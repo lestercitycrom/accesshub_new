@@ -148,6 +148,7 @@ final class AccountStatusService
 
 			$flags = is_array($account->flags) ? $account->flags : [];
 			unset($flags['ACTION_REQUIRED']);
+			unset($flags['PASSWORD_UPDATE_REQUIRED']);
 			$account->flags = $flags;
 
 			$account->save();
