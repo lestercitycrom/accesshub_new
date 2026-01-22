@@ -43,48 +43,42 @@
 	</x-admin.card>
 
 	<x-admin.card title="Log">
-		@php
-			$cell = (($density ?? 'normal') === 'compact') ? 'px-4 py-2.5' : 'px-4 py-3';
-		@endphp
+		<x-admin.table-toolbar title="Events" :density="($density ?? 'normal')" />
 
-		<div class="overflow-x-auto rounded-2xl border border-slate-200">
-			<table class="min-w-full text-sm">
-				<thead class="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-					<tr>
-						<th class="{{ $cell }} text-left">At</th>
-						<th class="{{ $cell }} text-left">Account</th>
-						<th class="{{ $cell }} text-left">Type</th>
-						<th class="{{ $cell }} text-left">Actor telegram_id</th>
-						<th class="{{ $cell }} text-left">Payload</th>
-					</tr>
-				</thead>
+		<x-admin.table :density="($density ?? 'normal')" :zebra="true" :sticky="true">
+			<x-slot:head>
+				<tr>
+					<x-admin.th>At</x-admin.th>
+					<x-admin.th>Account</x-admin.th>
+					<x-admin.th>Type</x-admin.th>
+					<x-admin.th>Actor telegram_id</x-admin.th>
+					<x-admin.th>Payload</x-admin.th>
+				</tr>
+			</x-slot:head>
 
-				<tbody class="divide-y divide-slate-200 bg-white">
-					@forelse($rows as $r)
-						<tr class="hover:bg-slate-50/70">
-							<td class="{{ $cell }}">
-								<span class="font-medium text-slate-900">{{ $r->created_at?->format('Y-m-d H:i') }}</span>
-							</td>
-							<td class="{{ $cell }}">
-								<a class="underline font-semibold text-slate-900 hover:text-slate-700"
-									href="{{ route('admin.accounts.show', $r->account_id) }}">
-									#{{ $r->account_id }}
-								</a>
-							</td>
-							<td class="{{ $cell }} font-semibold text-slate-900">{{ $r->type }}</td>
-							<td class="{{ $cell }}">{{ $r->telegram_id ?? '—' }}</td>
-							<td class="{{ $cell }}">
-								<pre class="text-xs whitespace-pre-wrap text-slate-700">@json($r->payload)</pre>
-							</td>
-						</tr>
-					@empty
-						<tr>
-							<td class="px-4 py-10 text-center text-slate-500" colspan="5">No rows</td>
-						</tr>
-					@endforelse
-				</tbody>
-			</table>
-		</div>
+			@forelse($rows as $r)
+				<tr>
+					<x-admin.td>
+						<span class="font-medium text-slate-900">{{ $r->created_at?->format('Y-m-d H:i') }}</span>
+					</x-admin.td>
+					<x-admin.td>
+						<a class="underline font-semibold text-slate-900 hover:text-slate-700"
+							href="{{ route('admin.accounts.show', $r->account_id) }}">
+							#{{ $r->account_id }}
+						</a>
+					</x-admin.td>
+					<x-admin.td class="font-semibold text-slate-900">{{ $r->type }}</x-admin.td>
+					<x-admin.td>{{ $r->telegram_id ?? '—' }}</x-admin.td>
+					<x-admin.td>
+						<pre class="text-xs whitespace-pre-wrap text-slate-700">@json($r->payload)</pre>
+					</x-admin.td>
+				</tr>
+			@empty
+				<tr>
+					<td class="px-4 py-10 text-center text-slate-500" colspan="5">No rows</td>
+				</tr>
+			@endforelse
+		</x-admin.table>
 
 		@if(method_exists($rows, 'links'))
 			<div class="pt-3">

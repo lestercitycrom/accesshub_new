@@ -53,55 +53,49 @@
 	</x-admin.card>
 
 	<x-admin.card title="Log">
-		@php
-			$cell = (($density ?? 'normal') === 'compact') ? 'px-4 py-2.5' : 'px-4 py-3';
-		@endphp
+		<x-admin.table-toolbar title="Issuances" :density="($density ?? 'normal')" />
 
-		<div class="overflow-x-auto rounded-2xl border border-slate-200">
-			<table class="min-w-full text-sm">
-				<thead class="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-					<tr>
-						<th class="{{ $cell }} text-left">Issued</th>
-						<th class="{{ $cell }} text-left">Order</th>
-						<th class="{{ $cell }} text-left">Account</th>
-						<th class="{{ $cell }} text-left">Operator</th>
-						<th class="{{ $cell }} text-left">Game</th>
-						<th class="{{ $cell }} text-left">Platform</th>
-						<th class="{{ $cell }} text-left">Qty</th>
-						<th class="{{ $cell }} text-left">Cooldown</th>
-					</tr>
-				</thead>
+		<x-admin.table :density="($density ?? 'normal')" :zebra="true" :sticky="true">
+			<x-slot:head>
+				<tr>
+					<x-admin.th>Issued</x-admin.th>
+					<x-admin.th>Order</x-admin.th>
+					<x-admin.th>Account</x-admin.th>
+					<x-admin.th>Operator</x-admin.th>
+					<x-admin.th>Game</x-admin.th>
+					<x-admin.th>Platform</x-admin.th>
+					<x-admin.th>Qty</x-admin.th>
+					<x-admin.th>Cooldown</x-admin.th>
+				</tr>
+			</x-slot:head>
 
-				<tbody class="divide-y divide-slate-200 bg-white">
-					@forelse($rows as $r)
-						<tr class="hover:bg-slate-50/70">
-							<td class="{{ $cell }}">
-								<span class="font-medium text-slate-900">{{ $r->issued_at?->format('Y-m-d H:i') }}</span>
-							</td>
-							<td class="{{ $cell }} font-semibold text-slate-900">{{ $r->order_id }}</td>
-							<td class="{{ $cell }}">
-								<a class="underline font-semibold text-slate-900 hover:text-slate-700"
-									href="{{ route('admin.accounts.show', $r->account_id) }}">
-									#{{ $r->account_id }}
-								</a>
-							</td>
-							<td class="{{ $cell }}">
-								<div class="text-xs text-slate-500">{{ $r->telegram_id }}</div>
-								<div class="font-semibold text-slate-900">{{ $r->telegramUser?->username ?? '-' }}</div>
-							</td>
-							<td class="{{ $cell }}">{{ $r->game }}</td>
-							<td class="{{ $cell }}">{{ $r->platform }}</td>
-							<td class="{{ $cell }}">{{ $r->qty }}</td>
-							<td class="{{ $cell }}">{{ $r->cooldown_until?->format('Y-m-d') ?? '—' }}</td>
-						</tr>
-					@empty
-						<tr>
-							<td class="px-4 py-10 text-center text-slate-500" colspan="8">No rows</td>
-						</tr>
-					@endforelse
-				</tbody>
-			</table>
-		</div>
+			@forelse($rows as $r)
+				<tr>
+					<x-admin.td>
+						<span class="font-medium text-slate-900">{{ $r->issued_at?->format('Y-m-d H:i') }}</span>
+					</x-admin.td>
+					<x-admin.td class="font-semibold text-slate-900">{{ $r->order_id }}</x-admin.td>
+					<x-admin.td>
+						<a class="underline font-semibold text-slate-900 hover:text-slate-700"
+							href="{{ route('admin.accounts.show', $r->account_id) }}">
+							#{{ $r->account_id }}
+						</a>
+					</x-admin.td>
+					<x-admin.td>
+						<div class="text-xs text-slate-500">{{ $r->telegram_id }}</div>
+						<div class="font-semibold text-slate-900">{{ $r->telegramUser?->username ?? '-' }}</div>
+					</x-admin.td>
+					<x-admin.td>{{ $r->game }}</x-admin.td>
+					<x-admin.td>{{ $r->platform }}</x-admin.td>
+					<x-admin.td>{{ $r->qty }}</x-admin.td>
+					<x-admin.td>{{ $r->cooldown_until?->format('Y-m-d') ?? '—' }}</x-admin.td>
+				</tr>
+			@empty
+				<tr>
+					<td class="px-4 py-10 text-center text-slate-500" colspan="8">No rows</td>
+				</tr>
+			@endforelse
+		</x-admin.table>
 
 		@if(method_exists($rows, 'links'))
 			<div class="pt-3">
