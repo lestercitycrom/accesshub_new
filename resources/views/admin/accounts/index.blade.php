@@ -10,37 +10,27 @@
 	<x-admin.page-header
 		title="Accounts"
 		subtitle="Поиск, фильтры, быстрый доступ к карточке и экспорт."
+		:meta="'<span class=&quot;font-semibold text-slate-700&quot;>Tip:</span> используйте Global Search сверху для быстрого lookup.'"
 	>
-		<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
-			href="{{ route('admin.account-lookup') }}">
-			Lookup
-		</a>
-
-		@if(isset($exportUrl))
+		<x-admin.page-actions primaryLabel="Create" primaryIcon="database" :primaryHref="route('admin.accounts.create')">
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
-				href="{{ $exportUrl }}">
-				Export CSV
+				href="{{ route('admin.account-lookup') }}">
+				Lookup
 			</a>
-		@endif
 
-		<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800"
-			href="{{ route('admin.accounts.create') }}">
-			Create
-		</a>
+			@if(isset($exportUrl))
+				<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
+					href="{{ $exportUrl }}">
+					Export CSV
+				</a>
+			@endif
+		</x-admin.page-actions>
 
-		{{-- Density toggle --}}
-		<div class="inline-flex rounded-xl border border-white/0 bg-white">
-			<button type="button"
-				wire:click="$set('density', 'normal')"
-				class="rounded-l-xl px-3 py-2 text-xs font-semibold border border-slate-200 {{ ($density ?? 'normal') === 'normal' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50' }}">
-				Normal
-			</button>
-			<button type="button"
-				wire:click="$set('density', 'compact')"
-				class="rounded-r-xl px-3 py-2 text-xs font-semibold border-y border-r border-slate-200 {{ ($density ?? 'normal') === 'compact' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50' }}">
-				Compact
-			</button>
-		</div>
+		<x-slot:breadcrumbs>
+			<span class="text-slate-500">Admin</span>
+			<span class="px-1 text-slate-300">/</span>
+			<span class="font-semibold text-slate-700">Accounts</span>
+		</x-slot:breadcrumbs>
 	</x-admin.page-header>
 
 	@if(session('status'))

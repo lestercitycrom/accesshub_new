@@ -5,33 +5,21 @@
 @endphp
 
 <div class="space-y-6">
-	<x-admin.page-header
-		title="Problems"
-		subtitle="Проблемные аккаунты: STOLEN/RECOVERY/TEMP_HOLD/DEAD + массовые действия."
-	>
-		<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
-			href="{{ route('admin.account-lookup') }}">
-			Lookup
-		</a>
+<x-admin.page-header
+	title="Problems"
+	subtitle="Проблемные аккаунты: STOLEN/RECOVERY/TEMP_HOLD/DEAD + массовые действия."
+	:meta="'Selected: <span class=&quot;font-semibold text-slate-700&quot;>'.(is_array($selected ?? null) ? count($selected) : 0).'</span>'"
+>
+	<x-admin.page-actions primaryLabel="Lookup" primaryIcon="search" :primaryHref="route('admin.accounts.lookup')">
+		<x-admin.button variant="secondary" size="md" wire:click="clear">Reset</x-admin.button>
+	</x-admin.page-actions>
 
-		<x-admin.button variant="secondary" size="md" wire:click="clear">
-			Reset
-		</x-admin.button>
-
-		{{-- Density toggle --}}
-		<div class="inline-flex rounded-xl border border-white/0 bg-white">
-			<button type="button"
-				wire:click="$set('density', 'normal')"
-				class="rounded-l-xl px-3 py-2 text-xs font-semibold border border-slate-200 {{ ($density ?? 'normal') === 'normal' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50' }}">
-				Normal
-			</button>
-			<button type="button"
-				wire:click="$set('density', 'compact')"
-				class="rounded-r-xl px-3 py-2 text-xs font-semibold border-y border-r border-slate-200 {{ ($density ?? 'normal') === 'compact' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50' }}">
-				Compact
-			</button>
-		</div>
-	</x-admin.page-header>
+	<x-slot:breadcrumbs>
+		<span class="text-slate-500">Admin</span>
+		<span class="px-1 text-slate-300">/</span>
+		<span class="font-semibold text-slate-700">Problems</span>
+	</x-slot:breadcrumbs>
+</x-admin.page-header>
 
 	@if(session('status'))
 		<x-admin.alert variant="success" :message="session('status')" />
@@ -100,6 +88,10 @@
 	</x-admin.filters-panel>
 
 	<x-admin.card title="List">
+		<x-admin.table-toolbar title="List" :density="($density ?? 'normal')">
+			<x-admin.button variant="secondary" size="sm" wire:click="releaseToPool">Release</x-admin.button>
+		</x-admin.table-toolbar>
+
 		<x-admin.table :density="($density ?? 'normal')" :sticky="true">
 			<x-slot:head>
 				<tr>
