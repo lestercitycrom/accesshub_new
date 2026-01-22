@@ -20,6 +20,7 @@ final class AccountLookup extends Component
 	public string $gameFilter = '';
 	public string $platformFilter = '';
 	public string $assignedFilter = '';
+	public string $density = 'normal';
 
 	public function mount(): void
 	{
@@ -47,6 +48,11 @@ final class AccountLookup extends Component
 	}
 
 	public function updatingAssignedFilter(): void
+	{
+		$this->resetPage();
+	}
+
+	public function updatedDensity(): void
 	{
 		$this->resetPage();
 	}

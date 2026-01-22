@@ -35,7 +35,11 @@
 	</x-admin.filters-bar>
 
 	<x-admin.card title="Results">
-		<x-admin.table :zebra="true" :sticky="true">
+		<x-admin.table-toolbar title="Results" :density="($density ?? 'normal')">
+			{{-- Quick actions for results --}}
+		</x-admin.table-toolbar>
+
+		<x-admin.table :density="($density ?? 'normal')" :zebra="true" :sticky="true">
 			<x-slot:head>
 				<tr>
 					<x-admin.th>ID</x-admin.th>
