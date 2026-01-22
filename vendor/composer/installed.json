@@ -2,12 +2,12 @@
     "packages": [
         {
             "name": "acme/admin-kit",
-            "version": "1.0.0",
-            "version_normalized": "1.0.0.0",
+            "version": "1.1.0",
+            "version_normalized": "1.1.0.0",
             "dist": {
                 "type": "path",
                 "url": "packages/acme/admin-kit",
-                "reference": "9c7748596c6aaf13753c417b26c71521ab8ee1a2"
+                "reference": "625ce556af8b638a18879defa66c22be36678681"
             },
             "require": {
                 "illuminate/support": "^12.0",

@@ -1,21 +1,17 @@
 <div class="space-y-6">
-	<div class="flex flex-wrap items-center justify-between gap-3">
-		<div>
-			<h1 class="text-2xl font-semibold tracking-tight text-slate-900">Problems</h1>
-			<p class="text-sm text-slate-500">Проблемные аккаунты: STOLEN/RECOVERY/TEMP_HOLD/DEAD + массовые действия.</p>
-		</div>
+	<x-admin.page-header
+		title="Problems"
+		subtitle="Проблемные аккаунты: STOLEN/RECOVERY/TEMP_HOLD/DEAD + массовые действия."
+	>
+		<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
+			href="{{ route('admin.account-lookup') }}">
+			Lookup
+		</a>
 
-		<div class="flex items-center gap-2">
-			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
-				href="{{ route('admin.account-lookup') }}">
-				Lookup
-			</a>
-
-			<x-admin.button variant="secondary" size="md" wire:click="clear">
-				Reset
-			</x-admin.button>
-		</div>
-	</div>
+		<x-admin.button variant="secondary" size="md" wire:click="clear">
+			Reset
+		</x-admin.button>
+	</x-admin.page-header>
 
 	<x-admin.card title="Tabs">
 		<div class="flex flex-wrap items-center gap-2">
@@ -98,18 +94,6 @@
 
 				<tbody class="divide-y divide-slate-200 bg-white">
 					@forelse($rows as $row)
-						@php
-							$st = $row->status->value;
-							$badge = match($st) {
-								'ACTIVE' => 'green',
-								'RECOVERY' => 'amber',
-								'STOLEN' => 'red',
-								'DEAD' => 'red',
-								'TEMP_HOLD' => 'blue',
-								default => 'gray',
-							};
-						@endphp
-
 						<tr class="hover:bg-slate-50/70">
 							<td class="px-4 py-3">
 								<input type="checkbox" value="{{ $row->id }}" wire:model="selected" class="rounded border-slate-300">
@@ -118,7 +102,9 @@
 							<td class="px-4 py-3">{{ $row->game }}</td>
 							<td class="px-4 py-3">{{ $row->platform }}</td>
 							<td class="px-4 py-3 font-semibold text-slate-900">{{ $row->login }}</td>
-							<td class="px-4 py-3"><x-admin.badge :variant="$badge">{{ $st }}</x-admin.badge></td>
+							<td class="px-4 py-3">
+								<x-admin.status-badge :status="$row->status->value" />
+							</td>
 							<td class="px-4 py-3">
 								@if($row->assigned_to_telegram_id)
 									<x-admin.badge variant="violet">{{ $row->assigned_to_telegram_id }}</x-admin.badge>
