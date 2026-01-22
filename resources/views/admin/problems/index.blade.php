@@ -45,30 +45,34 @@
 		</div>
 	</x-admin.card>
 
-	<x-admin.filters-panel title="Actions & Filters" :activeCount="$activeFilters">
-		<div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
-			<x-admin.input
+	<x-admin.filters-bar>
+		<div class="lg:col-span-3">
+			<x-admin.filter-input
 				label="Search login"
 				placeholder="login contains..."
+				icon="search"
 				wire:model.live="q"
 			/>
+		</div>
 
+		<div class="lg:col-span-2">
 			<div class="flex items-end gap-2">
-				<div class="w-28">
-					<x-admin.input label="Extend days" type="number" min="1" wire:model="extendDays" />
+				<div class="flex-1">
+					<x-admin.filter-input label="Extend days" type="number" min="1" wire:model="extendDays" />
 				</div>
-
-				<x-admin.button variant="secondary" size="md" wire:click="extendDeadline">
+				<x-admin.button variant="secondary" size="sm" wire:click="extendDeadline">
 					Extend
 				</x-admin.button>
 			</div>
+		</div>
 
-			<div class="flex items-end gap-2">
-				<x-admin.button variant="secondary" size="md" wire:click="releaseToPool">
-					Release to pool
-				</x-admin.button>
-			</div>
+		<div class="lg:col-span-2">
+			<x-admin.button variant="secondary" size="sm" wire:click="releaseToPool" class="w-full">
+				Release to pool
+			</x-admin.button>
+		</div>
 
+		<div class="lg:col-span-5">
 			<div class="flex items-end gap-2">
 				<div class="flex flex-wrap gap-2">
 					@foreach($statuses as $s)
@@ -82,10 +86,13 @@
 			</div>
 		</div>
 
-		<p class="mt-3 text-xs text-slate-500">
-			Extend deadline применяется только к STOLEN. Release to pool очищает assignment/deadline/flags и ставит ACTIVE.
-		</p>
-	</x-admin.filters-panel>
+		<div class="lg:col-span-12 flex items-center justify-between gap-2 pt-1">
+			<div class="text-xs text-slate-500 flex items-center gap-2">
+				<x-admin.icon name="filter" class="h-4 w-4" />
+				<span>Extend deadline applies only to STOLEN. Release to pool clears assignment/deadline/flags and sets ACTIVE.</span>
+			</div>
+		</div>
+	</x-admin.filters-bar>
 
 	<x-admin.card>
 		<x-admin.table-toolbar :density="($density ?? 'normal')" :showDensity="true">

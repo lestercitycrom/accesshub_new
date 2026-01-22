@@ -29,28 +29,76 @@
 		</div>
 	</x-admin.page-header>
 
-	<x-admin.card title="Filters">
-		<div class="grid grid-cols-1 gap-3 lg:grid-cols-6">
-			<x-admin.input label="Order ID" placeholder="ORD-..." wire:model.live="orderId" />
-			<x-admin.input label="Telegram ID" placeholder="111..." wire:model.live="telegramId" />
-			<x-admin.input label="Account ID" placeholder="123..." wire:model.live="accountId" />
-			<x-admin.input label="Game" placeholder="cs2..." wire:model.live="game" />
-			<x-admin.input label="Platform" placeholder="steam..." wire:model.live="platform" />
+	<x-admin.filters-bar>
+		<div class="lg:col-span-2">
+			<x-admin.filter-input
+				label="Order ID"
+				placeholder="ORD-..."
+				icon="hash"
+				wire:model.live="orderId"
+			/>
+		</div>
 
-			<div class="grid grid-cols-2 gap-2">
-				<div class="space-y-1">
-					<label class="text-xs font-semibold text-slate-700">Date from</label>
-					<input type="date" wire:model.live="dateFrom"
-						class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
-				</div>
-				<div class="space-y-1">
-					<label class="text-xs font-semibold text-slate-700">Date to</label>
-					<input type="date" wire:model.live="dateTo"
-						class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
-				</div>
+		<div class="lg:col-span-2">
+			<x-admin.filter-input
+				label="Telegram ID"
+				placeholder="111..."
+				icon="message-circle"
+				wire:model.live="telegramId"
+			/>
+		</div>
+
+		<div class="lg:col-span-2">
+			<x-admin.filter-input
+				label="Account ID"
+				placeholder="123..."
+				icon="user"
+				wire:model.live="accountId"
+			/>
+		</div>
+
+		<div class="lg:col-span-2">
+			<x-admin.filter-input
+				label="Game"
+				placeholder="cs2..."
+				icon="database"
+				wire:model.live="game"
+			/>
+		</div>
+
+		<div class="lg:col-span-2">
+			<x-admin.filter-input
+				label="Platform"
+				placeholder="steam..."
+				icon="database"
+				wire:model.live="platform"
+			/>
+		</div>
+
+		<div class="lg:col-span-2">
+			<div class="space-y-1">
+				<label class="text-[11px] font-semibold text-slate-600">Date from</label>
+				<input type="date" wire:model.live="dateFrom"
+					class="w-full rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300">
 			</div>
 		</div>
-	</x-admin.card>
+
+		<div class="lg:col-span-12 flex items-center justify-between gap-2 pt-1">
+			<div class="text-xs text-slate-500 flex items-center gap-2">
+				<x-admin.icon name="filter" class="h-4 w-4" />
+				<span>Filters apply instantly.</span>
+			</div>
+
+			<div class="flex items-center gap-2">
+				<x-admin.button variant="secondary" size="sm" wire:click="$refresh">
+					<span class="inline-flex items-center gap-2">
+						<x-admin.icon name="refresh" class="h-4 w-4" />
+						Refresh
+					</span>
+				</x-admin.button>
+			</div>
+		</div>
+	</x-admin.filters-bar>
 
 	<x-admin.card>
 		<x-admin.table-toolbar :density="($density ?? 'normal')" :showDensity="true" />

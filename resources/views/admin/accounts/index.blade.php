@@ -37,20 +37,53 @@
 		<x-admin.alert variant="success" :message="session('status')" />
 	@endif
 
-	<x-admin.filters-bar title="Filters">
-		<x-admin.input variant="filter" size="sm" label="Search" placeholder="login contains..." wire:model.live="q" />
-		<x-admin.input variant="filter" size="sm" label="Game" placeholder="cs2 / minecraft / ..." wire:model.live="gameFilter" />
-		<x-admin.input variant="filter" size="sm" label="Platform" placeholder="steam / xbox / ..." wire:model.live="platformFilter" />
+	<x-admin.filters-bar>
+		<div class="lg:col-span-3">
+			<x-admin.filter-input
+				label="Search"
+				placeholder="login contains..."
+				icon="search"
+				wire:model.live="q"
+			/>
+		</div>
 
-		<x-admin.select variant="filter" size="sm" label="Status" wire:model.live="statusFilter">
-			<option value="">Any</option>
-			@foreach($statusOptions as $s)
-				<option value="{{ $s }}">{{ $s }}</option>
-			@endforeach
-		</x-admin.select>
+		<div class="lg:col-span-2">
+			<x-admin.filter-input
+				label="Game"
+				placeholder="cs2 / minecraft..."
+				icon="database"
+				wire:model.live="gameFilter"
+			/>
+		</div>
 
-		<x-admin.button variant="secondary" size="sm" wire:click="clearFilters">Clear</x-admin.button>
-		<div class="text-xs text-slate-500 col-span-full">Фильтры работают поверх поиска по login.</div>
+		<div class="lg:col-span-2">
+			<x-admin.filter-input
+				label="Platform"
+				placeholder="steam / xbox..."
+				icon="database"
+				wire:model.live="platformFilter"
+			/>
+		</div>
+
+		<div class="lg:col-span-2">
+			<x-admin.filter-select label="Status" icon="list" wire:model.live="statusFilter">
+				<option value="">Any</option>
+				@foreach($statusOptions as $s)
+					<option value="{{ $s }}">{{ $s }}</option>
+				@endforeach>
+			</x-admin.filter-select>
+		</div>
+
+		<div class="lg:col-span-3 flex items-end gap-2">
+			<x-admin.button variant="secondary" size="sm" wire:click="clearFilters">Clear</x-admin.button>
+		</div>
+
+		<div class="lg:col-span-12 flex items-center justify-between gap-2 pt-1">
+			<div class="text-xs text-slate-500 flex items-center gap-2">
+				<x-admin.icon name="filter" class="h-4 w-4" />
+				<span>Filters work on top of login search.</span>
+			</div>
+		</div>
 	</x-admin.filters-bar>
 
 	<x-admin.card title="Accounts">
