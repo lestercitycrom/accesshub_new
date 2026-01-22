@@ -9,8 +9,8 @@
 		</div>
 	@endif
 
-	<div class="p-5 bg-slate-50/60 rounded-b-2xl">
-		<div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
+	<div class="p-4 bg-slate-50/60 rounded-b-2xl">
+		<div class="grid grid-cols-1 gap-3 lg:grid-cols-12 items-end">
 			{{ $slot }}
 		</div>
 	</div>

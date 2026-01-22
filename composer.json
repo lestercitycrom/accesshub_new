@@ -19,7 +19,7 @@
     ],
     "require": {
         "php": "^8.2",
-		"acme/admin-kit": "1.4.*",
+		"acme/admin-kit": "1.5.*",
         "laravel/fortify": "^1.30",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",

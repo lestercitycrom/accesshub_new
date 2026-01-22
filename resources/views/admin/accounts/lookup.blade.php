@@ -7,32 +7,75 @@
 		<x-admin.page-actions primaryLabel="Create" primaryIcon="plus" :primaryHref="route('admin.accounts.create')" />
 	</x-admin.page-header>
 
-	<x-admin.filters-bar title="Filters">
-		<x-admin.input variant="filter" size="sm" label="Search" placeholder="Login, ID, Order ID..." wire:model.live="q" />
-		<x-admin.select variant="filter" size="sm" label="Status" wire:model.live="statusFilter">
+<x-admin.filters-bar>
+	<div class="lg:col-span-4">
+		<x-admin.filter-input
+			label="Search"
+			placeholder="Login, ID, Order ID..."
+			icon="search"
+			wire:model.live="q"
+		/>
+	</div>
+
+	<div class="lg:col-span-2">
+		<x-admin.filter-select label="Status" icon="list" wire:model.live="statusFilter">
 			<option value="">All</option>
 			@foreach($statusOptions as $status)
 				<option value="{{ $status }}">{{ $status }}</option>
 			@endforeach>
-		</x-admin.select>
-		<x-admin.select variant="filter" size="sm" label="Game" wire:model.live="gameFilter">
+		</x-admin.filter-select>
+	</div>
+
+	<div class="lg:col-span-2">
+		<x-admin.filter-select label="Game" icon="database" wire:model.live="gameFilter">
 			<option value="">All</option>
 			@foreach($gameOptions as $game)
 				<option value="{{ $game }}">{{ $game }}</option>
 			@endforeach>
-		</x-admin.select>
-		<x-admin.select variant="filter" size="sm" label="Platform" wire:model.live="platformFilter">
+		</x-admin.filter-select>
+	</div>
+
+	<div class="lg:col-span-2">
+		<x-admin.filter-select label="Platform" icon="database" wire:model.live="platformFilter">
 			<option value="">All</option>
 			@foreach($platformOptions as $platform)
 				<option value="{{ $platform }}">{{ $platform }}</option>
 			@endforeach>
-		</x-admin.select>
-		<x-admin.select variant="filter" size="sm" label="Assigned" wire:model.live="assignedFilter">
+		</x-admin.filter-select>
+	</div>
+
+	<div class="lg:col-span-2">
+		<x-admin.filter-select label="Assigned" icon="users" wire:model.live="assignedFilter">
 			<option value="">All</option>
-			<option value="assigned">Assigned</option>
-			<option value="unassigned">Unassigned</option>
-		</x-admin.select>
-	</x-admin.filters-bar>
+			<option value="1">Assigned</option>
+			<option value="0">Not assigned</option>
+		</x-admin.filter-select>
+	</div>
+
+	<div class="lg:col-span-12 flex items-center justify-between gap-2 pt-1">
+		<div class="text-xs text-slate-500 flex items-center gap-2">
+			<x-admin.icon name="filter" class="h-4 w-4" />
+			<span>Filters apply instantly.</span>
+		</div>
+
+		<div class="flex items-center gap-2">
+			<x-admin.button variant="secondary" size="sm" wire:click="$refresh">
+				<span class="inline-flex items-center gap-2">
+					<x-admin.icon name="refresh" class="h-4 w-4" />
+					Refresh
+				</span>
+			</x-admin.button>
+
+			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800"
+				href="{{ route('admin.accounts.create') }}">
+				<span class="inline-flex items-center gap-2">
+					<x-admin.icon name="plus" class="h-4 w-4" />
+					Create
+				</span>
+			</a>
+		</div>
+	</div>
+</x-admin.filters-bar>
 
 	<x-admin.card title="Results">
 		<x-admin.table-toolbar title="Results" :density="($density ?? 'normal')">
@@ -68,8 +111,10 @@
 							<span class="text-slate-400">—</span>
 						@endif
 					</x-admin.td>
-					<x-admin.td align="right">
-						<x-admin.icon-button href="{{ route('admin.accounts.show', $account) }}" icon="eye" title="View" />
+					<x-admin.td align="right" nowrap>
+						<x-admin.table-actions
+							:viewHref="route('admin.accounts.show', $account)"
+						/>
 					</x-admin.td>
 				</tr>
 			@empty
