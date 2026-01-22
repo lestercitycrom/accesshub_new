@@ -1,36 +1,121 @@
-<div class="space-y-4">
-	<h1 class="text-xl font-semibold">Settings</h1>
+<div class="space-y-6">
+	<div class="flex flex-wrap items-start justify-between gap-3">
+		<div>
+			<h1 class="text-2xl font-semibold tracking-tight text-slate-900">Settings</h1>
+			<p class="text-sm text-slate-500">Минимальные настройки проекта, редактируемые из админки.</p>
+		</div>
+
+		<div class="flex items-center gap-2">
+			<x-admin.button variant="secondary" size="md" wire:click="$refresh">
+				Refresh
+			</x-admin.button>
+		</div>
+	</div>
 
 	@if(session('status'))
-		<div class="rounded-md bg-green-50 border border-green-200 p-3 text-sm text-green-800">
+		<div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
 			{{ session('status') }}
 		</div>
 	@endif
 
-	<div class="rounded-lg bg-white p-4 shadow-sm space-y-4 max-w-xl">
-		<div class="space-y-1">
-			<label class="text-sm font-medium">cooldown_days</label>
-			<input class="w-full rounded-md border-gray-300" type="number" min="0" wire:model="cooldownDays">
-			@error('cooldownDays') <div class="text-sm text-red-600">{{ $message }}</div> @enderror
-			<p class="text-xs text-gray-500">Сколько дней нельзя повторно выдавать аккаунт после выдачи.</p>
+	<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+		<div class="lg:col-span-2 space-y-6">
+			<x-admin.card title="General">
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<x-admin.input
+						label="cooldown_days"
+						type="number"
+						min="0"
+						wire:model="cooldownDays"
+						:error="$errors->first('cooldownDays')"
+						hint="Сколько дней нельзя повторно выдавать аккаунт после выдачи."
+					/>
+
+					<x-admin.input
+						label="max_qty"
+						type="number"
+						min="1"
+						wire:model="maxQty"
+						:error="$errors->first('maxQty')"
+						hint="Максимальный qty в выдаче (если используется)."
+					/>
+
+					<div class="sm:col-span-2">
+						<x-admin.input
+							label="stolen_default_deadline_days"
+							type="number"
+							min="1"
+							wire:model="stolenDefaultDeadlineDays"
+							:error="$errors->first('stolenDefaultDeadlineDays')"
+							hint="Сколько дней даём на работу со STOLEN до возврата в пул."
+						/>
+					</div>
+				</div>
+
+				<div class="mt-6 flex items-center gap-2">
+					<x-admin.button variant="primary" size="md" wire:click="save">
+						Save
+					</x-admin.button>
+
+					<x-admin.button
+						variant="secondary"
+						size="md"
+						type="button"
+						onclick="window.location='{{ route('admin.settings.index') }}'">
+						Cancel
+					</x-admin.button>
+				</div>
+			</x-admin.card>
+
+			<x-admin.card title="Notes">
+				<div class="space-y-2 text-sm text-slate-600">
+					<p class="font-semibold text-slate-900">Как использовать</p>
+					<ul class="list-disc pl-5 space-y-1 text-xs text-slate-500">
+						<li>cooldown_days — влияет на повторную выдачу одного и того же аккаунта.</li>
+						<li>stolen_default_deadline_days — дедлайн для статуса STOLEN (если интегрировали SettingsService в сервис статусов).</li>
+						<li>max_qty — ограничение количества в выдаче (если применяешь).</li>
+					</ul>
+
+					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Hint</div>
+						<div class="mt-1 text-xs text-slate-500">
+							Если настройки ещё не подключены в бизнес-логику — они всё равно сохраняются и готовы к использованию.
+						</div>
+					</div>
+				</div>
+			</x-admin.card>
 		</div>
 
-		<div class="space-y-1">
-			<label class="text-sm font-medium">stolen_default_deadline_days</label>
-			<input class="w-full rounded-md border-gray-300" type="number" min="1" wire:model="stolenDefaultDeadlineDays">
-			@error('stolenDefaultDeadlineDays') <div class="text-sm text-red-600">{{ $message }}</div> @enderror
-			<p class="text-xs text-gray-500">Сколько дней даём на работу со STOLEN до возврата в пул.</p>
-		</div>
+		<div class="space-y-6">
+			<x-admin.card title="Security">
+				<div class="space-y-2 text-sm text-slate-600">
+					<p class="font-semibold text-slate-900">Рекомендации</p>
+					<ul class="list-disc pl-5 space-y-1 text-xs text-slate-500">
+						<li>Изменяй параметры только админом.</li>
+						<li>После изменений — проверь выдачу/проблемные сценарии на тестовом аккаунте.</li>
+						<li>Логи изменения можно расширить позже (audit).</li>
+					</ul>
+				</div>
+			</x-admin.card>
 
-		<div class="space-y-1">
-			<label class="text-sm font-medium">max_qty</label>
-			<input class="w-full rounded-md border-gray-300" type="number" min="1" wire:model="maxQty">
-			@error('maxQty') <div class="text-sm text-red-600">{{ $message }}</div> @enderror
-			<p class="text-xs text-gray-500">Максимальный qty в выдаче (если используется).</p>
-		</div>
+			<x-admin.card title="Quick links">
+				<div class="flex flex-col gap-2">
+					<a class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+						href="{{ route('admin.problems.index') }}">
+						Problems
+					</a>
 
-		<div class="flex items-center gap-2">
-			<button class="rounded-md bg-black px-4 py-2 text-white" type="button" wire:click="save">Save</button>
+					<a class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+						href="{{ route('admin.issuances.index') }}">
+						Issuances
+					</a>
+
+					<a class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+						href="{{ route('admin.events.index') }}">
+						Events
+					</a>
+				</div>
+			</x-admin.card>
 		</div>
 	</div>
 </div>

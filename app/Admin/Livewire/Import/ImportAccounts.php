@@ -12,6 +12,7 @@ use Livewire\Component;
 final class ImportAccounts extends Component
 {
 	public string $csvText = '';
+	public ?string $file = null;
 	public array $preview = [];
 	public array $errors = [];
 	public bool $showPreview = false;
@@ -26,6 +27,11 @@ final class ImportAccounts extends Component
 		Gate::authorize('admin');
 
 		$this->reset(['preview', 'errors', 'showPreview']);
+
+		// If file is uploaded, read its content
+		if ($this->file) {
+			$this->csvText = file_get_contents($this->file->getRealPath());
+		}
 
 		if (empty(trim($this->csvText))) {
 			$this->errors[] = 'CSV text is required';
@@ -125,9 +131,71 @@ final class ImportAccounts extends Component
 		$this->reset(['csvText', 'preview', 'errors', 'showPreview']);
 	}
 
+	public function getStatsProperty(): array
+	{
+		if (!$this->showPreview || empty($this->preview)) {
+			return [
+				'parsed' => 0,
+				'create' => 0,
+				'update' => 0,
+				'skipped' => 0,
+				'errors' => $this->errors,
+			];
+		}
+
+		$create = 0;
+		$update = 0;
+		$skipped = 0;
+
+		foreach ($this->preview as $item) {
+			if ($item['exists']) {
+				$skipped++;
+			} else {
+				$create++;
+			}
+		}
+
+		return [
+			'parsed' => count($this->preview),
+			'create' => $create,
+			'update' => $update,
+			'skipped' => $skipped,
+			'errors' => $this->errors,
+		];
+	}
+
+	public function getPreviewRowsProperty(): array
+	{
+		if (!$this->showPreview || empty($this->preview)) {
+			return [];
+		}
+
+		return array_map(function ($item) {
+			return [
+				'game' => $item['game'],
+				'platform' => $item['platform'],
+				'login' => $item['login'],
+				'password' => $item['password'],
+				'action' => $item['exists'] ? 'skip' : 'create',
+				'reason' => $item['exists'] ? 'Already exists' : 'New account',
+			];
+		}, $this->preview);
+	}
+
+	public function preview(): void
+	{
+		$this->parseCsv();
+	}
+
+	public function apply(): void
+	{
+		$this->applyImport();
+	}
+
 	public function resetAll(): void
 	{
 		$this->csvText = '';
+		$this->file = null;
 		$this->preview = [];
 		$this->errors = [];
 		$this->showPreview = false;
