@@ -18,13 +18,5 @@ return [
 	 */
 	'nav' => [
 		['label' => 'Dashboard', 'route' => 'admin.dashboard'],
-		['label' => 'Accounts', 'route' => 'admin.accounts.index'],
-		['label' => 'Lookup', 'route' => 'admin.account-lookup'],
-		['label' => 'Import', 'route' => 'admin.import.accounts'],
-		['label' => 'Telegram Users', 'route' => 'admin.telegram-users.index'],
-		['label' => 'Problems', 'route' => 'admin.problems.index'],
-		['label' => 'Issuances', 'route' => 'admin.issuances.index'],
-		['label' => 'Events', 'route' => 'admin.events.index'],
-		['label' => 'Settings', 'route' => 'admin.settings.index'],
 	],
 ];

@@ -2,6 +2,9 @@
 	'variant' => 'success', // success|warning|danger|info
 	'title' => null,
 	'message' => null,
+	'autohide' => true,
+	'autohideMs' => 3200,
+	'dismissible' => true,
 ])
 
 @php
@@ -13,14 +16,38 @@
 	};
 @endphp
 
-<div {{ $attributes->merge(['class' => 'rounded-2xl border p-4 text-sm '.$classes]) }}>
-	@if($title)
-		<div class="font-semibold">{{ $title }}</div>
+<div
+	@if($autohide)
+		x-data="{ show: true }"
+		x-init="setTimeout(() => show = false, {{ (int) $autohideMs }})"
+		x-show="show"
 	@endif
+	{{ $attributes->merge(['class' => 'rounded-2xl border p-4 text-sm '.$classes]) }}
+>
+	<div class="flex items-start justify-between gap-3">
+		<div class="min-w-0">
+			@if($title)
+				<div class="font-semibold">{{ $title }}</div>
+			@endif
 
-	@if($message)
-		<div class="{{ $title ? 'mt-1' : '' }}">{{ $message }}</div>
-	@else
-		{{ $slot }}
-	@endif
+			@if($message)
+				<div class="{{ $title ? 'mt-1' : '' }}">{{ $message }}</div>
+			@else
+				{{ $slot }}
+			@endif
+		</div>
+
+		@if($dismissible)
+			<button type="button"
+				class="rounded-lg px-2 py-1 text-xs font-semibold hover:bg-white/40"
+				@if($autohide)
+					@click="show = false"
+				@else
+					onclick="this.closest('div').remove()"
+				@endif
+			>
+				✕
+			</button>
+		@endif
+	</div>
 </div>

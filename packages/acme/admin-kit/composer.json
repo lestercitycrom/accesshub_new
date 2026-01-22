@@ -3,7 +3,7 @@
 	"description": "Reusable Admin UI Kit for Laravel (Blade + Tailwind).",
 	"type": "library",
 	"license": "proprietary",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"require": {
 		"php": "^8.2",
 		"illuminate/support": "^12.0",

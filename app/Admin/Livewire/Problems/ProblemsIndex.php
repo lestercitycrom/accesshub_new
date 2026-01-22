@@ -17,6 +17,7 @@ final class ProblemsIndex extends Component
 	public string $q = '';
 	public array $selected = [];
 	public int $extendDays = 1;
+	public string $density = 'normal';
 
 	public function mount(): void
 	{
@@ -29,6 +30,11 @@ final class ProblemsIndex extends Component
 	}
 
 	public function updatedQ(): void
+	{
+		$this->selected = [];
+	}
+
+	public function updatedDensity(): void
 	{
 		$this->selected = [];
 	}

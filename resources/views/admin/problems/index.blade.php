@@ -1,22 +1,46 @@
+@php
+	$activeFilters = 0;
+	$activeFilters += !empty($q ?? null) ? 1 : 0;
+	$activeFilters += !empty($tab ?? null) ? 1 : 0;
+@endphp
+
 <div class="space-y-6">
 	<x-admin.page-header
 		title="Problems"
 		subtitle="Проблемные аккаунты: STOLEN/RECOVERY/TEMP_HOLD/DEAD + массовые действия."
 	>
 		<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
-			href="{{ route('admin.account-lookup') }}">
+			href="{{ route('admin.accounts.lookup') }}">
 			Lookup
 		</a>
 
 		<x-admin.button variant="secondary" size="md" wire:click="clear">
 			Reset
 		</x-admin.button>
+
+		{{-- Density toggle --}}
+		<div class="inline-flex rounded-xl border border-white/0 bg-white">
+			<button type="button"
+				wire:click="$set('density', 'normal')"
+				class="rounded-l-xl px-3 py-2 text-xs font-semibold border border-slate-200 {{ ($density ?? 'normal') === 'normal' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50' }}">
+				Normal
+			</button>
+			<button type="button"
+				wire:click="$set('density', 'compact')"
+				class="rounded-r-xl px-3 py-2 text-xs font-semibold border-y border-r border-slate-200 {{ ($density ?? 'normal') === 'compact' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50' }}">
+				Compact
+			</button>
+		</div>
 	</x-admin.page-header>
+
+	@if(session('status'))
+		<x-admin.alert variant="success" :message="session('status')" />
+	@endif
 
 	<x-admin.card title="Tabs">
 		<div class="flex flex-wrap items-center gap-2">
 			@foreach($tabs as $t)
-				@php $active = $tab === $t; @endphp
+				@php $active = ($tab ?? '') === $t; @endphp
 				<button
 					type="button"
 					wire:click="$set('tab', '{{ $t }}')"
@@ -33,7 +57,7 @@
 		</div>
 	</x-admin.card>
 
-	<x-admin.card title="Actions">
+	<x-admin.filters-panel title="Actions & Filters" :activeCount="$activeFilters">
 		<div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
 			<x-admin.input
 				label="Search login"
@@ -42,12 +66,12 @@
 			/>
 
 			<div class="flex items-end gap-2">
-				<div class="w-24">
+				<div class="w-28">
 					<x-admin.input label="Extend days" type="number" min="1" wire:model="extendDays" />
 				</div>
 
 				<x-admin.button variant="secondary" size="md" wire:click="extendDeadline">
-					Extend deadline
+					Extend
 				</x-admin.button>
 			</div>
 
@@ -73,53 +97,61 @@
 		<p class="mt-3 text-xs text-slate-500">
 			Extend deadline применяется только к STOLEN. Release to pool очищает assignment/deadline/flags и ставит ACTIVE.
 		</p>
-	</x-admin.card>
+	</x-admin.filters-panel>
 
 	<x-admin.card title="List">
+		@php
+			$cell = (($density ?? 'normal') === 'compact') ? 'px-4 py-2.5' : 'px-4 py-3';
+		@endphp
+
 		<div class="overflow-x-auto rounded-2xl border border-slate-200">
 			<table class="min-w-full text-sm">
-				<thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+				<thead class="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
 					<tr>
-						<th class="w-10 px-4 py-3"></th>
-						<th class="px-4 py-3 text-left">ID</th>
-						<th class="px-4 py-3 text-left">Game</th>
-						<th class="px-4 py-3 text-left">Platform</th>
-						<th class="px-4 py-3 text-left">Login</th>
-						<th class="px-4 py-3 text-left">Status</th>
-						<th class="px-4 py-3 text-left">Assigned</th>
-						<th class="px-4 py-3 text-left">Deadline</th>
-						<th class="px-4 py-3 text-right">Action</th>
+						<th class="w-10 {{ $cell }}"></th>
+						<th class="{{ $cell }} text-left">ID</th>
+						<th class="{{ $cell }} text-left">Game</th>
+						<th class="{{ $cell }} text-left">Platform</th>
+						<th class="{{ $cell }} text-left">Login</th>
+						<th class="{{ $cell }} text-left">Status</th>
+						<th class="{{ $cell }} text-left">Assigned</th>
+						<th class="{{ $cell }} text-left">Deadline</th>
+						<th class="{{ $cell }} text-right">Action</th>
 					</tr>
 				</thead>
 
 				<tbody class="divide-y divide-slate-200 bg-white">
 					@forelse($rows as $row)
 						<tr class="hover:bg-slate-50/70">
-							<td class="px-4 py-3">
+							<td class="{{ $cell }}">
 								<input type="checkbox" value="{{ $row->id }}" wire:model="selected" class="rounded border-slate-300">
 							</td>
-							<td class="px-4 py-3 font-semibold text-slate-900">{{ $row->id }}</td>
-							<td class="px-4 py-3">{{ $row->game }}</td>
-							<td class="px-4 py-3">{{ $row->platform }}</td>
-							<td class="px-4 py-3 font-semibold text-slate-900">{{ $row->login }}</td>
-							<td class="px-4 py-3">
+							<td class="{{ $cell }} font-semibold text-slate-900">{{ $row->id }}</td>
+							<td class="{{ $cell }}">{{ $row->game }}</td>
+							<td class="{{ $cell }}">{{ $row->platform }}</td>
+							<td class="{{ $cell }} font-semibold text-slate-900">{{ $row->login }}</td>
+
+							<td class="{{ $cell }}">
 								<x-admin.status-badge :status="$row->status->value" />
 							</td>
-							<td class="px-4 py-3">
+
+							<td class="{{ $cell }}">
 								@if($row->assigned_to_telegram_id)
 									<x-admin.badge variant="violet">{{ $row->assigned_to_telegram_id }}</x-admin.badge>
 								@else
 									<span class="text-slate-400">—</span>
 								@endif
 							</td>
-							<td class="px-4 py-3">
+
+							<td class="{{ $cell }}">
 								@if($row->status_deadline_at)
 									<span class="font-medium text-slate-900">{{ $row->status_deadline_at->format('Y-m-d H:i') }}</span>
 								@else
 									<span class="text-slate-400">—</span>
 								@endif
 							</td>
-							<td class="px-4 py-3 text-right">
+
+							<td class="{{ $cell }} text-right">
 								<a class="text-sm font-semibold text-slate-900 hover:text-slate-700 underline"
 									href="{{ route('admin.accounts.show', $row) }}">
 									Open
