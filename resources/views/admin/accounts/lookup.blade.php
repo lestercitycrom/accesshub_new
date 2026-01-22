@@ -77,8 +77,8 @@
 	</div>
 </x-admin.filters-bar>
 
-	<x-admin.card title="Results">
-		<x-admin.table-toolbar title="Results" :density="($density ?? 'normal')">
+	<x-admin.card>
+		<x-admin.table-toolbar :density="($density ?? 'normal')" :showDensity="true">
 			{{-- Quick actions for results --}}
 		</x-admin.table-toolbar>
 

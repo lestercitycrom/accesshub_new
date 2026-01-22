@@ -87,8 +87,8 @@
 		</p>
 	</x-admin.filters-panel>
 
-	<x-admin.card title="List">
-		<x-admin.table-toolbar title="List" :density="($density ?? 'normal')">
+	<x-admin.card>
+		<x-admin.table-toolbar :density="($density ?? 'normal')" :showDensity="true">
 			<x-admin.button variant="secondary" size="sm" wire:click="releaseToPool">Release</x-admin.button>
 		</x-admin.table-toolbar>
 

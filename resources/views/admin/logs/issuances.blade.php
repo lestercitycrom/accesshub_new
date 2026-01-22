@@ -52,8 +52,8 @@
 		</div>
 	</x-admin.card>
 
-	<x-admin.card title="Log">
-		<x-admin.table-toolbar title="Issuances" :density="($density ?? 'normal')" />
+	<x-admin.card>
+		<x-admin.table-toolbar :density="($density ?? 'normal')" :showDensity="true" />
 
 		<x-admin.table :density="($density ?? 'normal')" :zebra="true" :sticky="true">
 			<x-slot:head>

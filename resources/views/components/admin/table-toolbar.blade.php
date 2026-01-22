@@ -1,6 +1,7 @@
 @props([
 	'title' => null,
 	'density' => null, // normal|compact
+	'showDensity' => false, // whether to show density toggle
 ])
 
 <div {{ $attributes->merge(['class' => 'flex flex-wrap items-end justify-between gap-3']) }}>
@@ -11,7 +12,7 @@
 	<div class="flex flex-wrap items-center gap-2">
 		{{ $slot }}
 
-		@if($density)
+		@if($density && $showDensity)
 			<div class="inline-flex rounded-xl bg-white">
 				<button type="button"
 					wire:click="$set('density', 'normal')"
