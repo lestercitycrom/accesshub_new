@@ -29,6 +29,9 @@
         "psr-4": {
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
+            "Database\\Factories\\Domain\\Telegram\\Models\\": "database/factories/Domain/Telegram/Models/",
+            "Database\\Factories\\Domain\\Accounts\\Models\\": "database/factories/Domain/Accounts/Models/",
+            "Database\\Factories\\Domain\\Issuance\\Models\\": "database/factories/Domain/Issuance/Models/",
             "Database\\Seeders\\": "database/seeders/"
         }
     },
