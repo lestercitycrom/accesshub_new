@@ -20,6 +20,7 @@ final class AccountsIndex extends Component
 	public string $gameFilter = '';
 	public string $platformFilter = '';
 	public array $selected = [];
+	public string $density = 'normal';
 
 	public function mount(): void
 	{
@@ -44,6 +45,11 @@ final class AccountsIndex extends Component
 	public function updatingPlatformFilter(): void
 	{
 		$this->resetPage();
+	}
+
+	public function updatedDensity(): void
+	{
+		$this->selected = [];
 	}
 
 	public function setStatus(string $status): void

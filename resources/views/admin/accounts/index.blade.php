@@ -27,6 +27,20 @@
 			href="{{ route('admin.accounts.create') }}">
 			Create
 		</a>
+
+		{{-- Density toggle --}}
+		<div class="inline-flex rounded-xl border border-white/0 bg-white">
+			<button type="button"
+				wire:click="$set('density', 'normal')"
+				class="rounded-l-xl px-3 py-2 text-xs font-semibold border border-slate-200 {{ ($density ?? 'normal') === 'normal' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50' }}">
+				Normal
+			</button>
+			<button type="button"
+				wire:click="$set('density', 'compact')"
+				class="rounded-r-xl px-3 py-2 text-xs font-semibold border-y border-r border-slate-200 {{ ($density ?? 'normal') === 'compact' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50' }}">
+				Compact
+			</button>
+		</div>
 	</x-admin.page-header>
 
 	@if(session('status'))
@@ -58,39 +72,43 @@
 	</x-admin.filters-panel>
 
 	<x-admin.card title="Accounts">
+		@php
+			$cell = (($density ?? 'normal') === 'compact') ? 'px-4 py-2.5' : 'px-4 py-3';
+		@endphp
+
 		<div class="overflow-x-auto rounded-2xl border border-slate-200">
 			<table class="min-w-full text-sm">
-				<thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+				<thead class="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
 					<tr>
-						<th class="px-4 py-3 text-left">ID</th>
-						<th class="px-4 py-3 text-left">Game</th>
-						<th class="px-4 py-3 text-left">Platform</th>
-						<th class="px-4 py-3 text-left">Login</th>
-						<th class="px-4 py-3 text-left">Status</th>
-						<th class="px-4 py-3 text-left">Assigned</th>
-						<th class="px-4 py-3 text-left">Deadline</th>
-						<th class="px-4 py-3 text-right">Action</th>
+						<th class="{{ $cell }} text-left">ID</th>
+						<th class="{{ $cell }} text-left">Game</th>
+						<th class="{{ $cell }} text-left">Platform</th>
+						<th class="{{ $cell }} text-left">Login</th>
+						<th class="{{ $cell }} text-left">Status</th>
+						<th class="{{ $cell }} text-left">Assigned</th>
+						<th class="{{ $cell }} text-left">Deadline</th>
+						<th class="{{ $cell }} text-right">Action</th>
 					</tr>
 				</thead>
 
 				<tbody class="divide-y divide-slate-200 bg-white">
 					@forelse($rows as $row)
 						<tr class="hover:bg-slate-50/70">
-							<td class="px-4 py-3 font-semibold text-slate-900">{{ $row->id }}</td>
-							<td class="px-4 py-3">{{ $row->game }}</td>
-							<td class="px-4 py-3">{{ $row->platform }}</td>
-							<td class="px-4 py-3">
+							<td class="{{ $cell }} font-semibold text-slate-900">{{ $row->id }}</td>
+							<td class="{{ $cell }}">{{ $row->game }}</td>
+							<td class="{{ $cell }}">{{ $row->platform }}</td>
+							<td class="{{ $cell }}">
 								<div class="font-semibold text-slate-900">{{ $row->login }}</div>
 								@if(is_array($row->meta) && isset($row->meta['email_login']))
 									<div class="text-xs text-slate-500">{{ $row->meta['email_login'] }}</div>
 								@endif
 							</td>
 
-							<td class="px-4 py-3">
+							<td class="{{ $cell }}">
 								<x-admin.status-badge :status="$row->status->value" />
 							</td>
 
-							<td class="px-4 py-3">
+							<td class="{{ $cell }}">
 								@if($row->assigned_to_telegram_id)
 									<x-admin.badge variant="violet">{{ $row->assigned_to_telegram_id }}</x-admin.badge>
 								@else
@@ -98,7 +116,7 @@
 								@endif
 							</td>
 
-							<td class="px-4 py-3">
+							<td class="{{ $cell }}">
 								@if($row->status_deadline_at)
 									<span class="font-medium text-slate-900">{{ $row->status_deadline_at->format('Y-m-d H:i') }}</span>
 								@else
@@ -106,7 +124,7 @@
 								@endif
 							</td>
 
-							<td class="px-4 py-3 text-right">
+							<td class="{{ $cell }} text-right">
 								<a class="text-sm font-semibold text-slate-900 hover:text-slate-700 underline"
 									href="{{ route('admin.accounts.show', $row) }}">
 									Open
