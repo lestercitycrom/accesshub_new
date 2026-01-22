@@ -10,7 +10,7 @@
 	subtitle="Проблемные аккаунты: STOLEN/RECOVERY/TEMP_HOLD/DEAD + массовые действия."
 	:meta="'Selected: <span class=&quot;font-semibold text-slate-700&quot;>'.(is_array($selected ?? null) ? count($selected) : 0).'</span>'"
 >
-	<x-admin.page-actions primaryLabel="Lookup" primaryIcon="search" :primaryHref="route('admin.accounts.lookup')">
+	<x-admin.page-actions primaryLabel="Lookup" primaryIcon="search" :primaryHref="route('admin.account-lookup')">
 		<x-admin.button variant="secondary" size="md" wire:click="clear">Reset</x-admin.button>
 	</x-admin.page-actions>
 
