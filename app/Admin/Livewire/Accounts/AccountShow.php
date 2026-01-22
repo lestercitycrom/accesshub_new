@@ -75,9 +75,9 @@ final class AccountShow extends Component
 	public function render()
 	{
 		return view('admin.accounts.show', [
-			'statusOptions' => $this->statusOptions,
-			'issuances' => $this->account->issuances()->with('telegramUser')->latest()->limit(10)->get(),
-			'events' => $this->account->events()->with('telegramUser')->latest()->limit(20)->get(),
+			'statuses' => $this->statusOptions,
+			'issuances' => $this->account->issuances()->with('telegramUser')->latest()->limit(20)->get(),
+			'events' => $this->account->events()->with('telegramUser')->latest()->limit(50)->get(),
 		])->layout('layouts.admin');
 	}
 }

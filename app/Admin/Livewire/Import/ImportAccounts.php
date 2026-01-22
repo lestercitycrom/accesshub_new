@@ -125,6 +125,14 @@ final class ImportAccounts extends Component
 		$this->reset(['csvText', 'preview', 'errors', 'showPreview']);
 	}
 
+	public function resetAll(): void
+	{
+		$this->csvText = '';
+		$this->preview = [];
+		$this->errors = [];
+		$this->showPreview = false;
+	}
+
 	public function render()
 	{
 		return view('admin.import.accounts')->layout('layouts.admin');
