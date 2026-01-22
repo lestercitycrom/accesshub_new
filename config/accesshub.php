@@ -18,4 +18,9 @@ return [
 	'stolen' => [
 		'default_deadline_days' => 5,
 	],
+
+	'webapp' => [
+		'validate_init_data' => env('WEBAPP_VALIDATE_INIT_DATA', false),
+		'max_history_items' => 20,
+	],
 ];
