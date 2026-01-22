@@ -1,9 +1,9 @@
 @php
 	$activeFilters = 0;
 	$activeFilters += !empty($q) ? 1 : 0;
-	$activeFilters += !empty($game) ? 1 : 0;
-	$activeFilters += !empty($platform) ? 1 : 0;
-	$activeFilters += !empty($status) ? 1 : 0;
+	$activeFilters += !empty($gameFilter) ? 1 : 0;
+	$activeFilters += !empty($platformFilter) ? 1 : 0;
+	$activeFilters += !empty($statusFilter) ? 1 : 0;
 @endphp
 
 <div class="space-y-6">
@@ -36,15 +36,15 @@
 	<x-admin.filters-panel title="Filters" :activeCount="$activeFilters">
 		<div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
 			<x-admin.input label="Search" placeholder="login contains..." wire:model.live="q" />
-			<x-admin.input label="Game" placeholder="cs2 / minecraft / ..." wire:model.live="game" />
-			<x-admin.input label="Platform" placeholder="steam / xbox / ..." wire:model.live="platform" />
+			<x-admin.input label="Game" placeholder="cs2 / minecraft / ..." wire:model.live="gameFilter" />
+			<x-admin.input label="Platform" placeholder="steam / xbox / ..." wire:model.live="platformFilter" />
 
 			<div class="space-y-1">
 				<label class="text-xs font-semibold text-slate-700">Status</label>
-				<select wire:model.live="status"
+				<select wire:model.live="statusFilter"
 					class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
 					<option value="">Any</option>
-					@foreach($statuses as $s)
+					@foreach($statusOptions as $s)
 						<option value="{{ $s }}">{{ $s }}</option>
 					@endforeach
 				</select>
