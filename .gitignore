@@ -29,7 +29,11 @@ vendor/
 # IDE
 .vscode/
 .idea/
+.cursor/
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Vite
+public/hot
