@@ -76,7 +76,8 @@
 							<td class="py-2 pr-3">{{ $row->login }}</td>
 							<td class="py-2 pr-3">{{ $row->status->value }}</td>
 							<td class="py-2 pr-3">{{ $row->assigned_to_telegram_id ?: '-' }}</td>
-							<td class="py-2 pr-3">
+							<td class="py-2 pr-3 flex gap-2">
+								<a class="text-sm underline" href="{{ route('admin.accounts.show', $row) }}">Open</a>
 								<a class="text-sm underline" href="{{ route('admin.accounts.edit', $row) }}">Edit</a>
 							</td>
 						</tr>

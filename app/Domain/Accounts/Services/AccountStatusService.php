@@ -134,4 +134,62 @@ final class AccountStatusService
 			]);
 		});
 	}
+
+	public function releaseToPool(int $accountId, ?int $telegramId, array $payload = []): void
+	{
+		DB::transaction(function () use ($accountId, $telegramId, $payload): void {
+			$account = Account::query()
+				->lockForUpdate()
+				->findOrFail($accountId);
+
+			$account->status = AccountStatus::ACTIVE;
+			$account->assigned_to_telegram_id = null;
+			$account->status_deadline_at = null;
+
+			$flags = is_array($account->flags) ? $account->flags : [];
+			unset($flags['ACTION_REQUIRED']);
+			$account->flags = $flags;
+
+			$account->save();
+
+			AccountEvent::query()->create([
+				'account_id' => $account->id,
+				'telegram_id' => $telegramId,
+				'type' => 'RELEASE_TO_POOL',
+				'payload' => array_merge([
+					'new_status' => AccountStatus::ACTIVE->value,
+				], $payload),
+			]);
+		});
+	}
+
+	public function adminUpdatePassword(int $accountId, string $newPassword, ?int $telegramId, array $payload = []): void
+	{
+		DB::transaction(function () use ($accountId, $newPassword, $telegramId, $payload): void {
+			$account = Account::query()
+				->lockForUpdate()
+				->findOrFail($accountId);
+
+			$account->password = $newPassword;
+			$account->status = AccountStatus::ACTIVE;
+			$account->assigned_to_telegram_id = null;
+			$account->status_deadline_at = null;
+
+			$flags = is_array($account->flags) ? $account->flags : [];
+			unset($flags['PASSWORD_UPDATE_REQUIRED']);
+			unset($flags['ACTION_REQUIRED']);
+			$account->flags = $flags;
+
+			$account->save();
+
+			AccountEvent::query()->create([
+				'account_id' => $account->id,
+				'telegram_id' => $telegramId,
+				'type' => 'PASSWORD_UPDATED',
+				'payload' => array_merge([
+					'new_status' => AccountStatus::ACTIVE->value,
+				], $payload),
+			]);
+		});
+	}
 }
