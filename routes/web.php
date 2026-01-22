@@ -41,6 +41,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
 	Route::get('/problems', App\Admin\Livewire\Problems\ProblemsIndex::class)->name('problems.index');
 
+	Route::get('/settings', App\Admin\Livewire\Settings\SettingsIndex::class)->name('settings.index');
+
 	Route::get('/export/accounts.csv', App\Admin\Http\Controllers\Export\ExportAccountsCsvController::class)->name('export.accounts.csv');
 	Route::get('/export/issuances.csv', App\Admin\Http\Controllers\Export\ExportIssuancesCsvController::class)->name('export.issuances.csv');
 });

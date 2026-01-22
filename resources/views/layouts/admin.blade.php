@@ -22,6 +22,7 @@
 						<a href="{{ route('admin.issuances.index') }}" class="hover:underline">Issuances</a>
 						<a href="{{ route('admin.events.index') }}" class="hover:underline">Events</a>
 						<a href="{{ route('admin.problems.index') }}" class="hover:underline">Problems</a>
+						<a href="{{ route('admin.settings.index') }}" class="hover:underline">Settings</a>
 					</nav>
 				</div>
 
