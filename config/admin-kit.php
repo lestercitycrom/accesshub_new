@@ -18,5 +18,9 @@ return [
 	 */
 	'nav' => [
 		['label' => 'Dashboard', 'route' => 'admin.dashboard'],
+		['label' => 'Accounts', 'route' => 'admin.accounts.index', 'icon' => 'users'],
+		['label' => 'Problems', 'route' => 'admin.problems.index', 'icon' => 'alert-triangle'],
+		['label' => 'Import', 'route' => 'admin.import.accounts', 'icon' => 'upload'],
+		['label' => 'Logs', 'route' => 'admin.logs.issuances', 'icon' => 'file-text'],
 	],
 ];
