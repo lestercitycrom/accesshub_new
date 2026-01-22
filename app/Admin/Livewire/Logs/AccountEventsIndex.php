@@ -19,6 +19,7 @@ final class AccountEventsIndex extends Component
 	public string $type = '';
 	public string $dateFrom = '';
 	public string $dateTo = '';
+	public string $density = 'normal';
 
 	public function mount(): void
 	{
@@ -30,6 +31,11 @@ final class AccountEventsIndex extends Component
 	public function updatingType(): void { $this->resetPage(); }
 	public function updatingDateFrom(): void { $this->resetPage(); }
 	public function updatingDateTo(): void { $this->resetPage(); }
+
+	public function updatedDensity(): void
+	{
+		$this->resetPage();
+	}
 
 	public function clearFilters(): void
 	{

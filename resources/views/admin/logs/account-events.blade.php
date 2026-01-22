@@ -1,14 +1,26 @@
 <div class="space-y-6">
-	<div class="flex flex-wrap items-center justify-between gap-3">
-		<div>
-			<h1 class="text-2xl font-semibold tracking-tight text-slate-900">Events</h1>
-			<p class="text-sm text-slate-500">Журнал событий аккаунтов: фильтры и быстрый переход к аккаунту.</p>
-		</div>
-
+	<x-admin.page-header
+		title="Events"
+		subtitle="Журнал событий аккаунтов: фильтры и быстрый переход к аккаунту."
+	>
 		<x-admin.button variant="secondary" size="md" wire:click="clearFilters">
 			Clear
 		</x-admin.button>
-	</div>
+
+		{{-- Density toggle --}}
+		<div class="inline-flex rounded-xl border border-white/0 bg-white">
+			<button type="button"
+				wire:click="$set('density', 'normal')"
+				class="rounded-l-xl px-3 py-2 text-xs font-semibold border border-slate-200 {{ ($density ?? 'normal') === 'normal' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50' }}">
+				Normal
+			</button>
+			<button type="button"
+				wire:click="$set('density', 'compact')"
+				class="rounded-r-xl px-3 py-2 text-xs font-semibold border-y border-r border-slate-200 {{ ($density ?? 'normal') === 'compact' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50' }}">
+				Compact
+			</button>
+		</div>
+	</x-admin.page-header>
 
 	<x-admin.card title="Filters">
 		<div class="grid grid-cols-1 gap-3 lg:grid-cols-5">
@@ -31,33 +43,37 @@
 	</x-admin.card>
 
 	<x-admin.card title="Log">
+		@php
+			$cell = (($density ?? 'normal') === 'compact') ? 'px-4 py-2.5' : 'px-4 py-3';
+		@endphp
+
 		<div class="overflow-x-auto rounded-2xl border border-slate-200">
 			<table class="min-w-full text-sm">
-				<thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+				<thead class="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
 					<tr>
-						<th class="px-4 py-3 text-left">At</th>
-						<th class="px-4 py-3 text-left">Account</th>
-						<th class="px-4 py-3 text-left">Type</th>
-						<th class="px-4 py-3 text-left">Actor telegram_id</th>
-						<th class="px-4 py-3 text-left">Payload</th>
+						<th class="{{ $cell }} text-left">At</th>
+						<th class="{{ $cell }} text-left">Account</th>
+						<th class="{{ $cell }} text-left">Type</th>
+						<th class="{{ $cell }} text-left">Actor telegram_id</th>
+						<th class="{{ $cell }} text-left">Payload</th>
 					</tr>
 				</thead>
 
 				<tbody class="divide-y divide-slate-200 bg-white">
 					@forelse($rows as $r)
 						<tr class="hover:bg-slate-50/70">
-							<td class="px-4 py-3">
+							<td class="{{ $cell }}">
 								<span class="font-medium text-slate-900">{{ $r->created_at?->format('Y-m-d H:i') }}</span>
 							</td>
-							<td class="px-4 py-3">
+							<td class="{{ $cell }}">
 								<a class="underline font-semibold text-slate-900 hover:text-slate-700"
 									href="{{ route('admin.accounts.show', $r->account_id) }}">
 									#{{ $r->account_id }}
 								</a>
 							</td>
-							<td class="px-4 py-3 font-semibold text-slate-900">{{ $r->type }}</td>
-							<td class="px-4 py-3">{{ $r->telegram_id ?? '—' }}</td>
-							<td class="px-4 py-3">
+							<td class="{{ $cell }} font-semibold text-slate-900">{{ $r->type }}</td>
+							<td class="{{ $cell }}">{{ $r->telegram_id ?? '—' }}</td>
+							<td class="{{ $cell }}">
 								<pre class="text-xs whitespace-pre-wrap text-slate-700">@json($r->payload)</pre>
 							</td>
 						</tr>
