@@ -23,11 +23,11 @@
 		</div>
 	@endif
 
-	@if(!empty($errors ?? null))
+	@if(!empty($parseErrors ?? null))
 		<div class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
 			<div class="font-semibold">Errors</div>
 			<ul class="mt-2 list-disc pl-5 space-y-1">
-				@foreach($errors as $error)
+				@foreach($parseErrors as $error)
 					<li class="text-xs">{{ $error }}</li>
 				@endforeach
 			</ul>

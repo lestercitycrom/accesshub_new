@@ -14,7 +14,7 @@ final class ImportAccounts extends Component
 	public string $csvText = '';
 	public ?string $file = null;
 	public array $preview = [];
-	public array $errors = [];
+	public array $parseErrors = [];
 	public bool $showPreview = false;
 
 	public function mount(): void
@@ -26,7 +26,7 @@ final class ImportAccounts extends Component
 	{
 		Gate::authorize('admin');
 
-		$this->reset(['preview', 'errors', 'showPreview']);
+		$this->reset(['preview', 'parseErrors', 'showPreview']);
 
 		// If file is uploaded, read its content
 		if ($this->file) {
@@ -34,7 +34,7 @@ final class ImportAccounts extends Component
 		}
 
 		if (empty(trim($this->csvText))) {
-			$this->errors[] = 'CSV text is required';
+			$this->parseErrors[] = 'CSV text is required';
 			return;
 		}
 
@@ -42,7 +42,7 @@ final class ImportAccounts extends Component
 		$header = str_getcsv(array_shift($lines));
 
 		if (count($header) < 4) {
-			$this->errors[] = 'CSV must have at least 4 columns: game, platform, login, password';
+			$this->parseErrors[] = 'CSV must have at least 4 columns: game, platform, login, password';
 			return;
 		}
 
@@ -57,21 +57,21 @@ final class ImportAccounts extends Component
 			$data = str_getcsv($line);
 
 			if (count($data) < 4) {
-				$this->errors[] = "Line " . ($lineNumber + 2) . ": Not enough columns";
+				$this->parseErrors[] = "Line " . ($lineNumber + 2) . ": Not enough columns";
 				continue;
 			}
 
 			[$game, $platform, $login, $password] = array_map('trim', $data);
 
 			if (empty($game) || empty($platform) || empty($login) || empty($password)) {
-				$this->errors[] = "Line " . ($lineNumber + 2) . ": Empty required fields";
+				$this->parseErrors[] = "Line " . ($lineNumber + 2) . ": Empty required fields";
 				continue;
 			}
 
 			$key = $game . '|' . $platform . '|' . $login;
 
 			if (isset($existingLogins[$key])) {
-				$this->errors[] = "Line " . ($lineNumber + 2) . ": Duplicate login in CSV";
+				$this->parseErrors[] = "Line " . ($lineNumber + 2) . ": Duplicate login in CSV";
 				continue;
 			}
 
@@ -93,7 +93,7 @@ final class ImportAccounts extends Component
 			];
 		}
 
-		if (empty($this->errors)) {
+		if (empty($this->parseErrors)) {
 			$this->showPreview = true;
 		}
 	}
@@ -139,7 +139,7 @@ final class ImportAccounts extends Component
 				'create' => 0,
 				'update' => 0,
 				'skipped' => 0,
-				'errors' => $this->errors,
+				'errors' => $this->parseErrors,
 			];
 		}
 
@@ -160,7 +160,7 @@ final class ImportAccounts extends Component
 			'create' => $create,
 			'update' => $update,
 			'skipped' => $skipped,
-			'errors' => $this->errors,
+			'errors' => $this->parseErrors,
 		];
 	}
 
@@ -197,7 +197,7 @@ final class ImportAccounts extends Component
 		$this->csvText = '';
 		$this->file = null;
 		$this->preview = [];
-		$this->errors = [];
+		$this->parseErrors = [];
 		$this->showPreview = false;
 	}
 
