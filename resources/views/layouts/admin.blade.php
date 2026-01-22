@@ -17,6 +17,7 @@
 					<nav class="text-sm text-gray-700 flex gap-3">
 						<a href="{{ route('admin.telegram-users.index') }}" class="hover:underline">Telegram Users</a>
 						<a href="{{ route('admin.accounts.index') }}" class="hover:underline">Accounts</a>
+						<a href="{{ route('admin.import.accounts') }}" class="hover:underline">Import</a>
 					</nav>
 				</div>
 
