@@ -12,7 +12,7 @@
 	<div class="flex flex-wrap items-center gap-2">
 		{{ $slot }}
 
-		@if($density && $showDensity)
+		@if(config('admin-kit.features.table_density_toggle') && $density && $showDensity)
 			<div class="inline-flex rounded-xl bg-white">
 				<button type="button"
 					wire:click="$set('density', 'normal')"

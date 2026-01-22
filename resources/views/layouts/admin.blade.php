@@ -22,17 +22,17 @@
 				</a>
 
 				{{-- Global search --}}
-				@if(\Illuminate\Support\Facades\Route::has('admin.account-lookup'))
-					<form method="GET" action="{{ route('admin.account-lookup') }}" class="hidden lg:flex items-center gap-2 min-w-0">
+				@if(config('admin-kit.features.global_search') && \Illuminate\Support\Facades\Route::has(config('admin-kit.global_search.route')))
+					<form method="GET" action="{{ route(config('admin-kit.global_search.route')) }}" class="hidden lg:flex items-center gap-2 min-w-0">
 						<div class="relative">
 							<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300">
 								<x-admin.icon name="search" class="h-4 w-4" />
 							</span>
 							<input
 								type="text"
-								name="q"
-								value="{{ request('q') }}"
-								placeholder="Search login / id / order..."
+								name="{{ config('admin-kit.global_search.query_key', 'q') }}"
+								value="{{ request(config('admin-kit.global_search.query_key', 'q')) }}"
+								placeholder="{{ config('admin-kit.global_search.placeholder', 'Search...') }}"
 								class="w-[360px] rounded-xl bg-white/10 border border-white/10 pl-10 pr-3 py-2 text-sm text-white placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-white/20"
 							/>
 						</div>
@@ -72,11 +72,10 @@
 
 				<div class="flex items-center gap-3">
 					{{-- Quick actions --}}
+					@if(config('admin-kit.features.quick_actions') && count((array) config('admin-kit.quick_actions', [])) > 0)
 					@php
 						$qa = (array) config('admin-kit.quick_actions', []);
 					@endphp
-
-					@if(count($qa) > 0)
 						<details class="relative hidden sm:block">
 							<summary class="list-none cursor-pointer select-none rounded-xl px-3 py-2 text-sm font-semibold bg-white/10 hover:bg-white/15 inline-flex items-center gap-2">
 								<span class="text-slate-100">Actions</span>
@@ -158,7 +157,7 @@
 				</div>
 
 				{{-- Mobile quick actions --}}
-				@if(count($qa) > 0)
+				@if(config('admin-kit.features.quick_actions') && count($qa) > 0)
 					<div class="mt-2 flex flex-wrap gap-1">
 						@foreach($qa as $item)
 							@php
