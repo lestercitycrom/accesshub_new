@@ -26,7 +26,7 @@
 						$nav = [
 							['label' => 'Telegram Users', 'route' => 'admin.telegram-users.index'],
 							['label' => 'Accounts', 'route' => 'admin.accounts.index'],
-							['label' => 'Lookup', 'route' => 'admin.accounts.lookup'],
+							['label' => 'Lookup', 'route' => 'admin.account-lookup'],
 							['label' => 'Import', 'route' => 'admin.import.accounts'],
 							['label' => 'Issuances', 'route' => 'admin.issuances.index'],
 							['label' => 'Events', 'route' => 'admin.events.index'],
