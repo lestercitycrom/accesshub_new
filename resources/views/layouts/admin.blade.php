@@ -19,6 +19,8 @@
 						<a href="{{ route('admin.accounts.index') }}" class="hover:underline">Accounts</a>
 						<a href="{{ route('admin.account-lookup') }}" class="hover:underline">Lookup</a>
 						<a href="{{ route('admin.import.accounts') }}" class="hover:underline">Import</a>
+						<a href="{{ route('admin.issuances.index') }}" class="hover:underline">Issuances</a>
+						<a href="{{ route('admin.events.index') }}" class="hover:underline">Events</a>
 					</nav>
 				</div>
 

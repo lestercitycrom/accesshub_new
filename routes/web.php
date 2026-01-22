@@ -35,4 +35,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 	Route::get('/account-lookup', App\Admin\Livewire\Accounts\AccountLookup::class)->name('account-lookup');
 
 	Route::get('/import/accounts', App\Admin\Livewire\Import\ImportAccounts::class)->name('import.accounts');
+
+	Route::get('/issuances', App\Admin\Livewire\Logs\IssuancesIndex::class)->name('issuances.index');
+	Route::get('/events', App\Admin\Livewire\Logs\AccountEventsIndex::class)->name('events.index');
 });
