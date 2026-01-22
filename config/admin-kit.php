@@ -19,8 +19,10 @@ return [
 	'nav' => [
 		['label' => 'Dashboard', 'route' => 'admin.dashboard'],
 		['label' => 'Accounts', 'route' => 'admin.accounts.index', 'icon' => 'users'],
+		['label' => 'Telegram Users', 'route' => 'admin.telegram-users.index', 'icon' => 'message-circle'],
 		['label' => 'Problems', 'route' => 'admin.problems.index', 'icon' => 'alert-triangle'],
 		['label' => 'Import', 'route' => 'admin.import.accounts', 'icon' => 'upload'],
 		['label' => 'Logs', 'route' => 'admin.issuances.index', 'icon' => 'file-text'],
+		['label' => 'Settings', 'route' => 'admin.settings.index', 'icon' => 'settings'],
 	],
 ];
