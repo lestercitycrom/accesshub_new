@@ -30,6 +30,13 @@ final class AccountFactory extends Factory
 		];
 	}
 
+	public function withCooldown(): self
+	{
+		return $this->state(fn (): array => [
+			// Note: cooldown_until is on issuances, not accounts
+		]);
+	}
+
 	public function status(AccountStatus $status): self
 	{
 		return $this->state(fn (): array => [
