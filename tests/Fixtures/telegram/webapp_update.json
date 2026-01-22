@@ -1,0 +1,20 @@
+{
+	"update_id": 123456790,
+	"message": {
+		"message_id": 124,
+		"from": {
+			"id": 123456789,
+			"username": "testuser",
+			"first_name": "Test",
+			"last_name": "User"
+		},
+		"chat": {
+			"id": 123456789,
+			"type": "private"
+		},
+		"web_app_data": {
+			"data": "{\"action\":\"issue\",\"payload\":{\"order_id\":\"ORD-67890\",\"game\":\"dota2\",\"platform\":\"steam\",\"qty\":1}}"
+		},
+		"date": 1640995201
+	}
+}
