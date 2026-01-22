@@ -23,9 +23,14 @@
 		</div>
 	@endif
 
-	@if(!empty($errorMessage ?? null))
+	@if(!empty($errors ?? null))
 		<div class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
-			{{ $errorMessage }}
+			<div class="font-semibold">Errors</div>
+			<ul class="mt-2 list-disc pl-5 space-y-1">
+				@foreach($errors as $error)
+					<li class="text-xs">{{ $error }}</li>
+				@endforeach
+			</ul>
 		</div>
 	@endif
 
@@ -53,9 +58,9 @@
 							wire:model="file"
 							class="block w-full text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-slate-900 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-white hover:file:bg-slate-800"
 						/>
-						@error('file')
-							<div class="mt-2 text-xs font-medium text-rose-600">{{ $message }}</div>
-						@enderror
+						@if($errors->has('file'))
+							<div class="mt-2 text-xs font-medium text-rose-600">{{ $errors->first('file') }}</div>
+						@endif
 					</div>
 				</div>
 
