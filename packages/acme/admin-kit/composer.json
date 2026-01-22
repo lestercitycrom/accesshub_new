@@ -1,0 +1,25 @@
+{
+	"name": "acme/admin-kit",
+	"description": "Reusable Admin UI Kit for Laravel (Blade + Tailwind).",
+	"type": "library",
+	"license": "proprietary",
+	"require": {
+		"php": "^8.2",
+		"illuminate/support": "^12.0",
+		"illuminate/view": "^12.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"Acme\\AdminKit\\": "src/"
+		}
+	},
+	"extra": {
+		"laravel": {
+			"providers": [
+				"Acme\\AdminKit\\AdminKitServiceProvider"
+			]
+		}
+	},
+	"minimum-stability": "dev",
+	"prefer-stable": true
+}

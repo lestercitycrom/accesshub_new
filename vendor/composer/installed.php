@@ -3,13 +3,22 @@
         'name' => 'laravel/livewire-starter-kit',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'f6ed87aa7ef535e6854452a78b3f7dbb529439e1',
+        'reference' => '5dc98d3a35a1375fe4109acfc09953b6b68d64a0',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
         'dev' => true,
     ),
     'versions' => array(
+        'acme/admin-kit' => array(
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => '15f2924252701f7b9b7e7ef7e22b49a8dd86176a',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../acme/admin-kit',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'bacon/bacon-qr-code' => array(
             'pretty_version' => 'v3.0.3',
             'version' => '3.0.3.0',
@@ -463,7 +472,7 @@
         'laravel/livewire-starter-kit' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'f6ed87aa7ef535e6854452a78b3f7dbb529439e1',
+            'reference' => '5dc98d3a35a1375fe4109acfc09953b6b68d64a0',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
