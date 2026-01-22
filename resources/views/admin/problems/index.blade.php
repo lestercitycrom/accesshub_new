@@ -100,72 +100,65 @@
 	</x-admin.filters-panel>
 
 	<x-admin.card title="List">
-		@php
-			$cell = (($density ?? 'normal') === 'compact') ? 'px-4 py-2.5' : 'px-4 py-3';
-		@endphp
+		<x-admin.table :density="($density ?? 'normal')" :sticky="true">
+			<x-slot:head>
+				<tr>
+					<x-admin.th class="w-10"></x-admin.th>
+					<x-admin.th>ID</x-admin.th>
+					<x-admin.th>Game</x-admin.th>
+					<x-admin.th>Platform</x-admin.th>
+					<x-admin.th>Login</x-admin.th>
+					<x-admin.th>Status</x-admin.th>
+					<x-admin.th>Assigned</x-admin.th>
+					<x-admin.th>Deadline</x-admin.th>
+					<x-admin.th align="right">Action</x-admin.th>
+				</tr>
+			</x-slot:head>
 
-		<div class="overflow-x-auto rounded-2xl border border-slate-200">
-			<table class="min-w-full text-sm">
-				<thead class="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-					<tr>
-						<th class="w-10 {{ $cell }}"></th>
-						<th class="{{ $cell }} text-left">ID</th>
-						<th class="{{ $cell }} text-left">Game</th>
-						<th class="{{ $cell }} text-left">Platform</th>
-						<th class="{{ $cell }} text-left">Login</th>
-						<th class="{{ $cell }} text-left">Status</th>
-						<th class="{{ $cell }} text-left">Assigned</th>
-						<th class="{{ $cell }} text-left">Deadline</th>
-						<th class="{{ $cell }} text-right">Action</th>
-					</tr>
-				</thead>
+			@forelse($rows as $row)
+				<tr class="hover:bg-slate-50/70">
+					<x-admin.td>
+						<input type="checkbox" value="{{ $row->id }}" wire:model="selected" class="rounded border-slate-300">
+					</x-admin.td>
 
-				<tbody class="divide-y divide-slate-200 bg-white">
-					@forelse($rows as $row)
-						<tr class="hover:bg-slate-50/70">
-							<td class="{{ $cell }}">
-								<input type="checkbox" value="{{ $row->id }}" wire:model="selected" class="rounded border-slate-300">
-							</td>
-							<td class="{{ $cell }} font-semibold text-slate-900">{{ $row->id }}</td>
-							<td class="{{ $cell }}">{{ $row->game }}</td>
-							<td class="{{ $cell }}">{{ $row->platform }}</td>
-							<td class="{{ $cell }} font-semibold text-slate-900">{{ $row->login }}</td>
+					<x-admin.td class="font-semibold text-slate-900">{{ $row->id }}</x-admin.td>
+					<x-admin.td>{{ $row->game }}</x-admin.td>
+					<x-admin.td>{{ $row->platform }}</x-admin.td>
+					<x-admin.td class="font-semibold text-slate-900">{{ $row->login }}</x-admin.td>
 
-							<td class="{{ $cell }}">
-								<x-admin.status-badge :status="$row->status->value" />
-							</td>
+					<x-admin.td>
+						<x-admin.status-badge :status="$row->status->value" />
+					</x-admin.td>
 
-							<td class="{{ $cell }}">
-								@if($row->assigned_to_telegram_id)
-									<x-admin.badge variant="violet">{{ $row->assigned_to_telegram_id }}</x-admin.badge>
-								@else
-									<span class="text-slate-400">—</span>
-								@endif
-							</td>
+					<x-admin.td>
+						@if($row->assigned_to_telegram_id)
+							<x-admin.badge variant="violet">{{ $row->assigned_to_telegram_id }}</x-admin.badge>
+						@else
+							<span class="text-slate-400">—</span>
+						@endif
+					</x-admin.td>
 
-							<td class="{{ $cell }}">
-								@if($row->status_deadline_at)
-									<span class="font-medium text-slate-900">{{ $row->status_deadline_at->format('Y-m-d H:i') }}</span>
-								@else
-									<span class="text-slate-400">—</span>
-								@endif
-							</td>
+					<x-admin.td>
+						@if($row->status_deadline_at)
+							<span class="font-medium text-slate-900">{{ $row->status_deadline_at->format('Y-m-d H:i') }}</span>
+						@else
+							<span class="text-slate-400">—</span>
+						@endif
+					</x-admin.td>
 
-							<td class="{{ $cell }} text-right">
-								<a class="text-sm font-semibold text-slate-900 hover:text-slate-700 underline"
-									href="{{ route('admin.accounts.show', $row) }}">
-									Open
-								</a>
-							</td>
-						</tr>
-					@empty
-						<tr>
-							<td class="px-4 py-10 text-center text-slate-500" colspan="9">No rows</td>
-						</tr>
-					@endforelse
-				</tbody>
-			</table>
-		</div>
+					<x-admin.td align="right">
+						<a class="text-sm font-semibold text-slate-900 hover:text-slate-700 underline"
+							href="{{ route('admin.accounts.show', $row) }}">
+							Open
+						</a>
+					</x-admin.td>
+				</tr>
+			@empty
+				<tr>
+					<td class="px-4 py-10 text-center text-slate-500" colspan="9">No rows</td>
+				</tr>
+			@endforelse
+		</x-admin.table>
 
 		@if(method_exists($rows, 'links'))
 			<div class="pt-3">

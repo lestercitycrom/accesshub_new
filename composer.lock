@@ -4,15 +4,15 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bbc02b8344e4fbe1cb393d0a236362e8",
+    "content-hash": "92a100a71b8eb7348ee998f56198621c",
     "packages": [
         {
             "name": "acme/admin-kit",
-            "version": "1.2.0",
+            "version": "1.3.0",
             "dist": {
                 "type": "path",
                 "url": "packages/acme/admin-kit",
-                "reference": "1242b9607f44de211611c8ed6d728e0cef8732c3"
+                "reference": "07e8c452fd59c67b4aee7d7539c43144883bc47f"
             },
             "require": {
                 "illuminate/support": "^12.0",

@@ -71,6 +71,44 @@
 				</nav>
 
 				<div class="flex items-center gap-3">
+					{{-- Quick actions --}}
+					@php
+						$qa = (array) config('admin-kit.quick_actions', []);
+					@endphp
+
+					@if(count($qa) > 0)
+						<details class="relative hidden sm:block">
+							<summary class="list-none cursor-pointer select-none rounded-xl px-3 py-2 text-sm font-semibold bg-white/10 hover:bg-white/15 inline-flex items-center gap-2">
+								<span class="text-slate-100">Actions</span>
+								<span class="text-slate-300">▾</span>
+							</summary>
+
+							<div class="absolute right-0 mt-2 w-60 rounded-2xl border border-white/10 bg-slate-900/95 backdrop-blur shadow-lg overflow-hidden">
+								<div class="p-2">
+									@foreach($qa as $item)
+										@php
+											$route = (string) ($item['route'] ?? '');
+											$label = (string) ($item['label'] ?? '');
+											$icon = (string) ($item['icon'] ?? '');
+										@endphp
+
+										@if($route !== '' && $label !== '' && \Illuminate\Support\Facades\Route::has($route))
+											<a
+												href="{{ route($route) }}"
+												class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-white/10"
+											>
+												@if($icon !== '')
+													<x-admin.icon :name="$icon" class="h-4 w-4 text-slate-300" />
+												@endif
+												<span>{{ $label }}</span>
+											</a>
+										@endif
+									@endforeach
+								</div>
+							</div>
+						</details>
+					@endif
+
 					<div class="hidden sm:flex items-center gap-2 text-sm text-slate-200">
 						<span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white font-semibold">
 							{{ strtoupper(substr((string) auth()->user()?->name, 0, 1)) }}
@@ -118,6 +156,27 @@
 						@endif
 					@endforeach
 				</div>
+
+				{{-- Mobile quick actions --}}
+				@if(count($qa) > 0)
+					<div class="mt-2 flex flex-wrap gap-1">
+						@foreach($qa as $item)
+							@php
+								$route = (string) ($item['route'] ?? '');
+								$label = (string) ($item['label'] ?? '');
+							@endphp
+
+							@if($route !== '' && $label !== '' && \Illuminate\Support\Facades\Route::has($route))
+								<a
+									href="{{ route($route) }}"
+									class="rounded-xl px-3 py-2 text-sm font-semibold bg-white/10 hover:bg-white/15 text-slate-100"
+								>
+									{{ $label }}
+								</a>
+							@endif
+						@endforeach
+					</div>
+				@endif
 			</div>
 		</div>
 	</header>

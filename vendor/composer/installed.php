@@ -3,7 +3,7 @@
         'name' => 'laravel/livewire-starter-kit',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '828355b16f856091cc9d8983742fda1a32cf121e',
+        'reference' => 'befb66d183bc4fbd85d92625f0fdf4951c4a7335',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         'acme/admin-kit' => array(
-            'pretty_version' => '1.2.0',
-            'version' => '1.2.0.0',
-            'reference' => '1242b9607f44de211611c8ed6d728e0cef8732c3',
+            'pretty_version' => '1.3.0',
+            'version' => '1.3.0.0',
+            'reference' => '07e8c452fd59c67b4aee7d7539c43144883bc47f',
             'type' => 'library',
             'install_path' => __DIR__ . '/../acme/admin-kit',
             'aliases' => array(),
@@ -472,7 +472,7 @@
         'laravel/livewire-starter-kit' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '828355b16f856091cc9d8983742fda1a32cf121e',
+            'reference' => 'befb66d183bc4fbd85d92625f0fdf4951c4a7335',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
