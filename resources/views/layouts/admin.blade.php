@@ -22,8 +22,8 @@
 				</a>
 
 				{{-- Global search --}}
-				@if(\Illuminate\Support\Facades\Route::has('admin.accounts.lookup'))
-					<form method="GET" action="{{ route('admin.accounts.lookup') }}" class="hidden lg:flex items-center gap-2 min-w-0">
+				@if(\Illuminate\Support\Facades\Route::has('admin.account-lookup'))
+					<form method="GET" action="{{ route('admin.account-lookup') }}" class="hidden lg:flex items-center gap-2 min-w-0">
 						<div class="relative">
 							<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300">
 								<x-admin.icon name="search" class="h-4 w-4" />
