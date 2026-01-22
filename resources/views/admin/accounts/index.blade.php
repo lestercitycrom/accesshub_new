@@ -132,11 +132,11 @@
 						@endif
 					</x-admin.td>
 
-					<x-admin.td align="right">
-						<div class="flex items-center gap-1">
-							<x-admin.icon-button href="{{ route('admin.accounts.show', $row) }}" icon="eye" title="View" />
-							<x-admin.icon-button href="{{ route('admin.accounts.edit', $row) }}" icon="pencil" title="Edit" />
-						</div>
+					<x-admin.td align="right" class="w-20">
+						<x-admin.table-actions
+							:viewHref="route('admin.accounts.show', $row)"
+							:editHref="route('admin.accounts.edit', $row)"
+						/>
 					</x-admin.td>
 				</tr>
 			@empty

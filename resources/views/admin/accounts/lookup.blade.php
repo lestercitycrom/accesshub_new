@@ -111,7 +111,7 @@
 							<span class="text-slate-400">—</span>
 						@endif
 					</x-admin.td>
-					<x-admin.td align="right" nowrap>
+					<x-admin.td align="right" class="w-20" nowrap>
 						<x-admin.table-actions
 							:viewHref="route('admin.accounts.show', $account)"
 						/>
