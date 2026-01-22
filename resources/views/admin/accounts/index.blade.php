@@ -1,7 +1,16 @@
 <div class="space-y-4">
 	<div class="flex items-center justify-between">
 		<h1 class="text-xl font-semibold">Accounts</h1>
-		<a class="rounded-md bg-black px-4 py-2 text-white" href="{{ route('admin.accounts.create') }}">Create</a>
+
+		<div class="flex items-center gap-2">
+			<a class="rounded-md border px-4 py-2" href="{{ route('admin.account-lookup') }}">Lookup</a>
+
+			<a class="rounded-md border px-4 py-2" href="{{ $exportUrl }}">
+				Export CSV
+			</a>
+
+			<a class="rounded-md bg-black px-4 py-2 text-white" href="{{ route('admin.accounts.create') }}">Create</a>
+		</div>
 	</div>
 
 	<div class="rounded-lg bg-white p-4 shadow-sm space-y-3">

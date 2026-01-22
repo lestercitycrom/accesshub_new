@@ -117,11 +117,19 @@ final class AccountsIndex extends Component
 
 	public function render()
 	{
+		$exportParams = array_filter([
+			'q' => trim($this->q) !== '' ? $this->q : null,
+			'status' => trim($this->statusFilter) !== '' ? $this->statusFilter : null,
+			'game' => trim($this->gameFilter) !== '' ? $this->gameFilter : null,
+			'platform' => trim($this->platformFilter) !== '' ? $this->platformFilter : null,
+		], static fn ($v): bool => $v !== null);
+
 		return view('admin.accounts.index', [
 			'rows' => $this->rows,
 			'statusOptions' => $this->statusOptions,
 			'gameOptions' => $this->gameOptions,
 			'platformOptions' => $this->platformOptions,
+			'exportUrl' => route('admin.export.accounts.csv', $exportParams),
 		])->layout('layouts.admin');
 	}
 }

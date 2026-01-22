@@ -94,8 +94,19 @@ final class IssuancesIndex extends Component
 
 	public function render()
 	{
+		$exportParams = array_filter([
+			'order_id' => trim($this->orderId) !== '' ? $this->orderId : null,
+			'telegram_id' => trim($this->telegramId) !== '' ? $this->telegramId : null,
+			'account_id' => trim($this->accountId) !== '' ? $this->accountId : null,
+			'game' => trim($this->game) !== '' ? $this->game : null,
+			'platform' => trim($this->platform) !== '' ? $this->platform : null,
+			'date_from' => trim($this->dateFrom) !== '' ? $this->dateFrom : null,
+			'date_to' => trim($this->dateTo) !== '' ? $this->dateTo : null,
+		], static fn ($v): bool => $v !== null);
+
 		return view('admin.logs.issuances', [
 			'rows' => $this->rows,
+			'exportUrl' => route('admin.export.issuances.csv', $exportParams),
 		])->layout('layouts.admin');
 	}
 }

@@ -1,8 +1,12 @@
 <div class="space-y-4">
-	<div class="flex items-center justify-between">
-		<h1 class="text-xl font-semibold">Issuances Log</h1>
+<div class="flex items-center justify-between">
+	<h1 class="text-xl font-semibold">Issuances Log</h1>
+
+	<div class="flex items-center gap-2">
+		<a class="rounded-md border px-4 py-2" href="{{ $exportUrl }}">Export CSV</a>
 		<button class="rounded-md border px-4 py-2" type="button" wire:click="clearFilters">Clear</button>
 	</div>
+</div>
 
 	<div class="rounded-lg bg-white p-4 shadow-sm space-y-3">
 		<div class="grid grid-cols-1 sm:grid-cols-6 gap-3">
