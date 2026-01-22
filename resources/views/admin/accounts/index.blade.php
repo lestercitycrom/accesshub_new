@@ -37,32 +37,24 @@
 		<x-admin.alert variant="success" :message="session('status')" />
 	@endif
 
-	<x-admin.filters-panel title="Filters" :activeCount="$activeFilters">
-		<div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
-			<x-admin.input label="Search" placeholder="login contains..." wire:model.live="q" />
-			<x-admin.input label="Game" placeholder="cs2 / minecraft / ..." wire:model.live="gameFilter" />
-			<x-admin.input label="Platform" placeholder="steam / xbox / ..." wire:model.live="platformFilter" />
+	<x-admin.filters-bar title="Filters">
+		<x-admin.input variant="filter" size="sm" label="Search" placeholder="login contains..." wire:model.live="q" />
+		<x-admin.input variant="filter" size="sm" label="Game" placeholder="cs2 / minecraft / ..." wire:model.live="gameFilter" />
+		<x-admin.input variant="filter" size="sm" label="Platform" placeholder="steam / xbox / ..." wire:model.live="platformFilter" />
 
-			<div class="space-y-1">
-				<label class="text-xs font-semibold text-slate-700">Status</label>
-				<select wire:model.live="statusFilter"
-					class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
-					<option value="">Any</option>
-					@foreach($statusOptions as $s)
-						<option value="{{ $s }}">{{ $s }}</option>
-					@endforeach
-				</select>
-			</div>
-		</div>
+		<x-admin.select variant="filter" size="sm" label="Status" wire:model.live="statusFilter">
+			<option value="">Any</option>
+			@foreach($statusOptions as $s)
+				<option value="{{ $s }}">{{ $s }}</option>
+			@endforeach
+		</x-admin.select>
 
-		<div class="mt-4 flex items-center gap-2">
-			<x-admin.button variant="secondary" size="sm" wire:click="clearFilters">Clear</x-admin.button>
-			<div class="text-xs text-slate-500">Фильтры работают поверх поиска по login.</div>
-		</div>
-	</x-admin.filters-panel>
+		<x-admin.button variant="secondary" size="sm" wire:click="clearFilters">Clear</x-admin.button>
+		<div class="text-xs text-slate-500 col-span-full">Фильтры работают поверх поиска по login.</div>
+	</x-admin.filters-bar>
 
 	<x-admin.card title="Accounts">
-		<x-admin.table density="normal" :sticky="true">
+		<x-admin.table density="normal" :sticky="true" :zebra="true">
 			<x-slot:head>
 				<tr>
 					<x-admin.th>ID</x-admin.th>
@@ -108,15 +100,10 @@
 					</x-admin.td>
 
 					<x-admin.td align="right">
-						<a class="text-sm font-semibold text-slate-900 hover:text-slate-700 underline"
-							href="{{ route('admin.accounts.show', $row) }}">
-							Open
-						</a>
-						<span class="text-slate-300 px-1">|</span>
-						<a class="text-sm font-semibold text-slate-900 hover:text-slate-700 underline"
-							href="{{ route('admin.accounts.edit', $row) }}">
-							Edit
-						</a>
+						<div class="flex items-center gap-1">
+							<x-admin.icon-button href="{{ route('admin.accounts.show', $row) }}" icon="eye" title="View" />
+							<x-admin.icon-button href="{{ route('admin.accounts.edit', $row) }}" icon="pencil" title="Edit" />
+						</div>
 					</x-admin.td>
 				</tr>
 			@empty
