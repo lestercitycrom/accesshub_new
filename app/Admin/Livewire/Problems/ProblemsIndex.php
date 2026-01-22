@@ -38,6 +38,11 @@ final class ProblemsIndex extends Component
 		return ['STOLEN', 'RECOVERY', 'TEMP_HOLD', 'DEAD', 'ALL'];
 	}
 
+	public function getStatusesProperty(): array
+	{
+		return array_map(fn($status) => $status->value, AccountStatus::cases());
+	}
+
 	public function getRowsProperty()
 	{
 		$query = Account::query();
@@ -135,11 +140,20 @@ final class ProblemsIndex extends Component
 		$this->dispatch('refresh');
 	}
 
+	public function clear(): void
+	{
+		$this->tab = 'STOLEN';
+		$this->q = '';
+		$this->selected = [];
+		$this->extendDays = 1;
+	}
+
 	public function render()
 	{
 		return view('admin.problems.index', [
 			'rows' => $this->rows,
 			'tabs' => $this->tabs,
+			'statuses' => $this->statuses,
 		])->layout('layouts.admin');
 	}
 }

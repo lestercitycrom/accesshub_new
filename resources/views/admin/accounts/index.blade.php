@@ -1,100 +1,160 @@
-<div class="space-y-4">
-	<div class="flex items-center justify-between">
-		<h1 class="text-xl font-semibold">Accounts</h1>
+<div class="space-y-6">
+	<div class="flex flex-wrap items-center justify-between gap-3">
+		<div>
+			<h1 class="text-2xl font-semibold tracking-tight text-slate-900">Accounts</h1>
+			<p class="text-sm text-slate-500">Поиск, фильтры, быстрый доступ к карточке и экспорт.</p>
+		</div>
 
 		<div class="flex items-center gap-2">
-			<a class="rounded-md border px-4 py-2" href="{{ route('admin.account-lookup') }}">Lookup</a>
-
-			<a class="rounded-md border px-4 py-2" href="{{ $exportUrl }}">
-				Export CSV
+			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
+				href="{{ route('admin.account-lookup') }}">
+				Lookup
 			</a>
 
-			<a class="rounded-md bg-black px-4 py-2 text-white" href="{{ route('admin.accounts.create') }}">Create</a>
+			@if(isset($exportUrl))
+				<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
+					href="{{ $exportUrl }}">
+					Export CSV
+				</a>
+			@endif
+
+			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800"
+				href="{{ route('admin.accounts.create') }}">
+				Create
+			</a>
 		</div>
 	</div>
 
-	<div class="rounded-lg bg-white p-4 shadow-sm space-y-3">
-		<div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-			<div>
-				<label class="text-sm font-medium">Search</label>
-				<input class="w-full rounded-md border-gray-300" type="text" placeholder="Login, game, platform..." wire:model.live="q">
-			</div>
+	<x-admin.card title="Filters">
+		<div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
+			<x-admin.input
+				label="Search"
+				placeholder="login contains..."
+				wire:model.live="q"
+			/>
 
-			<div>
-				<label class="text-sm font-medium">Status</label>
-				<select class="w-full rounded-md border-gray-300" wire:model.live="statusFilter">
-					<option value="">All</option>
-					@foreach($statusOptions as $status)
-						<option value="{{ $status }}">{{ $status }}</option>
-					@endforeach
-				</select>
-			</div>
+			<x-admin.input
+				label="Game"
+				placeholder="cs2 / minecraft / ..."
+				wire:model.live="gameFilter"
+			/>
 
-			<div>
-				<label class="text-sm font-medium">Game</label>
-				<select class="w-full rounded-md border-gray-300" wire:model.live="gameFilter">
-					<option value="">All</option>
-					@foreach($gameOptions as $game)
-						<option value="{{ $game }}">{{ $game }}</option>
-					@endforeach
-				</select>
-			</div>
+			<x-admin.input
+				label="Platform"
+				placeholder="steam / xbox / ..."
+				wire:model.live="platformFilter"
+			/>
 
-			<div>
-				<label class="text-sm font-medium">Platform</label>
-				<select class="w-full rounded-md border-gray-300" wire:model.live="platformFilter">
-					<option value="">All</option>
-					@foreach($platformOptions as $platform)
-						<option value="{{ $platform }}">{{ $platform }}</option>
+			<div class="space-y-1">
+				<label class="text-xs font-semibold text-slate-700">Status</label>
+				<select wire:model.live="statusFilter"
+					class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+					<option value="">Any</option>
+					@foreach($statusOptions as $s)
+						<option value="{{ $s }}">{{ $s }}</option>
 					@endforeach
 				</select>
 			</div>
 		</div>
 
-		<div class="flex items-center gap-2">
-			@foreach($statusOptions as $status)
-				<button class="rounded-md border px-3 py-2 text-xs" type="button" wire:click="setStatus('{{ $status }}')">Status: {{ $status }}</button>
-			@endforeach
-		</div>
+		<div class="mt-4 flex items-center gap-2">
+			<x-admin.button variant="secondary" size="sm" wire:click="clearFilters">
+				Clear
+			</x-admin.button>
 
-		<div class="overflow-x-auto">
+			<div class="text-xs text-slate-500">
+				Подсказка: статус/игра/платформа — точное совпадение, поиск — contains по login.
+			</div>
+		</div>
+	</x-admin.card>
+
+	<x-admin.card title="Accounts">
+		<div class="overflow-x-auto rounded-2xl border border-slate-200">
 			<table class="min-w-full text-sm">
-				<thead>
-					<tr class="text-left text-gray-600">
-						<th class="py-2 pr-3">
-							<input type="checkbox"
-								@if(count($selected) && count($selected) === $rows->count()) checked @endif
-								wire:click="$set('selected', {{ $rows->pluck('id') }})">
-						</th>
-						<th class="py-2 pr-3">Game</th>
-						<th class="py-2 pr-3">Platform</th>
-						<th class="py-2 pr-3">Login</th>
-						<th class="py-2 pr-3">Status</th>
-						<th class="py-2 pr-3">Assigned To</th>
-						<th class="py-2 pr-3"></th>
+				<thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+					<tr>
+						<th class="px-4 py-3 text-left">ID</th>
+						<th class="px-4 py-3 text-left">Game</th>
+						<th class="px-4 py-3 text-left">Platform</th>
+						<th class="px-4 py-3 text-left">Login</th>
+						<th class="px-4 py-3 text-left">Status</th>
+						<th class="px-4 py-3 text-left">Assigned</th>
+						<th class="px-4 py-3 text-left">Deadline</th>
+						<th class="px-4 py-3 text-right">Action</th>
 					</tr>
 				</thead>
-				<tbody>
-					@foreach($rows as $row)
-						<tr class="border-t">
-							<td class="py-2 pr-3">
-								<input type="checkbox" value="{{ $row->id }}" wire:model="selected">
+
+				<tbody class="divide-y divide-slate-200 bg-white">
+					@forelse($rows as $row)
+						<tr class="hover:bg-slate-50/70">
+							<td class="px-4 py-3 font-semibold text-slate-900">{{ $row->id }}</td>
+							<td class="px-4 py-3">{{ $row->game }}</td>
+							<td class="px-4 py-3">{{ $row->platform }}</td>
+							<td class="px-4 py-3">
+								<div class="font-semibold text-slate-900">{{ $row->login }}</div>
+								@if(is_array($row->meta) && isset($row->meta['email_login']))
+									<div class="text-xs text-slate-500">{{ $row->meta['email_login'] }}</div>
+								@endif
 							</td>
-							<td class="py-2 pr-3">{{ $row->game }}</td>
-							<td class="py-2 pr-3">{{ $row->platform }}</td>
-							<td class="py-2 pr-3">{{ $row->login }}</td>
-							<td class="py-2 pr-3">{{ $row->status->value }}</td>
-							<td class="py-2 pr-3">{{ $row->assigned_to_telegram_id ?: '-' }}</td>
-							<td class="py-2 pr-3 flex gap-2">
-								<a class="text-sm underline" href="{{ route('admin.accounts.show', $row) }}">Open</a>
-								<a class="text-sm underline" href="{{ route('admin.accounts.edit', $row) }}">Edit</a>
+
+							<td class="px-4 py-3">
+								@php
+									$st = $row->status->value;
+									$badge = match($st) {
+										'ACTIVE' => 'green',
+										'RECOVERY' => 'amber',
+										'STOLEN' => 'red',
+										'DEAD' => 'red',
+										'TEMP_HOLD' => 'blue',
+										default => 'gray',
+									};
+								@endphp
+								<x-admin.badge :variant="$badge">{{ $st }}</x-admin.badge>
+							</td>
+
+							<td class="px-4 py-3">
+								@if($row->assigned_to_telegram_id)
+									<x-admin.badge variant="violet">{{ $row->assigned_to_telegram_id }}</x-admin.badge>
+								@else
+									<span class="text-slate-400">—</span>
+								@endif
+							</td>
+
+							<td class="px-4 py-3">
+								@if($row->status_deadline_at)
+									<span class="font-medium text-slate-900">{{ $row->status_deadline_at->format('Y-m-d H:i') }}</span>
+								@else
+									<span class="text-slate-400">—</span>
+								@endif
+							</td>
+
+							<td class="px-4 py-3 text-right">
+								<a class="text-sm font-semibold text-slate-900 hover:text-slate-700 underline"
+									href="{{ route('admin.accounts.show', $row) }}">
+									Open
+								</a>
+								<span class="text-slate-300 px-1">|</span>
+								<a class="text-sm font-semibold text-slate-900 hover:text-slate-700 underline"
+									href="{{ route('admin.accounts.edit', $row) }}">
+									Edit
+								</a>
 							</td>
 						</tr>
-					@endforeach
+					@empty
+						<tr>
+							<td class="px-4 py-10 text-center text-slate-500" colspan="8">
+								No accounts found
+							</td>
+						</tr>
+					@endforelse
 				</tbody>
 			</table>
 		</div>
 
-		{{ $rows->links() }}
-	</div>
+		@if(method_exists($rows, 'links'))
+			<div class="pt-3">
+				{{ $rows->links() }}
+			</div>
+		@endif
+	</x-admin.card>
 </div>

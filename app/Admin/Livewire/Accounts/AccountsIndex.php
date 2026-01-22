@@ -62,6 +62,15 @@ final class AccountsIndex extends Component
 		$this->selected = [];
 	}
 
+	public function clearFilters(): void
+	{
+		$this->q = '';
+		$this->statusFilter = '';
+		$this->gameFilter = '';
+		$this->platformFilter = '';
+		$this->resetPage();
+	}
+
 	/**
 	 * @return LengthAwarePaginator<Account>
 	 */
