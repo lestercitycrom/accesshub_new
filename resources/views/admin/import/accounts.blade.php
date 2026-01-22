@@ -58,9 +58,9 @@
 							wire:model="file"
 							class="block w-full text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-slate-900 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-white hover:file:bg-slate-800"
 						/>
-						@if($errors->has('file'))
-							<div class="mt-2 text-xs font-medium text-rose-600">{{ $errors->first('file') }}</div>
-						@endif
+						@error('file')
+							<div class="mt-2 text-xs font-medium text-rose-600">{{ $message }}</div>
+						@enderror
 					</div>
 				</div>
 
