@@ -6,6 +6,8 @@ namespace App\WebApp\Livewire;
 
 use App\Domain\Issuance\Models\Issuance;
 use App\Domain\Issuance\Services\IssueService;
+use App\Domain\Accounts\Models\AccountEvent;
+use App\Domain\Accounts\Services\AccountStatusService;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 
@@ -22,6 +24,10 @@ final class WebAppPage extends Component
 
 	/** @var Collection<int, Issuance> */
 	public Collection $history;
+
+	// Password update form (shown per row)
+	public ?int $passwordAccountId = null;
+	public string $newPassword = '';
 
 	public function mount(): void
 	{
@@ -90,9 +96,74 @@ final class WebAppPage extends Component
 		$this->tab = 'history';
 	}
 
+	public function markProblem(int $accountId, string $reason, AccountStatusService $service): void
+	{
+		$telegramId = $this->telegramId();
+
+		if ($telegramId <= 0) {
+			$this->resultText = 'WebApp not bootstrapped.';
+			return;
+		}
+
+		$service->markProblem($accountId, $telegramId, $reason, [
+			'source' => 'webapp',
+		]);
+
+		$this->resultText = sprintf('Problem saved: %s (account #%d).', $reason, $accountId);
+
+		$this->loadHistory($telegramId);
+		$this->tab = 'history';
+	}
+
+	public function openPasswordForm(int $accountId): void
+	{
+		$this->passwordAccountId = $accountId;
+		$this->newPassword = '';
+		$this->resultText = null;
+	}
+
+	public function cancelPasswordForm(): void
+	{
+		$this->passwordAccountId = null;
+		$this->newPassword = '';
+	}
+
+	public function submitPassword(AccountStatusService $service): void
+	{
+		$telegramId = $this->telegramId();
+
+		if ($telegramId <= 0) {
+			$this->resultText = 'WebApp not bootstrapped.';
+			return;
+		}
+
+		if ($this->passwordAccountId === null || $this->passwordAccountId <= 0) {
+			$this->resultText = 'No account selected.';
+			return;
+		}
+
+		$newPassword = trim($this->newPassword);
+
+		if ($newPassword === '') {
+			$this->resultText = 'Password is required.';
+			return;
+		}
+
+		$service->updatePassword($this->passwordAccountId, $newPassword, $telegramId);
+
+		$this->resultText = sprintf('Password updated (account #%d).', $this->passwordAccountId);
+
+		$this->passwordAccountId = null;
+		$this->newPassword = '';
+
+		$this->loadHistory($telegramId);
+		$this->tab = 'history';
+	}
+
 	private function loadHistory(int $telegramId): void
 	{
 		$this->history = Issuance::query()
+			->with(['account'])
 			->where('telegram_id', $telegramId)
 			->orderByDesc('issued_at')
 			->limit(20)
@@ -107,6 +178,14 @@ final class WebAppPage extends Component
 	public function canDevBootstrap(): bool
 	{
 		return (bool) config('accesshub.webapp.verify_init_data', false) === false;
+	}
+
+	public function lastEventTypeFor(int $accountId): ?string
+	{
+		return AccountEvent::query()
+			->where('account_id', $accountId)
+			->orderByDesc('id')
+			->value('type');
 	}
 
 	public function render()

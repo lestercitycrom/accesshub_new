@@ -109,36 +109,123 @@
 			<section class="rounded-lg bg-white p-4 shadow-sm space-y-3">
 				<h2 class="text-base font-semibold">История (последние 20)</h2>
 
-			<div class="overflow-x-auto">
-				<table class="min-w-full text-sm">
-					<thead>
-						<tr class="text-left text-gray-600">
-							<th class="py-2 pr-3">Issued</th>
-							<th class="py-2 pr-3">Order</th>
-							<th class="py-2 pr-3">Game</th>
-							<th class="py-2 pr-3">Platform</th>
-							<th class="py-2 pr-3">Qty</th>
-						</tr>
-					</thead>
-					<tbody>
-						@forelse($history as $row)
-							<tr class="border-t">
-								<td class="py-2 pr-3">{{ $row->issued_at?->format('Y-m-d H:i') }}</td>
-								<td class="py-2 pr-3">{{ $row->order_id }}</td>
-								<td class="py-2 pr-3">{{ $row->game }}</td>
-								<td class="py-2 pr-3">{{ $row->platform }}</td>
-								<td class="py-2 pr-3">{{ $row->qty }}</td>
+				@if($resultText)
+					<pre class="whitespace-pre-wrap rounded-md bg-gray-100 p-3 text-sm">{{ $resultText }}</pre>
+				@endif
+
+				<div class="overflow-x-auto">
+					<table class="min-w-full text-sm">
+						<thead>
+							<tr class="text-left text-gray-600">
+								<th class="py-2 pr-3">Issued</th>
+								<th class="py-2 pr-3">Order</th>
+								<th class="py-2 pr-3">Game</th>
+								<th class="py-2 pr-3">Platform</th>
+								<th class="py-2 pr-3">Qty</th>
+								<th class="py-2 pr-3">Account</th>
+								<th class="py-2 pr-3">Actions</th>
 							</tr>
-						@empty
-							<tr class="border-t">
-								<td class="py-3 text-gray-500" colspan="5">Нет данных</td>
-							</tr>
-						@endforelse
-					</tbody>
-				</table>
-			</div>
-		</section>
-	@endif
+						</thead>
+						<tbody>
+							@forelse($history as $row)
+								@php
+									$accountId = (int) $row->account_id;
+								@endphp
+								<tr class="border-t align-top">
+									<td class="py-2 pr-3">{{ $row->issued_at?->format('Y-m-d H:i') }}</td>
+									<td class="py-2 pr-3">{{ $row->order_id }}</td>
+									<td class="py-2 pr-3">{{ $row->game }}</td>
+									<td class="py-2 pr-3">{{ $row->platform }}</td>
+									<td class="py-2 pr-3">{{ $row->qty }}</td>
+									<td class="py-2 pr-3">
+										<div class="text-xs text-gray-600">#{{ $accountId }}</div>
+										<div class="text-xs text-gray-500">Last event: {{ $this->lastEventTypeFor($accountId) ?? '-' }}</div>
+									</td>
+									<td class="py-2 pr-3 space-y-2">
+										<div class="flex flex-wrap gap-2">
+											<button
+												type="button"
+												class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
+												wire:click="markProblem({{ $accountId }}, 'wrong_password')"
+											>
+												Wrong password
+											</button>
+
+											<button
+												type="button"
+												class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
+												wire:click="markProblem({{ $accountId }}, 'stolen')"
+											>
+												Stolen
+											</button>
+
+											<button
+												type="button"
+												class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
+												wire:click="markProblem({{ $accountId }}, 'temp_hold')"
+											>
+												Temp hold
+											</button>
+
+											<button
+												type="button"
+												class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
+												wire:click="markProblem({{ $accountId }}, 'dead')"
+											>
+												Dead
+											</button>
+
+											<button
+												type="button"
+												class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
+												wire:click="openPasswordForm({{ $accountId }})"
+											>
+												Update password
+											</button>
+										</div>
+
+										@if($passwordAccountId === $accountId)
+											<div class="rounded-md bg-gray-50 p-2 space-y-2">
+												<div class="text-xs text-gray-600">New password for account #{{ $accountId }}</div>
+
+												<input
+													class="w-full rounded-md border-gray-300 text-sm"
+													type="text"
+													wire:model="newPassword"
+													placeholder="New password"
+												>
+
+												<div class="flex gap-2">
+													<button
+														type="button"
+														class="rounded-md bg-black px-3 py-1 text-xs text-white hover:opacity-90"
+														wire:click="submitPassword"
+													>
+														Save
+													</button>
+
+													<button
+														type="button"
+														class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-100"
+														wire:click="cancelPasswordForm"
+													>
+														Cancel
+													</button>
+												</div>
+											</div>
+										@endif
+									</td>
+								</tr>
+							@empty
+								<tr class="border-t">
+									<td class="py-3 text-gray-500" colspan="7">Нет данных</td>
+								</tr>
+							@endforelse
+						</tbody>
+					</table>
+				</div>
+			</section>
+		@endif
 	</div>
 
 	@livewireScripts
