@@ -7,12 +7,18 @@ return [
 		'max_qty' => 2,
 
 		/*
-		 * Minimal rule:
-		 * - If operator requests qty >= 2 => apply cooldown_days.
-		 * - If account was issued in last 24h => apply cooldown_days.
-		 * - Else => no cooldown.
+		 * Cooldown modes:
+		 * - 'operator_qty': cooldown only when operator requests qty >= 2
+		 * - 'rolling_24h': cooldown for account re-issuance within account_cooldown_hours
+		 * - 'both': apply both rules
 		 */
-		'cooldown_days' => 14,
+		'cooldown_mode' => env('ACCESSHUB_COOLDOWN_MODE', 'both'),
+
+		/*
+		 * Cooldown periods
+		 */
+		'operator_cooldown_days' => 14,
+		'account_cooldown_hours' => 24,
 	],
 
 	'stolen' => [

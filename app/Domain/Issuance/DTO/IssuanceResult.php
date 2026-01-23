@@ -23,4 +23,19 @@ final class IssuanceResult
 	{
 		return new self(false, null, null, null, $error);
 	}
+
+	public static function fail(string $message): self
+	{
+		return self::error($message);
+	}
+
+	public function ok(): bool
+	{
+		return $this->success;
+	}
+
+	public function message(): ?string
+	{
+		return $this->error;
+	}
 }
