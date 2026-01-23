@@ -11,6 +11,8 @@ use Livewire\Component;
 
 final class WebAppPage extends Component
 {
+	public string $tab = 'issue';
+
 	public string $orderId = '';
 	public string $platform = 'steam';
 	public string $game = 'cs2';
@@ -25,16 +27,35 @@ final class WebAppPage extends Component
 	{
 		$this->history = collect();
 
-		$telegramId = (int) session()->get('webapp.telegram_id', 0);
+		$telegramId = $this->telegramId();
 
 		if ($telegramId > 0) {
 			$this->loadHistory($telegramId);
 		}
 	}
 
+	public function setTab(string $tab): void
+	{
+		$allowed = ['issue', 'history'];
+
+		if (!in_array($tab, $allowed, true)) {
+			return;
+		}
+
+		$this->tab = $tab;
+
+		if ($tab === 'history') {
+			$telegramId = $this->telegramId();
+
+			if ($telegramId > 0) {
+				$this->loadHistory($telegramId);
+			}
+		}
+	}
+
 	public function issue(IssueService $service): void
 	{
-		$telegramId = (int) session()->get('webapp.telegram_id', 0);
+		$telegramId = $this->telegramId();
 
 		if ($telegramId <= 0) {
 			$this->resultText = 'WebApp not bootstrapped. Open inside Telegram and try again.';
@@ -44,13 +65,14 @@ final class WebAppPage extends Component
 		$orderId = trim($this->orderId);
 		$platform = trim($this->platform);
 		$game = trim($this->game);
+		$qty = max(1, (int) $this->qty);
 
 		if ($orderId === '' || $platform === '' || $game === '') {
 			$this->resultText = 'Please fill all fields.';
 			return;
 		}
 
-		$result = $service->issue($telegramId, $orderId, $game, $platform, max(1, (int) $this->qty));
+		$result = $service->issue($telegramId, $orderId, $game, $platform, $qty);
 
 		if ($result->ok() !== true) {
 			$this->resultText = (string) ($result->message() ?? 'Error.');
@@ -65,6 +87,7 @@ final class WebAppPage extends Component
 		);
 
 		$this->loadHistory($telegramId);
+		$this->tab = 'history';
 	}
 
 	private function loadHistory(int $telegramId): void
@@ -76,8 +99,21 @@ final class WebAppPage extends Component
 			->get();
 	}
 
+	private function telegramId(): int
+	{
+		return (int) session()->get('webapp.telegram_id', 0);
+	}
+
+	public function canDevBootstrap(): bool
+	{
+		return (bool) config('accesshub.webapp.verify_init_data', false) === false;
+	}
+
 	public function render()
 	{
-		return view('webapp.page');
+		return view('webapp.page', [
+			'isBootstrapped' => $this->telegramId() > 0,
+			'canDevBootstrap' => $this->canDevBootstrap(),
+		])->layout('layouts.app');
 	}
 }

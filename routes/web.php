@@ -27,10 +27,12 @@ Route::get('/dashboard', function () {
     return redirect()->route('login');
 })->name('dashboard');
 
-// WebApp routes
-Route::get('/webapp', App\WebApp\Livewire\WebAppPage::class)->name('webapp');
-Route::post('/webapp/bootstrap', BootstrapController::class)->name('webapp.bootstrap');
-Route::get('/webapp/api/schema', App\WebApp\Http\Controllers\SchemaController::class)->name('webapp.schema');
+// WebApp routes (no auth required)
+Route::withoutMiddleware(['auth', 'admin'])->group(function () {
+    Route::get('/webapp', App\WebApp\Livewire\WebAppPage::class)->name('webapp');
+    Route::post('/webapp/bootstrap', BootstrapController::class)->name('webapp.bootstrap');
+    Route::get('/webapp/api/schema', App\WebApp\Http\Controllers\SchemaController::class)->name('webapp.schema');
+});
 
 require __DIR__.'/settings.php';
 

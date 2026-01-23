@@ -12,13 +12,50 @@
 	<div class="mx-auto max-w-3xl p-4 space-y-6">
 		<header class="space-y-1">
 			<h1 class="text-xl font-semibold">AccessHub WebApp</h1>
-			<p class="text-sm text-gray-600">В Telegram bootstrap выполнится автоматически.</p>
+			<p class="text-sm text-gray-600">
+				Открой в Telegram для авторизации. В dev можно включить ручной bootstrap.
+			</p>
 		</header>
 
-		<div id="bootstrapStatus" class="text-sm text-gray-600"></div>
+		<div class="rounded-lg bg-white p-4 shadow-sm space-y-2">
+			<div class="text-sm text-gray-700">
+				@if($isBootstrapped)
+					<span class="font-medium">Статус:</span> <span class="text-green-700">Bootstrapped</span>
+				@else
+					<span class="font-medium">Статус:</span> <span class="text-amber-700">Not bootstrapped</span>
+				@endif
+			</div>
 
-		<section class="rounded-lg bg-white p-4 shadow-sm space-y-4">
-			<h2 class="text-base font-semibold">Выдача</h2>
+			<div id="bootstrapStatus" class="text-sm text-gray-600"></div>
+
+			@if(!$isBootstrapped)
+				<div class="text-xs text-gray-500">
+					Подсказка: если открыто не в Telegram — нажми Dev Bootstrap (только в dev).
+				</div>
+			@endif
+		</div>
+
+		<nav class="flex gap-2">
+			<button
+				type="button"
+				class="rounded-md px-3 py-2 text-sm border border-gray-300 hover:bg-gray-100 {{ $tab === 'issue' ? 'bg-gray-100' : '' }}"
+				wire:click="setTab('issue')"
+			>
+				Выдача
+			</button>
+
+			<button
+				type="button"
+				class="rounded-md px-3 py-2 text-sm border border-gray-300 hover:bg-gray-100 {{ $tab === 'history' ? 'bg-gray-100' : '' }}"
+				wire:click="setTab('history')"
+			>
+				История
+			</button>
+		</nav>
+
+		@if($tab === 'issue')
+			<section class="rounded-lg bg-white p-4 shadow-sm space-y-4">
+				<h2 class="text-base font-semibold">Выдача</h2>
 
 			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 				<div class="space-y-1">
@@ -42,31 +79,35 @@
 				</div>
 			</div>
 
-			<div class="flex items-center gap-2">
-				<button
-					class="rounded-md bg-black px-4 py-2 text-white hover:opacity-90"
-					type="button"
-					wire:click="issue"
-				>
-					Выдать
-				</button>
+				<div class="flex items-center gap-2">
+					<button
+						class="rounded-md bg-black px-4 py-2 text-white hover:opacity-90"
+						type="button"
+						wire:click="issue"
+					>
+						Выдать
+					</button>
 
-				<button
-					id="devBootstrapBtn"
-					class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
-					type="button"
-				>
-					Dev Bootstrap
-				</button>
-			</div>
+					@if($canDevBootstrap)
+						<button
+							id="devBootstrapBtn"
+							class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+							type="button"
+						>
+							Dev Bootstrap
+						</button>
+					@endif
+				</div>
 
-			@if($resultText)
-				<pre class="whitespace-pre-wrap rounded-md bg-gray-100 p-3 text-sm">{{ $resultText }}</pre>
-			@endif
-		</section>
+				@if($resultText)
+					<pre class="whitespace-pre-wrap rounded-md bg-gray-100 p-3 text-sm">{{ $resultText }}</pre>
+				@endif
+			</section>
+		@endif
 
-		<section class="rounded-lg bg-white p-4 shadow-sm space-y-3">
-			<h2 class="text-base font-semibold">История (последние 20)</h2>
+		@if($tab === 'history')
+			<section class="rounded-lg bg-white p-4 shadow-sm space-y-3">
+				<h2 class="text-base font-semibold">История (последние 20)</h2>
 
 			<div class="overflow-x-auto">
 				<table class="min-w-full text-sm">
@@ -97,6 +138,7 @@
 				</table>
 			</div>
 		</section>
+	@endif
 	</div>
 
 	@livewireScripts
@@ -134,7 +176,7 @@
 					statusEl.textContent = 'Bootstrap: Telegram initData detected...';
 					bootstrap({ initData: tg.initData });
 				} else {
-					statusEl.textContent = 'Bootstrap: Telegram not detected (dev mode).';
+					statusEl.textContent = 'Bootstrap: Telegram not detected.';
 				}
 			} catch (e) {
 				statusEl.textContent = 'Bootstrap: error';
