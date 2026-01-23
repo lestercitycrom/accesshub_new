@@ -6,88 +6,73 @@ namespace App\WebApp\Livewire;
 
 use App\Domain\Issuance\Models\Issuance;
 use App\Domain\Issuance\Services\IssueService;
-use App\Domain\Issuance\DTO\IssuanceResult;
+use Illuminate\Support\Collection;
 use Livewire\Component;
 
 final class WebAppPage extends Component
 {
 	public string $orderId = '';
-	public string $game = '';
-	public string $platform = '';
+	public string $platform = 'steam';
+	public string $game = 'cs2';
 	public int $qty = 1;
 
 	public ?string $resultText = null;
-	public $history = null;
 
-	protected $rules = [
-		'orderId' => 'required|string|max:100',
-		'game' => 'required|in:cs2,dota2,pubg',
-		'platform' => 'required|in:steam,epic',
-		'qty' => 'required|integer|min:1|max:2',
-	];
+	/** @var Collection<int, Issuance> */
+	public Collection $history;
 
-	public function mount()
+	public function mount(): void
 	{
-		$this->loadHistory();
+		$this->history = collect();
+
+		$telegramId = (int) session()->get('webapp.telegram_id', 0);
+
+		if ($telegramId > 0) {
+			$this->loadHistory($telegramId);
+		}
 	}
 
-	public function submit()
+	public function issue(IssueService $service): void
 	{
-		$this->validate();
+		$telegramId = (int) session()->get('webapp.telegram_id', 0);
 
-		$telegramId = session('webapp.telegram_id');
-
-		if (!$telegramId) {
-			$this->resultText = 'Ошибка: сессия не инициализирована. Выполните bootstrap.';
+		if ($telegramId <= 0) {
+			$this->resultText = 'WebApp not bootstrapped. Open inside Telegram and try again.';
 			return;
 		}
 
-		$service = app(IssueService::class);
-		$result = $service->issue(
-			telegramId: $telegramId,
-			orderId: $this->orderId,
-			game: $this->game,
-			platform: $this->platform,
-			qty: $this->qty,
+		$orderId = trim($this->orderId);
+		$platform = trim($this->platform);
+		$game = trim($this->game);
+
+		if ($orderId === '' || $platform === '' || $game === '') {
+			$this->resultText = 'Please fill all fields.';
+			return;
+		}
+
+		$result = $service->issue($telegramId, $orderId, $game, $platform, max(1, (int) $this->qty));
+
+		if ($result->ok() !== true) {
+			$this->resultText = (string) ($result->message() ?? 'Error.');
+			$this->loadHistory($telegramId);
+			return;
+		}
+
+		$this->resultText = sprintf(
+			"OK\nLogin: %s\nPassword: %s",
+			(string) $result->login,
+			(string) $result->password
 		);
 
-		if ($result->success) {
-			$this->resultText = sprintf(
-				"✅ Аккаунт выдан!\n\nЛогин: %s\nПароль: %s",
-				(string) $result->login,
-				(string) $result->password
-			);
-
-			// Reset form
-			$this->orderId = '';
-			$this->game = '';
-			$this->platform = '';
-			$this->qty = 1;
-		} else {
-			$this->resultText = '❌ Ошибка: ' . $result->error;
-		}
-
-		$this->loadHistory();
+		$this->loadHistory($telegramId);
 	}
 
-	public function getIsBootstrappedProperty(): bool
+	private function loadHistory(int $telegramId): void
 	{
-		return session()->has('webapp.telegram_id');
-	}
-
-	private function loadHistory(): void
-	{
-		$telegramId = session('webapp.telegram_id');
-
-		if (!$telegramId) {
-			$this->history = collect();
-			return;
-		}
-
 		$this->history = Issuance::query()
 			->where('telegram_id', $telegramId)
 			->orderByDesc('issued_at')
-			->limit(config('accesshub.webapp.max_history_items', 20))
+			->limit(20)
 			->get();
 	}
 

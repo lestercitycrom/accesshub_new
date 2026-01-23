@@ -26,7 +26,7 @@ return [
 	],
 
 	'webapp' => [
-		'validate_init_data' => env('WEBAPP_VALIDATE_INIT_DATA', false),
-		'max_history_items' => 20,
+		'verify_init_data' => env('INITDATA_VERIFY', false),
+		'max_auth_age_seconds' => (int) env('INITDATA_MAX_AGE', 86400),
 	],
 ];

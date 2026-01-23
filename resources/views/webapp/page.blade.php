@@ -3,238 +3,152 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token() }}">
 	@vite(['resources/css/app.css', 'resources/js/app.js'])
 	@livewireStyles
-	<title>AccessHub WebApp</title>
-	<script src="https://telegram.org/js/telegram-web-app.js"></script>
+	<title>WebApp</title>
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-900">
 	<div class="mx-auto max-w-3xl p-4 space-y-6">
 		<header class="space-y-1">
 			<h1 class="text-xl font-semibold">AccessHub WebApp</h1>
-			<p class="text-sm text-gray-600">
-				@if($this->isBootstrapped)
-					Подключено как Telegram пользователь
-				@else
-					Необходимо выполнить bootstrap
-				@endif
-			</p>
+			<p class="text-sm text-gray-600">В Telegram bootstrap выполнится автоматически.</p>
 		</header>
 
-		@if(!$this->isBootstrapped)
-			<div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-				<div class="flex">
-					<div class="ml-3">
-						<p class="text-sm text-blue-700">
-							Для работы в Telegram WebApp необходимо выполнить инициализацию.
-							Нажмите кнопку ниже или откройте в Telegram.
-						</p>
-					</div>
+		<div id="bootstrapStatus" class="text-sm text-gray-600"></div>
+
+		<section class="rounded-lg bg-white p-4 shadow-sm space-y-4">
+			<h2 class="text-base font-semibold">Выдача</h2>
+
+			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+				<div class="space-y-1">
+					<label class="text-sm font-medium">Order ID</label>
+					<input class="w-full rounded-md border-gray-300" type="text" wire:model="orderId">
 				</div>
-				<div class="mt-4">
-					<button
-						id="bootstrap-btn"
-						class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-					>
-						Подключиться к Telegram
-					</button>
+
+				<div class="space-y-1">
+					<label class="text-sm font-medium">Qty</label>
+					<input class="w-full rounded-md border-gray-300" type="number" min="1" max="2" wire:model="qty">
+				</div>
+
+				<div class="space-y-1">
+					<label class="text-sm font-medium">Platform</label>
+					<input class="w-full rounded-md border-gray-300" type="text" wire:model="platform">
+				</div>
+
+				<div class="space-y-1">
+					<label class="text-sm font-medium">Game</label>
+					<input class="w-full rounded-md border-gray-300" type="text" wire:model="game">
 				</div>
 			</div>
-		@endif
 
-		@if($this->isBootstrapped)
-			<!-- Issue Form -->
-			<div class="bg-white shadow rounded-lg p-6">
-				<h2 class="text-lg font-medium text-gray-900 mb-4">Выдача аккаунта</h2>
+			<div class="flex items-center gap-2">
+				<button
+					class="rounded-md bg-black px-4 py-2 text-white hover:opacity-90"
+					type="button"
+					wire:click="issue"
+				>
+					Выдать
+				</button>
 
-				<form wire:submit="submit" class="space-y-4">
-					<div>
-						<label for="orderId" class="block text-sm font-medium text-gray-700">
-							Номер заказа
-						</label>
-						<input
-							wire:model="orderId"
-							type="text"
-							id="orderId"
-							class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-							required
-						>
-						@error('orderId') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-					</div>
-
-					<div>
-						<label for="game" class="block text-sm font-medium text-gray-700">
-							Игра
-						</label>
-						<select
-							wire:model="game"
-							id="game"
-							class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-							required
-						>
-							<option value="">Выберите игру</option>
-							<option value="cs2">CS2</option>
-							<option value="dota2">Dota 2</option>
-							<option value="pubg">PUBG</option>
-						</select>
-						@error('game') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-					</div>
-
-					<div>
-						<label for="platform" class="block text-sm font-medium text-gray-700">
-							Платформа
-						</label>
-						<select
-							wire:model="platform"
-							id="platform"
-							class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-							required
-						>
-							<option value="">Выберите платформу</option>
-							<option value="steam">Steam</option>
-							<option value="epic">Epic Games</option>
-						</select>
-						@error('platform') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-					</div>
-
-					<div>
-						<label for="qty" class="block text-sm font-medium text-gray-700">
-							Количество
-						</label>
-						<input
-							wire:model="qty"
-							type="number"
-							id="qty"
-							min="1"
-							max="2"
-							class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-							required
-						>
-						@error('qty') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-					</div>
-
-					<button
-						type="submit"
-						class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-						wire:loading.attr="disabled"
-						wire:loading.class="opacity-50 cursor-not-allowed"
-					>
-						<span wire:loading.remove>Выдать аккаунт</span>
-						<span wire:loading>Обработка...</span>
-					</button>
-				</form>
-
-				@if($resultText)
-					<div class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-						<pre class="text-sm text-green-800 whitespace-pre-wrap">{{ $resultText }}</pre>
-					</div>
-				@endif
+				<button
+					id="devBootstrapBtn"
+					class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+					type="button"
+				>
+					Dev Bootstrap
+				</button>
 			</div>
 
-			<!-- History -->
-			<div class="bg-white shadow rounded-lg p-6">
-				<h2 class="text-lg font-medium text-gray-900 mb-4">История выдач</h2>
+			@if($resultText)
+				<pre class="whitespace-pre-wrap rounded-md bg-gray-100 p-3 text-sm">{{ $resultText }}</pre>
+			@endif
+		</section>
 
-				@if($history->isEmpty())
-					<p class="text-gray-500 text-center py-8">История пуста</p>
-				@else
-					<div class="overflow-x-auto">
-						<table class="min-w-full divide-y divide-gray-200">
-							<thead class="bg-gray-50">
-								<tr>
-									<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-										Заказ
-									</th>
-									<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-										Игра
-									</th>
-									<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-										Кол-во
-									</th>
-									<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-										Дата
-									</th>
-								</tr>
-							</thead>
-							<tbody class="bg-white divide-y divide-gray-200">
-								@foreach($history as $issuance)
-									<tr>
-										<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-											{{ $issuance->order_id }}
-										</td>
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-											{{ $issuance->game }} / {{ $issuance->platform }}
-										</td>
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-											{{ $issuance->qty }}
-										</td>
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-											{{ $issuance->issued_at->format('d.m.Y H:i') }}
-										</td>
-									</tr>
-								@endforeach
-							</tbody>
-						</table>
-					</div>
-				@endif
+		<section class="rounded-lg bg-white p-4 shadow-sm space-y-3">
+			<h2 class="text-base font-semibold">История (последние 20)</h2>
+
+			<div class="overflow-x-auto">
+				<table class="min-w-full text-sm">
+					<thead>
+						<tr class="text-left text-gray-600">
+							<th class="py-2 pr-3">Issued</th>
+							<th class="py-2 pr-3">Order</th>
+							<th class="py-2 pr-3">Game</th>
+							<th class="py-2 pr-3">Platform</th>
+							<th class="py-2 pr-3">Qty</th>
+						</tr>
+					</thead>
+					<tbody>
+						@forelse($history as $row)
+							<tr class="border-t">
+								<td class="py-2 pr-3">{{ $row->issued_at?->format('Y-m-d H:i') }}</td>
+								<td class="py-2 pr-3">{{ $row->order_id }}</td>
+								<td class="py-2 pr-3">{{ $row->game }}</td>
+								<td class="py-2 pr-3">{{ $row->platform }}</td>
+								<td class="py-2 pr-3">{{ $row->qty }}</td>
+							</tr>
+						@empty
+							<tr class="border-t">
+								<td class="py-3 text-gray-500" colspan="5">Нет данных</td>
+							</tr>
+						@endforelse
+					</tbody>
+				</table>
 			</div>
-		@endif
+		</section>
 	</div>
 
-	<script>
-		document.addEventListener('DOMContentLoaded', function() {
-			const bootstrapBtn = document.getElementById('bootstrap-btn');
-
-			if (bootstrapBtn) {
-				bootstrapBtn.addEventListener('click', function() {
-					performBootstrap();
-				});
-			}
-
-			// Auto-bootstrap if in Telegram WebApp
-			if (window.Telegram && window.Telegram.WebApp) {
-				performBootstrap();
-			}
-		});
-
-		function performBootstrap() {
-			if (!window.Telegram || !window.Telegram.WebApp) {
-				alert('Telegram WebApp не доступен. Откройте в Telegram.');
-				return;
-			}
-
-			const initData = window.Telegram.WebApp.initData;
-
-			if (!initData) {
-				alert('initData не доступна');
-				return;
-			}
-
-			fetch('/webapp/bootstrap', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-				},
-				body: JSON.stringify({
-					initData: initData
-				})
-			})
-			.then(response => response.json())
-			.then(data => {
-				if (data.success) {
-					location.reload();
-				} else {
-					alert('Ошибка bootstrap: ' + (data.error || 'Неизвестная ошибка'));
-				}
-			})
-			.catch(error => {
-				console.error('Bootstrap error:', error);
-				alert('Ошибка подключения');
-			});
-		}
-	</script>
-
 	@livewireScripts
+
+	<script>
+		(function () {
+			const statusEl = document.getElementById('bootstrapStatus');
+			const devBtn = document.getElementById('devBootstrapBtn');
+
+			async function bootstrap(payload) {
+				const res = await fetch('/webapp/bootstrap', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+					},
+					body: JSON.stringify(payload),
+					credentials: 'same-origin',
+				});
+
+				if (res.status === 204) {
+					statusEl.textContent = 'Bootstrap: OK';
+					window.location.reload();
+					return;
+				}
+
+				const txt = await res.text();
+				statusEl.textContent = 'Bootstrap: ' + res.status + ' ' + txt;
+			}
+
+			try {
+				const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+
+				if (tg && typeof tg.initData === 'string' && tg.initData.length > 0) {
+					statusEl.textContent = 'Bootstrap: Telegram initData detected...';
+					bootstrap({ initData: tg.initData });
+				} else {
+					statusEl.textContent = 'Bootstrap: Telegram not detected (dev mode).';
+				}
+			} catch (e) {
+				statusEl.textContent = 'Bootstrap: error';
+			}
+
+			devBtn.addEventListener('click', function () {
+				bootstrap({
+					telegram_id: 111,
+					username: 'dev_user',
+					first_name: 'Dev',
+					last_name: 'User'
+				});
+			});
+		})();
+	</script>
 </body>
 </html>

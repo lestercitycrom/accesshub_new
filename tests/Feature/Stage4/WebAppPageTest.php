@@ -18,15 +18,9 @@ it('renders webapp page', function (): void {
 
 it('shows not bootstrapped state initially', function (): void {
 	Livewire::test(\App\WebApp\Livewire\WebAppPage::class)
-		->assertSet('isBootstrapped', false);
+		->assertSet('history', collect());
 });
 
-it('shows bootstrapped state when session exists', function (): void {
-	session(['webapp.telegram_id' => 123456789]);
-
-	Livewire::test(\App\WebApp\Livewire\WebAppPage::class)
-		->assertSet('isBootstrapped', true);
-});
 
 it('submits form successfully when bootstrapped', function (): void {
 	// Setup test data
@@ -47,12 +41,8 @@ it('submits form successfully when bootstrapped', function (): void {
 		->set('game', 'cs2')
 		->set('platform', 'steam')
 		->set('qty', 1)
-		->call('submit')
-		->assertSet('resultText', "✅ Аккаунт выдан!\n\nЛогин: testlogin\nПароль: testpass")
-		->assertSet('orderId', '') // Form reset
-		->assertSet('game', '')
-		->assertSet('platform', '')
-		->assertSet('qty', 1);
+		->call('issue')
+		->assertSet('resultText', "OK\nLogin: testlogin\nPassword: testpass");
 });
 
 it('shows error when not bootstrapped', function (): void {
@@ -61,8 +51,8 @@ it('shows error when not bootstrapped', function (): void {
 		->set('game', 'cs2')
 		->set('platform', 'steam')
 		->set('qty', 1)
-		->call('submit')
-		->assertSet('resultText', 'Ошибка: сессия не инициализирована. Выполните bootstrap.');
+		->call('issue')
+		->assertSet('resultText', 'WebApp not bootstrapped. Open inside Telegram and try again.');
 });
 
 it('loads history when bootstrapped', function (): void {
@@ -88,16 +78,4 @@ it('loads history when bootstrapped', function (): void {
 		->assertSet('history', function ($history) {
 			return $history->count() === 2;
 		});
-});
-
-it('validates form fields', function (): void {
-	session(['webapp.telegram_id' => 123456789]);
-
-	Livewire::test(\App\WebApp\Livewire\WebAppPage::class)
-		->set('orderId', '')
-		->set('game', 'invalid')
-		->set('platform', 'invalid')
-		->set('qty', 0)
-		->call('submit')
-		->assertHasErrors(['orderId', 'game', 'platform', 'qty']);
 });

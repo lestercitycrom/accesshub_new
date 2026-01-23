@@ -28,9 +28,9 @@ Route::get('/dashboard', function () {
 })->name('dashboard');
 
 // WebApp routes
-Route::get('/webapp', App\WebApp\Livewire\WebAppPage::class)->name('webapp.page');
-Route::post('/webapp/bootstrap', [BootstrapController::class, 'bootstrap'])->name('webapp.bootstrap');
-Route::get('/webapp/api/schema', [BootstrapController::class, 'schema'])->name('webapp.schema');
+Route::get('/webapp', App\WebApp\Livewire\WebAppPage::class)->name('webapp');
+Route::post('/webapp/bootstrap', BootstrapController::class)->name('webapp.bootstrap');
+Route::get('/webapp/api/schema', App\WebApp\Http\Controllers\SchemaController::class)->name('webapp.schema');
 
 require __DIR__.'/settings.php';
 
