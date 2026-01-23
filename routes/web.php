@@ -30,7 +30,9 @@ Route::get('/dashboard', function () {
 // WebApp routes (no auth required)
 Route::withoutMiddleware(['auth', 'admin'])->group(function () {
     Route::get('/webapp', App\WebApp\Livewire\WebAppPage::class)->name('webapp');
-    Route::post('/webapp/bootstrap', BootstrapController::class)->name('webapp.bootstrap');
+    Route::post('/webapp/bootstrap', BootstrapController::class)
+        ->middleware('throttle:30,1')
+        ->name('webapp.bootstrap');
     Route::get('/webapp/api/schema', App\WebApp\Http\Controllers\SchemaController::class)->name('webapp.schema');
 });
 

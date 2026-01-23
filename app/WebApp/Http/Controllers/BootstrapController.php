@@ -51,6 +51,9 @@ final class BootstrapController
 				]
 			);
 
+			// Prevent session fixation
+			$request->session()->regenerate();
+
 			$request->session()->put('webapp.telegram_id', $telegramId);
 
 			return response()->noContent();
@@ -72,6 +75,7 @@ final class BootstrapController
 			]
 		);
 
+		$request->session()->regenerate();
 		$request->session()->put('webapp.telegram_id', $devTelegramId);
 
 		return response()->noContent();

@@ -25,8 +25,34 @@ final class TelegramInitDataVerifier
 		}
 
 		$hash = (string) $params['hash'];
+
+		// Basic hash format hardening (64 hex chars)
+		if (preg_match('/^[a-f0-9]{64}$/i', $hash) !== 1) {
+			return ['ok' => false, 'error' => 'Invalid hash format.'];
+		}
+
 		unset($params['hash']);
 
+		// auth_date MUST exist in secure mode
+		if (!isset($params['auth_date'])) {
+			return ['ok' => false, 'error' => 'Missing auth_date.'];
+		}
+
+		$authDate = (int) $params['auth_date'];
+
+		if ($authDate <= 0) {
+			return ['ok' => false, 'error' => 'Invalid auth_date.'];
+		}
+
+		if ($maxAgeSeconds > 0) {
+			$age = time() - $authDate;
+
+			if ($age < 0 || $age > $maxAgeSeconds) {
+				return ['ok' => false, 'error' => 'auth_date expired.'];
+			}
+		}
+
+		// Build data-check-string
 		ksort($params);
 
 		$parts = [];
@@ -47,33 +73,20 @@ final class TelegramInitDataVerifier
 			return ['ok' => false, 'error' => 'Invalid signature.'];
 		}
 
-		$authDate = isset($params['auth_date']) ? (int) $params['auth_date'] : 0;
-
-		if ($authDate > 0 && $maxAgeSeconds > 0) {
-			$age = time() - $authDate;
-
-			if ($age < 0 || $age > $maxAgeSeconds) {
-				return ['ok' => false, 'error' => 'auth_date expired.'];
-			}
+		// user MUST exist
+		if (!isset($params['user'])) {
+			return ['ok' => false, 'error' => 'Missing user.'];
 		}
 
-		$user = null;
+		$user = json_decode((string) $params['user'], true);
 
-		if (isset($params['user'])) {
-			$decodedUser = json_decode((string) $params['user'], true);
-
-			if (is_array($decodedUser)) {
-				$user = $decodedUser;
-			}
+		if (!is_array($user)) {
+			return ['ok' => false, 'error' => 'Invalid user.'];
 		}
 
-		$telegramId = null;
+		$telegramId = isset($user['id']) ? (int) $user['id'] : 0;
 
-		if (is_array($user) && isset($user['id'])) {
-			$telegramId = (int) $user['id'];
-		}
-
-		if ($telegramId === null || $telegramId <= 0) {
+		if ($telegramId <= 0) {
 			return ['ok' => false, 'error' => 'Missing user.id.'];
 		}
 
