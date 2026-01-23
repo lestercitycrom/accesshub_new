@@ -4,8 +4,17 @@ use App\Admin\Livewire\Dashboard;
 use App\WebApp\Http\Controllers\BootstrapController;
 use Illuminate\Support\Facades\Route;
 
+/**
+ * Public entrypoint:
+ * - Guest: redirect to login
+ * - Authenticated: redirect to admin dashboard
+ */
 Route::get('/', function () {
-    return view('welcome');
+	if (auth()->check()) {
+		return redirect()->route('admin.dashboard');
+	}
+
+	return redirect()->route('login');
 })->name('home');
 
 Route::view('dashboard', 'dashboard')
@@ -21,7 +30,9 @@ require __DIR__.'/settings.php';
 
 // Admin routes
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
-	Route::get('/', App\Livewire\Admin\Dashboard::class)->name('dashboard');
+	Route::get('/', fn () => redirect()->route('admin.dashboard'))->name('index');
+
+	Route::get('/dashboard', App\Livewire\Admin\Dashboard::class)->name('dashboard');
 
 	Route::get('/telegram-users', App\Admin\Livewire\TelegramUsers\TelegramUsersIndex::class)->name('telegram-users.index');
 	Route::get('/telegram-users/create', App\Admin\Livewire\TelegramUsers\TelegramUserForm::class)->name('telegram-users.create');
