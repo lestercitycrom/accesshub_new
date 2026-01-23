@@ -37,8 +37,8 @@ final class BotDispatcher
 			qty: $request->qty,
 		);
 
-		if (!$result->success) {
-			return 'Ошибка выдачи: ' . $result->error;
+		if (!$result->ok()) {
+			return 'Ошибка выдачи: ' . ($result->message() ?? 'Неизвестная ошибка');
 		}
 
 		return $this->formatSuccessMessage($result);

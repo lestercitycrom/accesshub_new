@@ -132,3 +132,22 @@ it('returns error message for invalid format', function (): void {
 		return str_contains($request['text'], 'Неверный формат запроса');
 	});
 });
+
+it('returns error message when no accounts available', function (): void {
+	// Create telegram user but no accounts
+	TelegramUser::factory()->create(['telegram_id' => 123456789]);
+
+	Http::fake([
+		'https://api.telegram.org/bottest/sendMessage' => Http::response(['ok' => true], 200),
+	]);
+
+	$fixture = json_decode(file_get_contents(base_path('tests/Fixtures/telegram/text_update.json')), true);
+
+	$response = $this->postJson('/api/telegram/webhook', $fixture);
+
+	$response->assertStatus(200);
+
+	Http::assertSent(function ($request): bool {
+		return str_contains($request['text'], 'Ошибка выдачи: No available accounts.');
+	});
+});
