@@ -17,10 +17,6 @@ Route::get('/', function () {
 	return redirect()->route('login');
 })->name('home');
 
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
-
 // WebApp routes
 Route::get('/webapp', App\WebApp\Livewire\WebAppPage::class)->name('webapp.page');
 Route::post('/webapp/bootstrap', [BootstrapController::class, 'bootstrap'])->name('webapp.bootstrap');
