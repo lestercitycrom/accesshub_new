@@ -9,140 +9,144 @@ use App\Domain\Accounts\Models\Account;
 use App\Domain\Accounts\Models\AccountEvent;
 use App\Domain\Issuance\DTO\IssuanceResult;
 use App\Domain\Issuance\Models\Issuance;
-use Illuminate\Support\Carbon;
+use App\Domain\Telegram\Enums\TelegramRole;
+use App\Domain\Telegram\Models\TelegramUser;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 final class IssueService
 {
-	public function issue(
-		int $telegramId,
-		string $orderId,
-		string $game,
-		string $platform,
-		int $qty
-	): IssuanceResult {
+	public function issue(int $telegramId, string $orderId, string $game, string $platform, int $qty): IssuanceResult
+	{
 		$qty = max(1, $qty);
+
 		$maxQty = (int) config('accesshub.issuance.max_qty', 2);
 
 		if ($qty > $maxQty) {
-			return IssuanceResult::fail(sprintf('Qty must be between 1 and %d.', $maxQty));
+			return IssuanceResult::fail('Qty limit exceeded.');
 		}
 
-		// Check operator cooldown for operator_qty and both modes
-		if ($this->shouldCheckOperatorCooldown() && $this->hasActiveOperatorCooldown($telegramId, $game, $platform)) {
-			return IssuanceResult::fail('Cooldown active. Try later.');
+		$orderId = trim($orderId);
+		$game = trim($game);
+		$platform = trim($platform);
+
+		if ($orderId === '' || $game === '' || $platform === '') {
+			return IssuanceResult::fail('Invalid input.');
 		}
 
-		return DB::transaction(function () use ($telegramId, $orderId, $game, $platform, $qty): IssuanceResult {
-			$account = $this->findAvailableAccount($game, $platform, $telegramId);
+		$user = TelegramUser::query()->where('telegram_id', $telegramId)->first();
 
-			if (!$account) {
-				return IssuanceResult::fail('No available accounts.');
+		if ($user === null || $user->is_active !== true) {
+			return IssuanceResult::fail('Access denied.');
+		}
+
+		if (!in_array($user->role, [TelegramRole::OPERATOR, TelegramRole::ADMIN], true)) {
+			return IssuanceResult::fail('Access denied.');
+		}
+
+		$cooldownDays = (int) config('accesshub.issuance.cooldown_days', 14);
+		$now = CarbonImmutable::now();
+
+		return DB::transaction(function () use ($telegramId, $orderId, $game, $platform, $qty, $cooldownDays, $now): IssuanceResult {
+			$alreadyIssuedAccountIds = Issuance::query()
+				->where('order_id', $orderId)
+				->pluck('account_id')
+				->all();
+
+			// Select candidates:
+			// - ACTIVE accounts only
+			// - either available_uses > 0 OR next_release_at is reached (will normalize to 1)
+			$query = Account::query()
+				->where('game', $game)
+				->where('platform', $platform)
+				->where('status', AccountStatus::ACTIVE)
+				->when($alreadyIssuedAccountIds !== [], static function ($q) use ($alreadyIssuedAccountIds): void {
+					$q->whereNotIn('id', $alreadyIssuedAccountIds);
+				})
+				->where(static function ($q) use ($now): void {
+					$q->where('available_uses', '>', 0)
+						->orWhere(static function ($q2) use ($now): void {
+							$q2->whereNotNull('next_release_at')
+								->where('next_release_at', '<=', $now->toDateTimeString());
+						});
+				})
+				->orderByDesc('available_uses')
+				->orderBy('id')
+				->lockForUpdate()
+				->limit($qty);
+
+			/** @var array<int, Account> $accounts */
+			$accounts = $query->get()->all();
+
+			if (count($accounts) < $qty) {
+				return IssuanceResult::fail('Not enough accounts available.');
 			}
 
-			$cooldownUntil = $this->calculateCooldownUntil($telegramId, $account->id, $qty);
+			$items = [];
 
-			// Create issuance
-			Issuance::query()->create([
-				'telegram_id' => $telegramId,
-				'account_id' => $account->id,
-				'order_id' => $orderId,
-				'game' => $game,
-				'platform' => $platform,
-				'qty' => $qty,
-				'issued_at' => now(),
-				'cooldown_until' => $cooldownUntil,
-			]);
+			foreach ($accounts as $account) {
+				$this->normalizeAvailability($account, $now);
 
-			AccountEvent::query()->create([
-				'account_id' => $account->id,
-				'telegram_id' => $telegramId,
-				'type' => 'ISSUED',
-				'payload' => [
+				if ($account->available_uses <= 0) {
+					// Should not happen, but keep safe
+					return IssuanceResult::fail('Account is not available.');
+				}
+
+				$account->available_uses -= 1;
+
+				if ($account->available_uses === 0) {
+					$account->next_release_at = $now->addDays($cooldownDays);
+				}
+
+				$account->save();
+
+				$issuance = Issuance::query()->create([
 					'order_id' => $orderId,
+					'telegram_id' => $telegramId,
+					'account_id' => $account->id,
 					'game' => $game,
 					'platform' => $platform,
-					'qty' => $qty,
-					'cooldown_until' => $cooldownUntil?->toISOString(),
-				],
-			]);
+					'issued_at' => $now,
+					'payload' => [
+						'qty' => $qty,
+					],
+				]);
 
-			return IssuanceResult::success($account->id, $account->login, (string) $account->password);
+				AccountEvent::query()->create([
+					'account_id' => $account->id,
+					'telegram_id' => $telegramId,
+					'type' => 'ISSUED',
+					'payload' => [
+						'order_id' => $orderId,
+						'issuance_id' => $issuance->id,
+						'game' => $game,
+						'platform' => $platform,
+					],
+				]);
+
+				$items[] = [
+					'account_id' => (int) $account->id,
+					'login' => (string) $account->login,
+					'password' => (string) $account->password,
+				];
+			}
+
+			return IssuanceResult::success($items);
 		});
 	}
 
-	private function findAvailableAccount(string $game, string $platform, int $telegramId): ?Account
+	private function normalizeAvailability(Account $account, CarbonImmutable $now): void
 	{
-		$query = Account::query()
-			->where('game', $game)
-			->where('platform', $platform)
-			->where('status', AccountStatus::ACTIVE)
-			->lockForUpdate();
-
-		// Exclude accounts based on cooldown mode
-		$cooldownMode = config('accesshub.issuance.cooldown_mode', 'both');
-
-		if ($cooldownMode === 'rolling_24h' || $cooldownMode === 'both') {
-			$accountCooldownHours = (int) config('accesshub.issuance.account_cooldown_hours', 24);
-			$recentPeriod = Carbon::now()->subHours($accountCooldownHours);
-
-			$query->whereDoesntHave('issuances', function ($query) use ($recentPeriod): void {
-				$query->where('issued_at', '>', $recentPeriod);
-			});
+		if ($account->next_release_at === null) {
+			return;
 		}
 
-		return $query->first();
-	}
+		$next = CarbonImmutable::parse($account->next_release_at);
 
-	private function calculateCooldownUntil(int $telegramId, int $accountId, int $qty): ?Carbon
-	{
-		$cooldownMode = config('accesshub.issuance.cooldown_mode', 'both');
-
-		$shouldApplyCooldown = match ($cooldownMode) {
-			'operator_qty' => $qty >= (int) config('accesshub.issuance.max_qty', 2),
-			'rolling_24h' => $this->wasAccountIssuedRecently($accountId),
-			'both' => $qty >= (int) config('accesshub.issuance.max_qty', 2) || $this->wasAccountIssuedRecently($accountId),
-			default => false,
-		};
-
-		if ($shouldApplyCooldown) {
-			return Carbon::now()->addDays((int) config('accesshub.issuance.operator_cooldown_days', 14));
+		if ($now->greaterThanOrEqualTo($next)) {
+			// TЗ v3: after cooldown, allow exactly 1 issuance
+			$account->available_uses = 1;
+			$account->next_release_at = null;
 		}
-
-		return null;
-	}
-
-	private function shouldCheckOperatorCooldown(): bool
-	{
-		$cooldownMode = config('accesshub.issuance.cooldown_mode', 'both');
-		return in_array($cooldownMode, ['operator_qty', 'both'], true);
-	}
-
-	private function shouldApplyRollingCooldown(): bool
-	{
-		$cooldownMode = config('accesshub.issuance.cooldown_mode', 'both');
-		return in_array($cooldownMode, ['rolling_24h', 'both'], true);
-	}
-
-	private function hasActiveOperatorCooldown(int $telegramId, string $game, string $platform): bool
-	{
-		return Issuance::query()
-			->where('telegram_id', $telegramId)
-			->where('game', $game)
-			->where('platform', $platform)
-			->whereNotNull('cooldown_until')
-			->where('cooldown_until', '>', now())
-			->exists();
-	}
-
-	private function wasAccountIssuedRecently(int $accountId): bool
-	{
-		$accountCooldownHours = (int) config('accesshub.issuance.account_cooldown_hours', 24);
-		$recentPeriod = Carbon::now()->subHours($accountCooldownHours);
-
-		return Issuance::query()
-			->where('account_id', $accountId)
-			->where('issued_at', '>', $recentPeriod)
-			->exists();
 	}
 }

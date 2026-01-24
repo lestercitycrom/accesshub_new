@@ -23,6 +23,9 @@ final class AccountFactory extends Factory
 			'login' => $this->faker->unique()->userName(),
 			'password' => 'secret123', // Will be encrypted by cast
 			'status' => AccountStatus::ACTIVE,
+			'max_uses' => 3,
+			'available_uses' => 3,
+			'next_release_at' => null,
 			'assigned_to_telegram_id' => null,
 			'status_deadline_at' => null,
 			'flags' => null,

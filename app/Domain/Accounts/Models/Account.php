@@ -22,6 +22,9 @@ final class Account extends Model
 		'login',
 		'password',
 		'status',
+		'max_uses',
+		'available_uses',
+		'next_release_at',
 		'assigned_to_telegram_id',
 		'status_deadline_at',
 		'flags',
@@ -30,6 +33,9 @@ final class Account extends Model
 
 	protected $casts = [
 		'status' => AccountStatus::class,
+		'max_uses' => 'integer',
+		'available_uses' => 'integer',
+		'next_release_at' => 'datetime',
 		'assigned_to_telegram_id' => 'integer',
 		'status_deadline_at' => 'datetime',
 		'flags' => 'array',

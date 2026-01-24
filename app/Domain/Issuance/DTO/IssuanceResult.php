@@ -6,36 +6,49 @@ namespace App\Domain\Issuance\DTO;
 
 final class IssuanceResult
 {
+	/**
+	 * @param array<int, array{account_id:int, login:string, password:string}> $items
+	 */
 	private function __construct(
-		public readonly bool $success,
-		public readonly ?int $accountId,
-		public readonly ?string $login,
-		public readonly ?string $password,
-		public readonly ?string $error,
-	) {}
-
-	public static function success(int $accountId, string $login, string $password): self
-	{
-		return new self(true, $accountId, $login, $password, null);
+		private readonly bool $ok,
+		private readonly ?string $message,
+		public readonly array $items = [],
+	) {
 	}
 
-	public static function error(string $error): self
+	/**
+	 * Success result.
+	 *
+	 * @param array<int, array{account_id:int, login:string, password:string}> $items
+	 */
+	public static function success(array $items): self
 	{
-		return new self(false, null, null, null, $error);
+		return new self(true, null, $items);
 	}
 
+	/**
+	 * Fail result.
+	 */
 	public static function fail(string $message): self
 	{
-		return self::error($message);
+		return new self(false, $message, []);
+	}
+
+	/**
+	 * Backward-compatible alias for older code that called ::error().
+	 */
+	public static function error(string $message): self
+	{
+		return self::fail($message);
 	}
 
 	public function ok(): bool
 	{
-		return $this->success;
+		return $this->ok;
 	}
 
 	public function message(): ?string
 	{
-		return $this->error;
+		return $this->message;
 	}
 }
