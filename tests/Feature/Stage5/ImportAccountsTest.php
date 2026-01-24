@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Admin\Livewire\Import\ImportAccounts;
 use App\Domain\Accounts\Models\Account;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -13,7 +14,7 @@ it('renders import accounts page for admin', function (): void {
 	$admin = User::factory()->create(['is_admin' => true]);
 	$this->actingAs($admin);
 
-	Livewire::test(\App\Admin\Livewire\Import\ImportAccounts::class)
+	Livewire::test(ImportAccounts::class)
 		->assertOk()
 		->assertSee('Import Accounts');
 })->group('Stage5.4');
@@ -24,7 +25,7 @@ it('parses valid csv and shows preview', function (): void {
 
 	$csv = "game,platform,login,password\ncs2,steam,user1,pass1\ndota2,epic,user2,pass2";
 
-	Livewire::test(\App\Admin\Livewire\Import\ImportAccounts::class)
+	Livewire::test(ImportAccounts::class)
 		->set('csvText', $csv)
 		->call('parseCsv')
 		->assertSet('showPreview', true)
@@ -37,11 +38,11 @@ it('shows error for invalid csv', function (): void {
 
 	$csv = "game,platform\ncs2,steam";
 
-	Livewire::test(\App\Admin\Livewire\Import\ImportAccounts::class)
+	Livewire::test(ImportAccounts::class)
 		->set('csvText', $csv)
 		->call('parseCsv')
 		->assertSet('showPreview', false)
-		->assertCount('errors', 1);
+		->assertCount('parseErrors', 1);
 })->group('Stage5.4');
 
 it('skips existing accounts during import', function (): void {
@@ -57,7 +58,7 @@ it('skips existing accounts during import', function (): void {
 
 	$csv = "game,platform,login,password\ncs2,steam,user1,pass1\ndota2,epic,user2,pass2";
 
-	Livewire::test(\App\Admin\Livewire\Import\ImportAccounts::class)
+	Livewire::test(ImportAccounts::class)
 		->set('csvText', $csv)
 		->call('parseCsv')
 		->call('applyImport');
@@ -72,7 +73,7 @@ it('imports new accounts successfully', function (): void {
 
 	$csv = "game,platform,login,password\ncs2,steam,user1,pass1";
 
-	Livewire::test(\App\Admin\Livewire\Import\ImportAccounts::class)
+	Livewire::test(ImportAccounts::class)
 		->set('csvText', $csv)
 		->call('parseCsv')
 		->call('applyImport');

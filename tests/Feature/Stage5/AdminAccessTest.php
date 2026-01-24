@@ -20,5 +20,8 @@ it('forbids non-admin user', function (): void {
 it('allows admin user', function (): void {
 	$user = User::factory()->create(['is_admin' => true]);
 
-	$this->actingAs($user)->get('/admin')->assertOk();
+	$this->actingAs($user)
+	->get('/admin')
+	->assertRedirect('/admin/dashboard');
+
 })->group('Stage5.1');

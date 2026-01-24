@@ -31,7 +31,10 @@ final class TelegramUserForm extends Component
 			$this->username = $telegramUser->username;
 			$this->firstName = $telegramUser->first_name;
 			$this->lastName = $telegramUser->last_name;
-			$this->role = $telegramUser->role->value;
+
+			// Role can be null in DB or during initial hydration
+			$this->role = $telegramUser->role?->value ?? TelegramRole::OPERATOR->value;
+
 			$this->isActive = (bool) $telegramUser->is_active;
 		}
 	}

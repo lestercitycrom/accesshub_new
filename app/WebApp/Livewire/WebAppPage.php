@@ -9,8 +9,10 @@ use App\Domain\Issuance\Services\IssueService;
 use App\Domain\Accounts\Models\AccountEvent;
 use App\Domain\Accounts\Services\AccountStatusService;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
+#[Layout('components.layouts.webapp')]
 final class WebAppPage extends Component
 {
 	public string $tab = 'issue';
@@ -193,6 +195,6 @@ final class WebAppPage extends Component
 		return view('webapp.page', [
 			'isBootstrapped' => $this->telegramId() > 0,
 			'canDevBootstrap' => $this->canDevBootstrap(),
-		])->layout('layouts.app');
+		]);
 	}
 }

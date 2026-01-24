@@ -1,15 +1,4 @@
-<!doctype html>
-<html lang="ru">
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="csrf-token" content="{{ csrf_token() }}">
-	@vite(['resources/css/app.css', 'resources/js/app.js'])
-	@livewireStyles
-	<title>WebApp</title>
-</head>
-<body class="min-h-screen bg-gray-50 text-gray-900">
-	<div class="mx-auto max-w-3xl p-4 space-y-6">
+<div class="mx-auto max-w-3xl p-4 space-y-6">
 		<header class="space-y-1">
 			<h1 class="text-xl font-semibold">AccessHub WebApp</h1>
 			<p class="text-sm text-gray-600">
@@ -228,47 +217,46 @@
 		@endif
 	</div>
 
-	@livewireScripts
+<script>
+	(function () {
+		const statusEl = document.getElementById('bootstrapStatus');
+		const devBtn = document.getElementById('devBootstrapBtn');
 
-	<script>
-		(function () {
-			const statusEl = document.getElementById('bootstrapStatus');
-			const devBtn = document.getElementById('devBootstrapBtn');
+		async function bootstrap(payload) {
+			const res = await fetch('/webapp/bootstrap', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+				},
+				body: JSON.stringify(payload),
+				credentials: 'same-origin',
+			});
 
-			async function bootstrap(payload) {
-				const res = await fetch('/webapp/bootstrap', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
-					},
-					body: JSON.stringify(payload),
-					credentials: 'same-origin',
-				});
-
-				if (res.status === 204) {
-					statusEl.textContent = 'Bootstrap: OK';
-					window.location.reload();
-					return;
-				}
-
-				const txt = await res.text();
-				statusEl.textContent = 'Bootstrap: ' + res.status + ' ' + txt;
+			if (res.status === 204) {
+				statusEl.textContent = 'Bootstrap: OK';
+				window.location.reload();
+				return;
 			}
 
-			try {
-				const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+			const txt = await res.text();
+			statusEl.textContent = 'Bootstrap: ' + res.status + ' ' + txt;
+		}
 
-				if (tg && typeof tg.initData === 'string' && tg.initData.length > 0) {
-					statusEl.textContent = 'Bootstrap: Telegram initData detected...';
-					bootstrap({ initData: tg.initData });
-				} else {
-					statusEl.textContent = 'Bootstrap: Telegram not detected.';
-				}
-			} catch (e) {
-				statusEl.textContent = 'Bootstrap: error';
+		try {
+			const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+
+			if (tg && typeof tg.initData === 'string' && tg.initData.length > 0) {
+				statusEl.textContent = 'Bootstrap: Telegram initData detected...';
+				bootstrap({ initData: tg.initData });
+			} else {
+				statusEl.textContent = 'Bootstrap: Telegram not detected.';
 			}
+		} catch (e) {
+			statusEl.textContent = 'Bootstrap: error';
+		}
 
+		if (devBtn) {
 			devBtn.addEventListener('click', function () {
 				bootstrap({
 					telegram_id: 111,
@@ -277,7 +265,6 @@
 					last_name: 'User'
 				});
 			});
-		})();
-	</script>
-</body>
-</html>
+		}
+	})();
+</script>

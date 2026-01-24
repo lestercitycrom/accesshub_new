@@ -8,11 +8,18 @@ use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
 
 final class ImportAccounts extends Component
 {
+	use WithFileUploads;
+
 	public string $csvText = '';
-	public ?string $file = null;
+
+	/** @var TemporaryUploadedFile|null */
+	public ?TemporaryUploadedFile $file = null;
+
 	public array $preview = [];
 	public array $parseErrors = [];
 	public bool $showPreview = false;
@@ -29,17 +36,31 @@ final class ImportAccounts extends Component
 		$this->reset(['preview', 'parseErrors', 'showPreview']);
 
 		// If file is uploaded, read its content
-		if ($this->file) {
-			$this->csvText = file_get_contents($this->file->getRealPath());
+		if ($this->file !== null) {
+			$content = file_get_contents($this->file->getRealPath());
+
+			if ($content === false) {
+				$this->parseErrors[] = 'Failed to read uploaded file';
+				return;
+			}
+
+			$this->csvText = $content;
 		}
 
-		if (empty(trim($this->csvText))) {
+		if (trim($this->csvText) === '') {
 			$this->parseErrors[] = 'CSV text is required';
 			return;
 		}
 
 		$lines = explode("\n", trim($this->csvText));
-		$header = str_getcsv(array_shift($lines));
+		$headerLine = array_shift($lines);
+
+		if ($headerLine === null) {
+			$this->parseErrors[] = 'CSV is empty';
+			return;
+		}
+
+		$header = str_getcsv($headerLine);
 
 		if (count($header) < 4) {
 			$this->parseErrors[] = 'CSV must have at least 4 columns: game, platform, login, password';
@@ -50,28 +71,28 @@ final class ImportAccounts extends Component
 		$existingLogins = [];
 
 		foreach ($lines as $lineNumber => $line) {
-			if (empty(trim($line))) {
+			if (trim($line) === '') {
 				continue;
 			}
 
 			$data = str_getcsv($line);
 
 			if (count($data) < 4) {
-				$this->parseErrors[] = "Line " . ($lineNumber + 2) . ": Not enough columns";
+				$this->parseErrors[] = 'Line ' . ($lineNumber + 2) . ': Not enough columns';
 				continue;
 			}
 
 			[$game, $platform, $login, $password] = array_map('trim', $data);
 
-			if (empty($game) || empty($platform) || empty($login) || empty($password)) {
-				$this->parseErrors[] = "Line " . ($lineNumber + 2) . ": Empty required fields";
+			if ($game === '' || $platform === '' || $login === '' || $password === '') {
+				$this->parseErrors[] = 'Line ' . ($lineNumber + 2) . ': Empty required fields';
 				continue;
 			}
 
 			$key = $game . '|' . $platform . '|' . $login;
 
 			if (isset($existingLogins[$key])) {
-				$this->parseErrors[] = "Line " . ($lineNumber + 2) . ": Duplicate login in CSV";
+				$this->parseErrors[] = 'Line ' . ($lineNumber + 2) . ': Duplicate login in CSV';
 				continue;
 			}
 
@@ -93,7 +114,7 @@ final class ImportAccounts extends Component
 			];
 		}
 
-		if (empty($this->parseErrors)) {
+		if ($this->parseErrors === []) {
 			$this->showPreview = true;
 		}
 	}
@@ -102,7 +123,7 @@ final class ImportAccounts extends Component
 	{
 		Gate::authorize('admin');
 
-		if (empty($this->preview)) {
+		if ($this->preview === []) {
 			return;
 		}
 
@@ -110,7 +131,7 @@ final class ImportAccounts extends Component
 		$skipped = 0;
 
 		foreach ($this->preview as $item) {
-			if ($item['exists']) {
+			if (($item['exists'] ?? false) === true) {
 				$skipped++;
 				continue;
 			}
@@ -128,12 +149,13 @@ final class ImportAccounts extends Component
 
 		session()->flash('message', "Import completed: {$imported} imported, {$skipped} skipped (already exist)");
 
-		$this->reset(['csvText', 'preview', 'errors', 'showPreview']);
+		// Reset only existing component properties (avoid non-existing 'errors')
+		$this->reset(['csvText', 'file', 'preview', 'parseErrors', 'showPreview']);
 	}
 
 	public function getStatsProperty(): array
 	{
-		if (!$this->showPreview || empty($this->preview)) {
+		if (!$this->showPreview || $this->preview === []) {
 			return [
 				'parsed' => 0,
 				'create' => 0,
@@ -148,7 +170,7 @@ final class ImportAccounts extends Component
 		$skipped = 0;
 
 		foreach ($this->preview as $item) {
-			if ($item['exists']) {
+			if (($item['exists'] ?? false) === true) {
 				$skipped++;
 			} else {
 				$create++;
@@ -166,18 +188,18 @@ final class ImportAccounts extends Component
 
 	public function getPreviewRowsProperty(): array
 	{
-		if (!$this->showPreview || empty($this->preview)) {
+		if (!$this->showPreview || $this->preview === []) {
 			return [];
 		}
 
-		return array_map(function ($item) {
+		return array_map(static function (array $item): array {
 			return [
 				'game' => $item['game'],
 				'platform' => $item['platform'],
 				'login' => $item['login'],
 				'password' => $item['password'],
-				'action' => $item['exists'] ? 'skip' : 'create',
-				'reason' => $item['exists'] ? 'Already exists' : 'New account',
+				'action' => ($item['exists'] ?? false) ? 'skip' : 'create',
+				'reason' => ($item['exists'] ?? false) ? 'Already exists' : 'New account',
 			];
 		}, $this->preview);
 	}
@@ -194,11 +216,7 @@ final class ImportAccounts extends Component
 
 	public function resetAll(): void
 	{
-		$this->csvText = '';
-		$this->file = null;
-		$this->preview = [];
-		$this->parseErrors = [];
-		$this->showPreview = false;
+		$this->reset(['csvText', 'file', 'preview', 'parseErrors', 'showPreview']);
 	}
 
 	public function render()
