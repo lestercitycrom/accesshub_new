@@ -8,11 +8,11 @@
 
 <div class="space-y-6">
 	<x-admin.page-header
-		title="Accounts"
+		title="Аккаунты"
 		subtitle="Поиск, фильтры, быстрый доступ к карточке и экспорт."
-		:meta="'<span class=&quot;font-semibold text-slate-700&quot;>Tip:</span> используйте Global Search сверху для быстрого lookup.'"
+		:meta="'<span class=&quot;font-semibold text-slate-700&quot;>Подсказка:</span> используйте глобальный поиск сверху для быстрого поиска.'"
 	>
-		<x-admin.page-actions primaryLabel="Create" primaryIcon="database" :primaryHref="route('admin.accounts.create')">
+		<x-admin.page-actions primaryLabel="Создать" primaryIcon="database" :primaryHref="route('admin.accounts.create')">
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 				href="{{ route('admin.account-lookup') }}">
 				Lookup
@@ -21,15 +21,15 @@
 			@if(isset($exportUrl))
 				<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 					href="{{ $exportUrl }}">
-					Export CSV
+					Экспорт CSV
 				</a>
 			@endif
 		</x-admin.page-actions>
 
 		<x-slot:breadcrumbs>
-			<span class="text-slate-500">Admin</span>
+			<span class="text-slate-500">Админ</span>
 			<span class="px-1 text-slate-300">/</span>
-			<span class="font-semibold text-slate-700">Accounts</span>
+			<span class="font-semibold text-slate-700">Аккаунты</span>
 		</x-slot:breadcrumbs>
 	</x-admin.page-header>
 
@@ -40,7 +40,7 @@
 	<x-admin.filters-bar>
 		<div class="lg:col-span-3">
 			<x-admin.filter-input
-				label="Search"
+				label="Поиск"
 				placeholder="login contains..."
 				icon="search"
 				wire:model.live="q"
@@ -49,7 +49,7 @@
 
 		<div class="lg:col-span-2">
 			<x-admin.filter-input
-				label="Game"
+				label="Игра"
 				placeholder="cs2 / minecraft..."
 				icon="database"
 				wire:model.live="gameFilter"
@@ -58,7 +58,7 @@
 
 		<div class="lg:col-span-2">
 			<x-admin.filter-input
-				label="Platform"
+				label="Платформа"
 				placeholder="steam / xbox..."
 				icon="database"
 				wire:model.live="platformFilter"
@@ -66,7 +66,7 @@
 		</div>
 
 		<div class="lg:col-span-2">
-			<x-admin.filter-select label="Status" icon="list" wire:model.live="statusFilter">
+			<x-admin.filter-select label="Статус" icon="list" wire:model.live="statusFilter">
 				<option value="">Any</option>
 				@foreach($statusOptions as $s)
 					<option value="{{ $s }}">{{ $s }}</option>
@@ -86,15 +86,15 @@
 		</div>
 	</x-admin.filters-bar>
 
-	<x-admin.card title="Accounts">
+	<x-admin.card title="Аккаунты">
 		<x-admin.table density="normal" :sticky="true" :zebra="true">
 			<x-slot:head>
 				<tr>
 					<x-admin.th>ID</x-admin.th>
-					<x-admin.th>Game</x-admin.th>
-					<x-admin.th>Platform</x-admin.th>
-					<x-admin.th>Login</x-admin.th>
-					<x-admin.th>Status</x-admin.th>
+					<x-admin.th>Игра</x-admin.th>
+					<x-admin.th>Платформа</x-admin.th>
+					<x-admin.th>Логин</x-admin.th>
+					<x-admin.th>Статус</x-admin.th>
 					<x-admin.th>Assigned</x-admin.th>
 					<x-admin.th>Deadline</x-admin.th>
 					<x-admin.th align="right">Action</x-admin.th>

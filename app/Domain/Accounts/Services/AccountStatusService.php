@@ -7,6 +7,8 @@ namespace App\Domain\Accounts\Services;
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
 use App\Domain\Accounts\Models\AccountEvent;
+use App\Domain\Telegram\Enums\TelegramRole;
+use App\Domain\Telegram\Models\TelegramUser;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -44,11 +46,14 @@ final class AccountStatusService
 			$now = Carbon::now();
 
 			$flags = is_array($account->flags) ? $account->flags : [];
+			$isAdmin = $this->isAdminByTelegramId($telegramId);
 
 			// Minimal mapping (can be expanded later)
 			if (in_array($normalizedReason, ['wrong_password', 'password', 'bad_pass'], true)) {
-				$account->status = AccountStatus::RECOVERY;
+				$account->status = AccountStatus::TEMP_HOLD;
 				$flags['PASSWORD_UPDATE_REQUIRED'] = true;
+			} elseif (in_array($normalizedReason, ['no_email', 'no_mail', 'email', 'mail', 'no_access_email'], true)) {
+				$account->status = AccountStatus::RECOVERY;
 			} elseif (in_array($normalizedReason, ['stolen', 'hijacked'], true)) {
 				$account->status = AccountStatus::STOLEN;
 				$account->assigned_to_telegram_id = $telegramId;
@@ -58,7 +63,13 @@ final class AccountStatusService
 
 				$flags['ACTION_REQUIRED'] = true;
 			} elseif (in_array($normalizedReason, ['dead'], true)) {
-				$account->status = AccountStatus::DEAD;
+				if ($isAdmin) {
+					$account->status = AccountStatus::DEAD;
+				} else {
+					$account->status = AccountStatus::TEMP_HOLD;
+					$payload['requested_status'] = AccountStatus::DEAD->value;
+					$payload['denied'] = true;
+				}
 			} else {
 				$account->status = AccountStatus::TEMP_HOLD;
 			}
@@ -192,5 +203,47 @@ final class AccountStatusService
 				], $payload),
 			]);
 		});
+	}
+
+	public function extendDeadline(int $accountId, int $days, ?int $telegramId, array $payload = []): bool
+	{
+		if ($days <= 0) {
+			return false;
+		}
+
+		return DB::transaction(function () use ($accountId, $days, $telegramId, $payload): bool {
+			$account = Account::query()
+				->lockForUpdate()
+				->findOrFail($accountId);
+
+			if ($account->status !== AccountStatus::STOLEN) {
+				return false;
+			}
+
+			$currentDeadline = $account->status_deadline_at ?? now();
+			$account->status_deadline_at = $currentDeadline->addDays($days);
+			$account->save();
+
+			AccountEvent::query()->create([
+				'account_id' => $account->id,
+				'telegram_id' => $telegramId,
+				'type' => 'EXTEND_DEADLINE',
+				'payload' => array_merge([
+					'days_added' => $days,
+					'new_deadline' => $account->status_deadline_at->toDateTimeString(),
+				], $payload),
+			]);
+
+			return true;
+		});
+	}
+
+	private function isAdminByTelegramId(int $telegramId): bool
+	{
+		$user = TelegramUser::query()
+			->where('telegram_id', $telegramId)
+			->first();
+
+		return $user?->role === TelegramRole::ADMIN;
 	}
 }

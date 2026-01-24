@@ -8,7 +8,7 @@
 	<div class="flex flex-wrap items-start justify-between gap-3">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight text-slate-900">
-				Account #{{ $account->id }}
+				Аккаунт #{{ $account->id }}
 			</h1>
 
 			<p class="text-sm text-slate-500">
@@ -19,7 +19,7 @@
 		<div class="flex flex-wrap items-center gap-2">
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 				href="{{ route('admin.accounts.edit', $account) }}">
-				Edit
+				Редактировать
 			</a>
 
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
@@ -29,7 +29,7 @@
 
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 				href="{{ route('admin.accounts.index') }}">
-				Back
+				Назад
 			</a>
 		</div>
 	</div>
@@ -70,22 +70,22 @@
 
 				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
 					<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Game</div>
+						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Игра</div>
 						<div class="font-semibold text-slate-900">{{ $account->game }}</div>
 					</div>
 
 					<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Platform</div>
+						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Платформа</div>
 						<div class="font-semibold text-slate-900">{{ $account->platform }}</div>
 					</div>
 
 					<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Login</div>
+						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Логин</div>
 						<div class="font-semibold text-slate-900 break-all">{{ $account->login }}</div>
 					</div>
 
 					<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Password</div>
+						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Пароль</div>
 						<div class="font-semibold text-slate-900 break-all">
 							{{ $account->password ? '••••••••' : '—' }}
 						</div>
@@ -108,7 +108,7 @@
 		</x-admin.card>
 
 		<!-- Actions -->
-		<x-admin.card title="Actions">
+		<x-admin.card title="Действия">
 			<div class="space-y-4">
 				<div class="grid grid-cols-1 gap-3">
 					<div class="space-y-1">
@@ -122,7 +122,7 @@
 					</div>
 
 					<x-admin.button variant="primary" size="md" wire:click="applyStatus">
-						Apply status
+					Применить статус
 					</x-admin.button>
 
 					<x-admin.button variant="secondary" size="md" wire:click="releaseToPool">
@@ -131,7 +131,7 @@
 				</div>
 
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-					<div class="text-sm font-semibold text-slate-900">Update password (admin)</div>
+					<div class="text-sm font-semibold text-slate-900">Обновить пароль (админ)</div>
 
 					<x-admin.input
 						label="New password"
@@ -141,7 +141,7 @@
 					/>
 
 					<x-admin.button variant="danger" size="md" wire:click="updatePassword">
-						Update password
+						Обновить пароль
 					</x-admin.button>
 
 					<p class="text-xs text-slate-500">
@@ -152,7 +152,7 @@
 		</x-admin.card>
 
 		<!-- Notes -->
-		<x-admin.card title="Notes">
+		<x-admin.card title="Примечания">
 			<div class="space-y-2 text-sm text-slate-600">
 				<p>Здесь можно держать краткие правила для операторов/админа.</p>
 				<ul class="list-disc pl-5 space-y-1">
@@ -171,8 +171,8 @@
 				<table class="min-w-full text-sm">
 					<thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
 						<tr>
-							<th class="px-4 py-3 text-left">Issued</th>
-							<th class="px-4 py-3 text-left">Order</th>
+							<th class="px-4 py-3 text-left">Выдано</th>
+							<th class="px-4 py-3 text-left">Заказ</th>
 							<th class="px-4 py-3 text-left">Operator</th>
 							<th class="px-4 py-3 text-left">Qty</th>
 							<th class="px-4 py-3 text-left">Cooldown</th>
@@ -206,7 +206,7 @@
 		</x-admin.card>
 
 		<!-- Events -->
-		<x-admin.card title="Account Events (last 50)">
+		<x-admin.card title="События аккаунта (последние 50)">
 			<div class="overflow-x-auto rounded-2xl border border-slate-200">
 				<table class="min-w-full text-sm">
 					<thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">

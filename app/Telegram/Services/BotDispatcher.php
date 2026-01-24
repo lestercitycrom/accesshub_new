@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Telegram\Services;
 
-use App\Telegram\DTO\IncomingUpdate;
-use App\Telegram\DTO\IncomingIssueRequest;
-use App\Telegram\Services\Parsers\TextIssueParser;
-use App\Domain\Issuance\Services\IssueService;
 use App\Domain\Issuance\DTO\IssuanceResult;
+use App\Domain\Issuance\Services\IssueService;
 use App\Domain\Accounts\Services\AccountStatusService;
-use App\Domain\Accounts\Enums\AccountStatus;
+use App\Telegram\DTO\IncomingIssueRequest;
+use App\Telegram\DTO\IncomingUpdate;
+use App\Telegram\Services\Parsers\TextIssueParser;
 
 final class BotDispatcher
 {
@@ -26,7 +25,8 @@ final class BotDispatcher
 		$request = $this->parseIncomingRequest($incoming);
 
 		if (!$request) {
-			return 'Неверный формат запроса. Используйте: order_id\\nигровая_платформа x2';
+			// Use real newlines (double quotes) for Telegram rendering.
+			return "Неверный формат запроса.\n\nИспользуйте:\n<code>order_id</code>\n<code>игровая_платформа x2</code>";
 		}
 
 		$result = $this->issueService->issue(
@@ -46,12 +46,12 @@ final class BotDispatcher
 
 	private function parseIncomingRequest(IncomingUpdate $incoming): ?IncomingIssueRequest
 	{
-		// Check for WebApp data first
+		// Check for WebApp data first.
 		if ($incoming->webAppData) {
 			return $this->parseWebAppData($incoming);
 		}
 
-		// Fall back to text parsing
+		// Fall back to text parsing.
 		if ($incoming->text === null) {
 			return null;
 		}
@@ -85,9 +85,34 @@ final class BotDispatcher
 
 	private function formatSuccessMessage(IssuanceResult $result): string
 	{
-		return "✅ Аккаунт выдан!\n\n" .
-			"🎮 Логин: <code>{$result->login}</code>\n" .
-			"🔑 Пароль: <code>{$result->password}</code>\n\n" .
-			"⚠️ Не передавайте данные третьим лицам!";
+		// Build message from IssuanceResult items.
+		if (!$result->ok()) {
+			return (string) ($result->message() ?? 'Error.');
+		}
+
+		$items = $result->items;
+
+		if (count($items) === 0) {
+			return '✅ OK';
+		}
+
+		if (count($items) === 1) {
+			return
+				"✅ Выдано:\n\n" .
+				"🎮 Логин: <code>{$items[0]['login']}</code>\n" .
+				"🔑 Пароль: <code>{$items[0]['password']}</code>\n";
+		}
+
+		$lines = [];
+		$lines[] = '✅ Выдано (x' . count($items) . ')';
+
+		foreach ($items as $index => $item) {
+			$lines[] =
+				"\n#" . ($index + 1) . "\n" .
+				"🎮 Логин: <code>{$item['login']}</code>\n" .
+				"🔑 Пароль: <code>{$item['password']}</code>\n";
+		}
+
+		return implode('', $lines);
 	}
 }

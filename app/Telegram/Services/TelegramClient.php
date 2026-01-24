@@ -26,4 +26,34 @@ final class TelegramClient
 
 		return $response->successful();
 	}
+
+	public function setChatMenuButton(string $text, string $url): bool
+	{
+		$botToken = config('services.telegram.bot_token');
+
+		if (empty($botToken)) {
+			return false;
+		}
+
+		$url = trim($url);
+		$text = trim($text);
+
+		if ($url === '' || $text === '') {
+			return false;
+		}
+
+		$apiUrl = "https://api.telegram.org/bot{$botToken}/setChatMenuButton";
+
+		$response = Http::post($apiUrl, [
+			'menu_button' => [
+				'type' => 'web_app',
+				'text' => $text,
+				'web_app' => [
+					'url' => $url,
+				],
+			],
+		]);
+
+		return $response->successful();
+	}
 }

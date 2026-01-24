@@ -10,11 +10,11 @@
 	@endif
 
 	@if($editHref)
-		<x-admin.icon-button :href="$editHref" icon="pencil" title="Edit" variant="secondary" />
+		<x-admin.icon-button :href="$editHref" icon="pencil" title="Редактировать" variant="secondary" />
 	@endif
 
 	@if($deleteHref)
-		<x-admin.icon-button :href="$deleteHref" icon="trash" title="Delete" variant="danger" />
+		<x-admin.icon-button :href="$deleteHref" icon="trash" title="Удалить" variant="danger" />
 	@endif
 
 	@if(trim($slot) !== '')

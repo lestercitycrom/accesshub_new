@@ -6,6 +6,8 @@ use App\Telegram\Services\TelegramClient;
 use Illuminate\Support\Facades\Http;
 
 it('sends message successfully', function (): void {
+	config(['services.telegram.bot_token' => 'test']);
+
 	Http::fake([
 		'https://api.telegram.org/bot*/sendMessage' => Http::response(['ok' => true], 200),
 	]);

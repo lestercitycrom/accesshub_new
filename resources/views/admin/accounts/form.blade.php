@@ -2,7 +2,7 @@
 	<div class="flex flex-wrap items-start justify-between gap-3">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight text-slate-900">
-				{{ $isEdit ? 'Edit Account' : 'Create Account' }}
+				{{ $isEdit ? 'Редактировать аккаунт' : 'Создать аккаунт' }}
 			</h1>
 			<p class="text-sm text-slate-500">
 				{{ $isEdit ? 'Обновление данных аккаунта.' : 'Создание нового аккаунта.' }}
@@ -19,7 +19,7 @@
 
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 				href="{{ route('admin.accounts.index') }}">
-				Back
+				Назад
 			</a>
 		</div>
 	</div>
@@ -47,7 +47,7 @@
 			<x-admin.card title="Main">
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<x-admin.input
-						label="Game"
+						label="Игра"
 						type="text"
 						placeholder="cs2"
 						name="game"
@@ -57,7 +57,7 @@
 					/>
 
 					<x-admin.input
-						label="Platform"
+						label="Платформа"
 						type="text"
 						placeholder="steam"
 						name="platform"
@@ -68,7 +68,7 @@
 
 					<div class="sm:col-span-2">
 						<x-admin.input
-							label="Login"
+							label="Логин"
 							type="text"
 							placeholder="login"
 							name="login"
@@ -80,7 +80,7 @@
 
 					<div class="sm:col-span-2">
 						<x-admin.input
-							label="Password"
+							label="Пароль"
 							type="text"
 							placeholder="{{ $isEdit ? 'leave blank to keep current (optional)' : 'password' }}"
 							name="password"
@@ -120,10 +120,10 @@
 
 		<!-- Side -->
 		<div class="space-y-6">
-			<x-admin.card title="Status">
+			<x-admin.card title="Статус">
 				<div class="space-y-3">
 					<div class="space-y-1">
-						<label class="text-xs font-semibold text-slate-700">Status</label>
+						<label class="text-xs font-semibold text-slate-700">Статус</label>
 						<select wire:model="status"
 							class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
 							@foreach($statuses as $s)
@@ -142,7 +142,7 @@
 					/>
 
 					<div class="space-y-1">
-						<label class="text-xs font-semibold text-slate-700">Status deadline</label>
+						<label class="text-xs font-semibold text-slate-700">Дедлайн статуса</label>
 						<input type="datetime-local" wire:model="statusDeadlineAt"
 							class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
 						@error('statusDeadlineAt') <div class="text-xs font-medium text-rose-600">{{ $message }}</div> @enderror
@@ -173,14 +173,14 @@
 				</div>
 			</x-admin.card>
 
-			<x-admin.card title="Save">
+			<x-admin.card title="Сохранение">
 				<div class="flex items-center gap-2">
 					<x-admin.button variant="primary" size="md" wire:click="save">
-						Save
+						Сохранить
 					</x-admin.button>
 
 					<x-admin.button variant="secondary" size="md" onclick="window.location='{{ route('admin.accounts.index') }}'">
-						Cancel
+						Отмена
 					</x-admin.button>
 				</div>
 

@@ -1,9 +1,9 @@
 <div class="space-y-6">
 	<x-admin.page-header
-		title="Telegram Users"
+		title="Пользователи Telegram"
 		subtitle="Управление операторами/админами и их активностью."
 	>
-		<x-admin.page-actions primaryLabel="Create" primaryIcon="user-plus" :primaryHref="route('admin.telegram-users.create')">
+		<x-admin.page-actions primaryLabel="Добавить" primaryIcon="user-plus" :primaryHref="route('admin.telegram-users.create')">
 			<x-admin.button variant="secondary" size="sm" wire:click="$refresh">
 				<span class="inline-flex items-center gap-2">
 					<x-admin.icon name="refresh" class="h-4 w-4" />
@@ -16,7 +16,7 @@
 	<x-admin.filters-bar>
 		<div class="lg:col-span-4">
 			<x-admin.filter-input
-				label="Search"
+				label="Поиск"
 				placeholder="username / name / telegram id..."
 				icon="search"
 				wire:model.live="q"
@@ -33,11 +33,11 @@
 			</x-admin.button>
 
 			<x-admin.button variant="ghost" size="sm" wire:click="setRole('operator')">
-				Role: operator
+				Роль: оператор
 			</x-admin.button>
 
 			<x-admin.button variant="ghost" size="sm" wire:click="setRole('admin')">
-				Role: admin
+				Роль: админ
 			</x-admin.button>
 
 			<div class="ml-2 text-xs text-slate-500">
@@ -65,9 +65,9 @@
 							wire:click="$set('selected', {{ $rows->pluck('id') }})">
 					</x-admin.th>
 					<x-admin.th>Telegram ID</x-admin.th>
-					<x-admin.th>User</x-admin.th>
-					<x-admin.th>Role</x-admin.th>
-					<x-admin.th>Active</x-admin.th>
+					<x-admin.th>Пользователь</x-admin.th>
+					<x-admin.th>Роль</x-admin.th>
+					<x-admin.th>Активен</x-admin.th>
 					<x-admin.th align="right" class="w-20">Action</x-admin.th>
 				</tr>
 			</x-slot:head>

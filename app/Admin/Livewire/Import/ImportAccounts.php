@@ -27,6 +27,12 @@ final class ImportAccounts extends Component
 	public function mount(): void
 	{
 		Gate::authorize('admin');
+
+		$prefill = session()->get('import.csvText');
+		if (is_string($prefill) && trim($prefill) !== '') {
+			$this->csvText = $prefill;
+			$this->parseCsv();
+		}
 	}
 
 	public function parseCsv(): void
@@ -40,7 +46,7 @@ final class ImportAccounts extends Component
 			$content = file_get_contents($this->file->getRealPath());
 
 			if ($content === false) {
-				$this->parseErrors[] = 'Failed to read uploaded file';
+				$this->parseErrors[] = 'Не удалось прочитать загруженный файл';
 				return;
 			}
 
@@ -48,7 +54,7 @@ final class ImportAccounts extends Component
 		}
 
 		if (trim($this->csvText) === '') {
-			$this->parseErrors[] = 'CSV text is required';
+			$this->parseErrors[] = 'CSV-текст обязателен';
 			return;
 		}
 
@@ -56,14 +62,14 @@ final class ImportAccounts extends Component
 		$headerLine = array_shift($lines);
 
 		if ($headerLine === null) {
-			$this->parseErrors[] = 'CSV is empty';
+			$this->parseErrors[] = 'CSV пуст';
 			return;
 		}
 
 		$header = str_getcsv($headerLine);
 
 		if (count($header) < 4) {
-			$this->parseErrors[] = 'CSV must have at least 4 columns: game, platform, login, password';
+			$this->parseErrors[] = 'CSV должен содержать минимум 4 колонки: game, platform, login, password';
 			return;
 		}
 
@@ -78,21 +84,21 @@ final class ImportAccounts extends Component
 			$data = str_getcsv($line);
 
 			if (count($data) < 4) {
-				$this->parseErrors[] = 'Line ' . ($lineNumber + 2) . ': Not enough columns';
+				$this->parseErrors[] = 'Строка ' . ($lineNumber + 2) . ': недостаточно колонок';
 				continue;
 			}
 
 			[$game, $platform, $login, $password] = array_map('trim', $data);
 
 			if ($game === '' || $platform === '' || $login === '' || $password === '') {
-				$this->parseErrors[] = 'Line ' . ($lineNumber + 2) . ': Empty required fields';
+				$this->parseErrors[] = 'Строка ' . ($lineNumber + 2) . ': пустые обязательные поля';
 				continue;
 			}
 
 			$key = $game . '|' . $platform . '|' . $login;
 
 			if (isset($existingLogins[$key])) {
-				$this->parseErrors[] = 'Line ' . ($lineNumber + 2) . ': Duplicate login in CSV';
+				$this->parseErrors[] = 'Строка ' . ($lineNumber + 2) . ': дубликат логина в CSV';
 				continue;
 			}
 
@@ -147,7 +153,7 @@ final class ImportAccounts extends Component
 			$imported++;
 		}
 
-		session()->flash('message', "Import completed: {$imported} imported, {$skipped} skipped (already exist)");
+		session()->flash('message', "Импорт завершён: добавлено {$imported}, пропущено {$skipped} (уже существуют)");
 
 		// Reset only existing component properties (avoid non-existing 'errors')
 		$this->reset(['csvText', 'file', 'preview', 'parseErrors', 'showPreview']);
@@ -199,7 +205,7 @@ final class ImportAccounts extends Component
 				'login' => $item['login'],
 				'password' => $item['password'],
 				'action' => ($item['exists'] ?? false) ? 'skip' : 'create',
-				'reason' => ($item['exists'] ?? false) ? 'Already exists' : 'New account',
+				'reason' => ($item['exists'] ?? false) ? 'Уже существует' : 'Новый аккаунт',
 			];
 		}, $this->preview);
 	}

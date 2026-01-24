@@ -6,7 +6,7 @@
 		@if(isset($exportUrl))
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 				href="{{ $exportUrl }}">
-				Export CSV
+				Экспорт CSV
 			</a>
 		@endif
 
@@ -32,7 +32,7 @@
 	<x-admin.filters-bar>
 		<div class="lg:col-span-2">
 			<x-admin.filter-input
-				label="Order ID"
+				label="Номер заказа"
 				placeholder="ORD-..."
 				icon="hash"
 				wire:model.live="orderId"
@@ -50,7 +50,7 @@
 
 		<div class="lg:col-span-2">
 			<x-admin.filter-input
-				label="Account ID"
+				label="ID аккаунта"
 				placeholder="123..."
 				icon="user"
 				wire:model.live="accountId"
@@ -59,7 +59,7 @@
 
 		<div class="lg:col-span-2">
 			<x-admin.filter-input
-				label="Game"
+				label="Игра"
 				placeholder="cs2..."
 				icon="database"
 				wire:model.live="game"
@@ -68,7 +68,7 @@
 
 		<div class="lg:col-span-2">
 			<x-admin.filter-input
-				label="Platform"
+				label="Платформа"
 				placeholder="steam..."
 				icon="database"
 				wire:model.live="platform"
@@ -106,12 +106,12 @@
 		<x-admin.table :density="($density ?? 'normal')" :zebra="true" :sticky="true">
 			<x-slot:head>
 				<tr>
-					<x-admin.th>Issued</x-admin.th>
-					<x-admin.th>Order</x-admin.th>
-					<x-admin.th>Account</x-admin.th>
+					<x-admin.th>Выдано</x-admin.th>
+					<x-admin.th>Заказ</x-admin.th>
+					<x-admin.th>Аккаунт</x-admin.th>
 					<x-admin.th>Operator</x-admin.th>
-					<x-admin.th>Game</x-admin.th>
-					<x-admin.th>Platform</x-admin.th>
+					<x-admin.th>Игра</x-admin.th>
+					<x-admin.th>Платформа</x-admin.th>
 					<x-admin.th>Qty</x-admin.th>
 					<x-admin.th>Cooldown</x-admin.th>
 				</tr>

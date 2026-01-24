@@ -16,7 +16,7 @@ it('renders import accounts page for admin', function (): void {
 
 	Livewire::test(ImportAccounts::class)
 		->assertOk()
-		->assertSee('Import Accounts');
+		->assertSee('Импорт аккаунтов');
 })->group('Stage5.4');
 
 it('parses valid csv and shows preview', function (): void {

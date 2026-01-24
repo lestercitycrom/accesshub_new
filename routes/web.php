@@ -34,6 +34,8 @@ Route::withoutMiddleware(['auth', 'admin'])->group(function () {
         ->middleware('throttle:30,1')
         ->name('webapp.bootstrap');
     Route::get('/webapp/api/schema', App\WebApp\Http\Controllers\SchemaController::class)->name('webapp.schema');
+    Route::get('/webapp/api/me', App\WebApp\Http\Controllers\MeController::class)->name('webapp.me');
+    Route::get('/webapp/api/history', App\WebApp\Http\Controllers\HistoryController::class)->name('webapp.history');
 });
 
 require __DIR__.'/settings.php';
@@ -56,6 +58,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 	Route::get('/account-lookup', App\Admin\Livewire\Accounts\AccountLookup::class)->name('account-lookup');
 
 	Route::get('/import/accounts', App\Admin\Livewire\Import\ImportAccounts::class)->name('import.accounts');
+	Route::post('/import/accounts/upload', App\Admin\Http\Controllers\Import\ImportAccountsUploadController::class)
+		->name('import.accounts.upload');
 
 	Route::get('/issuances', App\Admin\Livewire\Logs\IssuancesIndex::class)->name('issuances.index');
 	Route::get('/events', App\Admin\Livewire\Logs\AccountEventsIndex::class)->name('events.index');

@@ -34,12 +34,23 @@ it('marks account as problem with wrong password reason', function (): void {
 	$service->markProblem($account->id, $telegramUser->telegram_id, 'wrong_password');
 
 	$account->refresh();
-	expect($account->status)->toBe(AccountStatus::RECOVERY);
+	expect($account->status)->toBe(AccountStatus::TEMP_HOLD);
 	expect($account->flags)->toHaveKey('PASSWORD_UPDATE_REQUIRED', true);
 
 	$event = $account->events()->first();
 	expect($event->type)->toBe('MARK_PROBLEM');
-	expect($event->payload)->toHaveKey('new_status', 'RECOVERY');
+	expect($event->payload)->toHaveKey('new_status', 'TEMP_HOLD');
+});
+
+it('marks account as recovery when email access is missing', function (): void {
+	$account = Account::factory()->create(['status' => AccountStatus::ACTIVE]);
+	$telegramUser = TelegramUser::factory()->create();
+
+	$service = new AccountStatusService();
+	$service->markProblem($account->id, $telegramUser->telegram_id, 'no_email');
+
+	$account->refresh();
+	expect($account->status)->toBe(AccountStatus::RECOVERY);
 });
 
 it('marks account as stolen', function (): void {
@@ -56,13 +67,18 @@ it('marks account as stolen', function (): void {
 	expect($account->flags)->toHaveKey('ACTION_REQUIRED', true);
 });
 
-it('marks account as dead', function (): void {
+it('marks account as dead for admin only', function (): void {
 	$account = Account::factory()->create(['status' => AccountStatus::ACTIVE]);
 	$telegramUser = TelegramUser::factory()->create();
+	$adminUser = TelegramUser::factory()->admin()->create();
 
 	$service = new AccountStatusService();
 	$service->markProblem($account->id, $telegramUser->telegram_id, 'dead');
 
+	$account->refresh();
+	expect($account->status)->toBe(AccountStatus::TEMP_HOLD);
+
+	$service->markProblem($account->id, $adminUser->telegram_id, 'dead');
 	$account->refresh();
 	expect($account->status)->toBe(AccountStatus::DEAD);
 });

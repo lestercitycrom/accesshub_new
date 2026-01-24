@@ -12,6 +12,6 @@ it('shows not bootstrapped status when session has no telegram id', function ():
 	$response = $this->get('/webapp');
 
 	$response->assertOk();
-	$response->assertSee('Not bootstrapped');
-	$response->assertSee('Dev Bootstrap');
+	$response->assertSee('Не инициализировано');
+	$response->assertSee('Тестовый bootstrap');
 })->group('Stage51');

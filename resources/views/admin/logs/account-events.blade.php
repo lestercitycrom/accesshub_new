@@ -25,7 +25,7 @@
 	<x-admin.filters-bar>
 		<div class="lg:col-span-2">
 			<x-admin.filter-input
-				label="Account ID"
+				label="ID аккаунта"
 				placeholder="123..."
 				icon="user"
 				wire:model.live="accountId"
@@ -90,7 +90,7 @@
 			<x-slot:head>
 				<tr>
 					<x-admin.th>At</x-admin.th>
-					<x-admin.th>Account</x-admin.th>
+					<x-admin.th>Аккаунт</x-admin.th>
 					<x-admin.th>Type</x-admin.th>
 					<x-admin.th>Actor telegram_id</x-admin.th>
 					<x-admin.th>Payload</x-admin.th>

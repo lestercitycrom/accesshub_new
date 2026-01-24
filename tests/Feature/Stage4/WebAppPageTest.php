@@ -42,7 +42,7 @@ it('submits form successfully when bootstrapped', function (): void {
 		->set('platform', 'steam')
 		->set('qty', 1)
 		->call('issue')
-		->assertSet('resultText', "OK\nLogin: testlogin\nPassword: testpass");
+		->assertSet('resultText', "Выдано:\nЛогин: testlogin\nПароль: testpass");
 });
 
 it('shows error when not bootstrapped', function (): void {
@@ -52,7 +52,7 @@ it('shows error when not bootstrapped', function (): void {
 		->set('platform', 'steam')
 		->set('qty', 1)
 		->call('issue')
-		->assertSet('resultText', 'WebApp not bootstrapped. Open inside Telegram and try again.');
+		->assertSet('resultText', 'WebApp не инициализирован. Откройте внутри Telegram и попробуйте снова.');
 });
 
 it('loads history when bootstrapped', function (): void {

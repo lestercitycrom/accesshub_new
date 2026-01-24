@@ -11,6 +11,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 it('handles text message webhook successfully', function (): void {
+	config()->set('services.telegram.bot_token', 'test');
+
 	// Setup test data
 	$telegramUser = TelegramUser::factory()->create(['telegram_id' => 987654321]);
 	$account = Account::factory()->create([
@@ -19,6 +21,13 @@ it('handles text message webhook successfully', function (): void {
 		'status' => AccountStatus::ACTIVE,
 		'login' => 'testlogin',
 		'password' => 'testpass',
+	]);
+	Account::factory()->create([
+		'game' => 'cs2',
+		'platform' => 'steam',
+		'status' => AccountStatus::ACTIVE,
+		'login' => 'testlogin2',
+		'password' => 'testpass2',
 	]);
 
 	// Mock Telegram API
@@ -38,7 +47,7 @@ it('handles text message webhook successfully', function (): void {
 	// Verify Telegram API was called
 	Http::assertSent(function ($request): bool {
 		return str_contains($request->url(), 'sendMessage')
-			&& str_contains($request['text'], '✅ Аккаунт выдан!')
+			&& str_contains($request['text'], '✅ Выдано')
 			&& str_contains($request['text'], 'testlogin')
 			&& str_contains($request['text'], 'testpass');
 	});
@@ -49,6 +58,8 @@ it('handles text message webhook successfully', function (): void {
 });
 
 it('handles webapp data webhook successfully', function (): void {
+	config()->set('services.telegram.bot_token', 'test');
+
 	// Setup test data
 	$telegramUser = TelegramUser::factory()->create(['telegram_id' => 987654321]);
 	$account = Account::factory()->create([
@@ -90,6 +101,8 @@ it('handles webapp data webhook successfully', function (): void {
 });
 
 it('auto registers telegram user', function (): void {
+	config()->set('services.telegram.bot_token', 'test');
+
 	// Load fixture
 	$fixture = json_decode(file_get_contents(base_path('tests/Fixtures/telegram/text_update.json')), true);
 
@@ -115,6 +128,8 @@ it('handles invalid update gracefully', function (): void {
 });
 
 it('returns error message for invalid format', function (): void {
+	config()->set('services.telegram.bot_token', 'test');
+
 	TelegramUser::factory()->create(['telegram_id' => 123456789]);
 
 	Http::fake([
@@ -134,6 +149,8 @@ it('returns error message for invalid format', function (): void {
 });
 
 it('returns error message when no accounts available', function (): void {
+	config()->set('services.telegram.bot_token', 'test');
+
 	// Create telegram user but no accounts
 	TelegramUser::factory()->create(['telegram_id' => 123456789]);
 
@@ -148,6 +165,6 @@ it('returns error message when no accounts available', function (): void {
 	$response->assertStatus(200);
 
 	Http::assertSent(function ($request): bool {
-		return str_contains($request['text'], 'Ошибка выдачи: No available accounts.');
+		return str_contains($request['text'], 'Ошибка выдачи: Недостаточно доступных аккаунтов.');
 	});
 });

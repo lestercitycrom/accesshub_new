@@ -23,7 +23,7 @@ final class IssueService
 		$maxQty = (int) config('accesshub.issuance.max_qty', 2);
 
 		if ($qty > $maxQty) {
-			return IssuanceResult::fail('Qty limit exceeded.');
+			return IssuanceResult::fail('Превышен лимит количества.');
 		}
 
 		$orderId = trim($orderId);
@@ -31,20 +31,23 @@ final class IssueService
 		$platform = trim($platform);
 
 		if ($orderId === '' || $game === '' || $platform === '') {
-			return IssuanceResult::fail('Invalid input.');
+			return IssuanceResult::fail('Неверные данные.');
 		}
 
 		$user = TelegramUser::query()->where('telegram_id', $telegramId)->first();
 
 		if ($user === null || $user->is_active !== true) {
-			return IssuanceResult::fail('Access denied.');
+			return IssuanceResult::fail('Доступ запрещен.');
 		}
 
 		if (!in_array($user->role, [TelegramRole::OPERATOR, TelegramRole::ADMIN], true)) {
-			return IssuanceResult::fail('Access denied.');
+			return IssuanceResult::fail('Доступ запрещен.');
 		}
 
-		$cooldownDays = (int) config('accesshub.issuance.cooldown_days', 14);
+		$cooldownDays = (int) config(
+			'accesshub.issuance.operator_cooldown_days',
+			(int) config('accesshub.issuance.cooldown_days', 14)
+		);
 		$now = CarbonImmutable::now();
 
 		return DB::transaction(function () use ($telegramId, $orderId, $game, $platform, $qty, $cooldownDays, $now): IssuanceResult {
@@ -79,7 +82,7 @@ final class IssueService
 			$accounts = $query->get()->all();
 
 			if (count($accounts) < $qty) {
-				return IssuanceResult::fail('Not enough accounts available.');
+				return IssuanceResult::fail('Недостаточно доступных аккаунтов.');
 			}
 
 			$items = [];
@@ -89,7 +92,7 @@ final class IssueService
 
 				if ($account->available_uses <= 0) {
 					// Should not happen, but keep safe
-					return IssuanceResult::fail('Account is not available.');
+					return IssuanceResult::fail('Аккаунт недоступен.');
 				}
 
 				$account->available_uses -= 1;
@@ -100,13 +103,19 @@ final class IssueService
 
 				$account->save();
 
+				$cooldownUntil = $account->available_uses === 0
+					? $account->next_release_at
+					: null;
+
 				$issuance = Issuance::query()->create([
 					'order_id' => $orderId,
 					'telegram_id' => $telegramId,
 					'account_id' => $account->id,
 					'game' => $game,
 					'platform' => $platform,
+					'qty' => $qty,
 					'issued_at' => $now,
+					'cooldown_until' => $cooldownUntil,
 					'payload' => [
 						'qty' => $qty,
 					],

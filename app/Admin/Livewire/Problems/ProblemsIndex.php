@@ -6,7 +6,6 @@ namespace App\Admin\Livewire\Problems;
 
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
-use App\Domain\Accounts\Models\AccountEvent;
 use App\Domain\Accounts\Services\AccountStatusService;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
@@ -106,22 +105,7 @@ final class ProblemsIndex extends Component
 		}
 
 		foreach ($this->selected as $accountId) {
-			$account = Account::find($accountId);
-			if ($account && $account->status === AccountStatus::STOLEN) {
-				$currentDeadline = $account->status_deadline_at ?? now();
-				$account->status_deadline_at = $currentDeadline->addDays($this->extendDays);
-				$account->save();
-
-				AccountEvent::create([
-					'account_id' => $account->id,
-					'telegram_id' => null,
-					'type' => 'EXTEND_DEADLINE',
-					'payload' => [
-						'days_added' => $this->extendDays,
-						'new_deadline' => $account->status_deadline_at->toDateTimeString(),
-					],
-				]);
-			}
+			$statusService->extendDeadline($accountId, $this->extendDays, null);
 		}
 
 		$this->selected = [];

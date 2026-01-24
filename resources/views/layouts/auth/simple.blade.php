@@ -12,7 +12,7 @@
 	@vite(['resources/css/app.css', 'resources/js/app.js'])
 	@livewireStyles
 
-	<title>{{ $title ?? __('Log in') }} — {{ config('admin-kit.brand.name', 'Admin') }}</title>
+	<title>{{ $title ?? 'Вход' }} — {{ config('admin-kit.brand.name', 'Admin') }}</title>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
 	<div class="min-h-screen flex flex-col">

@@ -28,13 +28,13 @@ final class BootstrapController
 
 		if ($verify) {
 			if ($botToken === '') {
-				return response('Server misconfigured.', 500);
+				return response('Сервер настроен неверно.', 500);
 			}
 
 			$result = $this->verifier->verify($initData, $botToken, $maxAge);
 
 			if (($result['ok'] ?? false) !== true) {
-				return response((string) ($result['error'] ?? 'Forbidden.'), 403);
+				return response((string) ($result['error'] ?? 'Доступ запрещен.'), 403);
 			}
 
 			$telegramId = (int) $result['telegram_id'];
@@ -61,7 +61,7 @@ final class BootstrapController
 
 		// DEV mode: allow manual telegram_id bootstrap
 		if ($devTelegramId <= 0) {
-			return response('Missing telegram_id (dev bootstrap).', 422);
+			return response('Не передан telegram_id (dev bootstrap).', 422);
 		}
 
 		TelegramUser::query()->updateOrCreate(

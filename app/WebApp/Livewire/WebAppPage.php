@@ -26,19 +26,24 @@ final class WebAppPage extends Component
 
 	/** @var Collection<int, Issuance> */
 	public Collection $history;
+	/** @var Collection<int, \App\Domain\Accounts\Models\Account> */
+	public Collection $stolenAccounts;
 
 	// Password update form (shown per row)
 	public ?int $passwordAccountId = null;
 	public string $newPassword = '';
+	public string $passwordMode = 'update';
 
 	public function mount(): void
 	{
 		$this->history = collect();
+		$this->stolenAccounts = collect();
 
 		$telegramId = $this->telegramId();
 
 		if ($telegramId > 0) {
 			$this->loadHistory($telegramId);
+			$this->loadStolen($telegramId);
 		}
 	}
 
@@ -57,6 +62,7 @@ final class WebAppPage extends Component
 
 			if ($telegramId > 0) {
 				$this->loadHistory($telegramId);
+				$this->loadStolen($telegramId);
 			}
 		}
 	}
@@ -66,7 +72,7 @@ final class WebAppPage extends Component
 		$telegramId = $this->telegramId();
 
 		if ($telegramId <= 0) {
-			$this->resultText = 'WebApp not bootstrapped. Open inside Telegram and try again.';
+			$this->resultText = 'WebApp не инициализирован. Откройте внутри Telegram и попробуйте снова.';
 			return;
 		}
 
@@ -76,34 +82,32 @@ final class WebAppPage extends Component
 		$qty = max(1, (int) $this->qty);
 
 		if ($orderId === '' || $platform === '' || $game === '') {
-			$this->resultText = 'Please fill all fields.';
+			$this->resultText = 'Заполните все поля.';
 			return;
 		}
 
 		$result = $service->issue($telegramId, $orderId, $game, $platform, $qty);
 
 		if ($result->ok() !== true) {
-			$this->resultText = (string) ($result->message() ?? 'Error.');
+			$this->resultText = (string) ($result->message() ?? 'Ошибка.');
 			$this->loadHistory($telegramId);
 			return;
 		}
 
-		$this->resultText = sprintf(
-			"OK\nLogin: %s\nPassword: %s",
-			(string) $result->login,
-			(string) $result->password
-		);
+		$this->resultText = $this->formatIssuanceItems($result->items);
+
 
 		$this->loadHistory($telegramId);
+		$this->loadStolen($telegramId);
 		$this->tab = 'history';
 	}
 
-	public function markProblem(int $accountId, string $reason, AccountStatusService $service): void
+	public function markProblem(int $accountId, string $reason, AccountStatusService $service, IssueService $issueService): void
 	{
 		$telegramId = $this->telegramId();
 
 		if ($telegramId <= 0) {
-			$this->resultText = 'WebApp not bootstrapped.';
+			$this->resultText = 'WebApp не инициализирован.';
 			return;
 		}
 
@@ -111,16 +115,49 @@ final class WebAppPage extends Component
 			'source' => 'webapp',
 		]);
 
-		$this->resultText = sprintf('Problem saved: %s (account #%d).', $reason, $accountId);
+		$issuance = Issuance::query()
+			->where('account_id', $accountId)
+			->where('telegram_id', $telegramId)
+			->orderByDesc('issued_at')
+			->first();
+
+		if ($issuance === null) {
+			$this->resultText = sprintf('Проблема сохранена: %s (аккаунт #%d).', $reason, $accountId);
+			$this->loadHistory($telegramId);
+			$this->loadStolen($telegramId);
+			$this->tab = 'history';
+			return;
+		}
+
+		$replacement = $issueService->issue(
+			telegramId: $telegramId,
+			orderId: (string) $issuance->order_id,
+			game: (string) $issuance->game,
+			platform: (string) $issuance->platform,
+			qty: 1,
+		);
+
+		if ($replacement->ok() !== true) {
+			$this->resultText = sprintf(
+				'Проблема сохранена: %s (аккаунт #%d). Замена не выдана: %s',
+				$reason,
+				$accountId,
+				(string) ($replacement->message() ?? 'Ошибка.')
+			);
+		} else {
+			$this->resultText = "Проблема сохранена. Выдана замена:\n\n" . $this->formatIssuanceItems($replacement->items);
+		}
 
 		$this->loadHistory($telegramId);
+		$this->loadStolen($telegramId);
 		$this->tab = 'history';
 	}
 
-	public function openPasswordForm(int $accountId): void
+	public function openPasswordForm(int $accountId, string $mode = 'update'): void
 	{
 		$this->passwordAccountId = $accountId;
 		$this->newPassword = '';
+		$this->passwordMode = $mode;
 		$this->resultText = null;
 	}
 
@@ -128,6 +165,7 @@ final class WebAppPage extends Component
 	{
 		$this->passwordAccountId = null;
 		$this->newPassword = '';
+		$this->passwordMode = 'update';
 	}
 
 	public function submitPassword(AccountStatusService $service): void
@@ -135,31 +173,78 @@ final class WebAppPage extends Component
 		$telegramId = $this->telegramId();
 
 		if ($telegramId <= 0) {
-			$this->resultText = 'WebApp not bootstrapped.';
+			$this->resultText = 'WebApp не инициализирован.';
 			return;
 		}
 
 		if ($this->passwordAccountId === null || $this->passwordAccountId <= 0) {
-			$this->resultText = 'No account selected.';
+			$this->resultText = 'Аккаунт не выбран.';
 			return;
 		}
 
 		$newPassword = trim($this->newPassword);
 
 		if ($newPassword === '') {
-			$this->resultText = 'Password is required.';
+			$this->resultText = 'Пароль обязателен.';
 			return;
 		}
 
-		$service->updatePassword($this->passwordAccountId, $newPassword, $telegramId);
+		if ($this->passwordMode === 'recover_stolen') {
+			$account = \App\Domain\Accounts\Models\Account::query()->find($this->passwordAccountId);
 
-		$this->resultText = sprintf('Password updated (account #%d).', $this->passwordAccountId);
+			if ($account === null || (int) $account->assigned_to_telegram_id !== $telegramId) {
+				$this->resultText = 'Доступ запрещен.';
+				return;
+			}
+
+			$service->recoverStolen($this->passwordAccountId, $newPassword, $telegramId, [
+				'source' => 'webapp',
+			]);
+
+			$this->resultText = sprintf('STOLEN восстановлен (аккаунт #%d).', $this->passwordAccountId);
+		} else {
+			$service->updatePassword($this->passwordAccountId, $newPassword, $telegramId, [
+				'source' => 'webapp',
+			]);
+
+			$this->resultText = sprintf('Пароль обновлён (аккаунт #%d).', $this->passwordAccountId);
+		}
 
 		$this->passwordAccountId = null;
 		$this->newPassword = '';
+		$this->passwordMode = 'update';
 
 		$this->loadHistory($telegramId);
+		$this->loadStolen($telegramId);
 		$this->tab = 'history';
+	}
+
+	public function postponeStolen(int $accountId, AccountStatusService $service): void
+	{
+		$telegramId = $this->telegramId();
+
+		if ($telegramId <= 0) {
+			$this->resultText = 'WebApp не инициализирован.';
+			return;
+		}
+
+		$account = \App\Domain\Accounts\Models\Account::query()->find($accountId);
+
+		if ($account === null || (int) $account->assigned_to_telegram_id !== $telegramId) {
+			$this->resultText = 'Доступ запрещен.';
+			return;
+		}
+
+		$ok = $service->extendDeadline($accountId, 1, $telegramId, [
+			'source' => 'webapp',
+			'action' => 'postpone',
+		]);
+
+		$this->resultText = $ok
+			? sprintf('STOLEN перенесён на 1 день (аккаунт #%d).', $accountId)
+			: 'Не удалось перенести.';
+
+		$this->loadStolen($telegramId);
 	}
 
 	private function loadHistory(int $telegramId): void
@@ -170,6 +255,47 @@ final class WebAppPage extends Component
 			->orderByDesc('issued_at')
 			->limit(20)
 			->get();
+	}
+
+	private function loadStolen(int $telegramId): void
+	{
+		$this->stolenAccounts = \App\Domain\Accounts\Models\Account::query()
+			->where('status', \App\Domain\Accounts\Enums\AccountStatus::STOLEN)
+			->where('assigned_to_telegram_id', $telegramId)
+			->orderBy('status_deadline_at')
+			->limit(50)
+			->get();
+	}
+
+	/**
+	 * @param array<int, array{account_id:int, login:string, password:string}> $items
+	 */
+	private function formatIssuanceItems(array $items): string
+	{
+		if (count($items) === 0) {
+			return 'Готово.';
+		}
+
+		if (count($items) === 1) {
+			return sprintf(
+				"Выдано:\nЛогин: %s\nПароль: %s",
+				(string) $items[0]['login'],
+				(string) $items[0]['password']
+			);
+		}
+
+		$lines = ['Выдано (x'.count($items).')'];
+
+		foreach ($items as $index => $item) {
+			$lines[] = sprintf(
+				"#%d\nЛогин: %s\nПароль: %s",
+				$index + 1,
+				(string) $item['login'],
+				(string) $item['password']
+			);
+		}
+
+		return implode("\n\n", $lines);
 	}
 
 	private function telegramId(): int

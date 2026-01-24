@@ -18,7 +18,7 @@ it('renders telegram users index for admin', function (): void {
 
 	Livewire::test(\App\Admin\Livewire\TelegramUsers\TelegramUsersIndex::class)
 		->assertOk()
-		->assertSee('Telegram Users');
+		->assertSee('Пользователи Telegram');
 })->group('Stage5.2');
 
 it('can deactivate selected users', function (): void {

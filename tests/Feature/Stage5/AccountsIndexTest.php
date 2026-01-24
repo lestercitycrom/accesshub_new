@@ -18,7 +18,7 @@ it('renders accounts index for admin', function (): void {
 
 	Livewire::test(\App\Admin\Livewire\Accounts\AccountsIndex::class)
 		->assertOk()
-		->assertSee('Accounts');
+		->assertSee('Аккаунты');
 })->group('Stage5.3');
 
 it('can filter accounts by status', function (): void {

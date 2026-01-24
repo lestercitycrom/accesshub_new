@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Admin\Livewire\Settings;
 
 use App\Domain\Settings\Services\SettingsService;
+use App\Telegram\Services\TelegramClient;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 
@@ -13,6 +14,8 @@ final class SettingsIndex extends Component
 	public int $cooldownDays = 30;
 	public int $stolenDefaultDeadlineDays = 5;
 	public int $maxQty = 3;
+	public string $webappMenuUrl = '';
+	public string $webappMenuText = '';
 
 	public function mount(SettingsService $settings): void
 	{
@@ -21,6 +24,10 @@ final class SettingsIndex extends Component
 		$this->cooldownDays = $settings->getInt('cooldown_days', 30);
 		$this->stolenDefaultDeadlineDays = $settings->getInt('stolen_default_deadline_days', 5);
 		$this->maxQty = $settings->getInt('max_qty', 3);
+
+		$defaultUrl = rtrim((string) config('app.url'), '/') . '/webapp';
+		$this->webappMenuUrl = (string) ($settings->get('webapp_menu_url') ?? $defaultUrl);
+		$this->webappMenuText = (string) ($settings->get('webapp_menu_text') ?? 'Открыть WebApp');
 	}
 
 	public function save(SettingsService $settings): void
@@ -39,7 +46,28 @@ final class SettingsIndex extends Component
 		$settings->set('stolen_default_deadline_days', (int) $this->stolenDefaultDeadlineDays, $userId);
 		$settings->set('max_qty', (int) $this->maxQty, $userId);
 
-		session()->flash('status', 'Settings saved.');
+		session()->flash('status', 'Настройки сохранены.');
+	}
+
+	public function applyWebAppMenu(SettingsService $settings, TelegramClient $telegram): void
+	{
+		Gate::authorize('admin');
+
+		$this->validate([
+			'webappMenuUrl' => ['required', 'string', 'max:255'],
+			'webappMenuText' => ['required', 'string', 'min:2', 'max:64'],
+		]);
+
+		$userId = (int) auth()->id();
+		$settings->set('webapp_menu_url', trim($this->webappMenuUrl), $userId);
+		$settings->set('webapp_menu_text', trim($this->webappMenuText), $userId);
+
+		$ok = $telegram->setChatMenuButton(trim($this->webappMenuText), trim($this->webappMenuUrl));
+
+		session()->flash(
+			'status',
+			$ok ? 'Кнопка меню WebApp установлена.' : 'Не удалось установить кнопку меню WebApp.'
+		);
 	}
 
 	public function render()

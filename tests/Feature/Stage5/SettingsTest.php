@@ -24,7 +24,7 @@ it('admin can save settings into database', function (): void {
 		->set('stolenDefaultDeadlineDays', 7)
 		->set('maxQty', 5)
 		->call('save')
-		->assertSee('Settings saved.');
+		->assertSee('Настройки сохранены.');
 
 	$cooldown = Setting::query()->where('key', 'cooldown_days')->firstOrFail();
 	expect($cooldown->value['v'])->toBe(40);

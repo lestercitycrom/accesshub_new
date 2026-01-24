@@ -6,18 +6,18 @@
 
 <div class="space-y-6">
 <x-admin.page-header
-	title="Problems"
+	title="Проблемные"
 	subtitle="Проблемные аккаунты: STOLEN/RECOVERY/TEMP_HOLD/DEAD + массовые действия."
 	:meta="'Selected: <span class=&quot;font-semibold text-slate-700&quot;>'.(is_array($selected ?? null) ? count($selected) : 0).'</span>'"
 >
 	<x-admin.page-actions primaryLabel="Lookup" primaryIcon="search" :primaryHref="route('admin.account-lookup')">
-		<x-admin.button variant="secondary" size="md" wire:click="clear">Reset</x-admin.button>
+		<x-admin.button variant="secondary" size="md" wire:click="clear">Сброс</x-admin.button>
 	</x-admin.page-actions>
 
 	<x-slot:breadcrumbs>
-		<span class="text-slate-500">Admin</span>
+		<span class="text-slate-500">Админ</span>
 		<span class="px-1 text-slate-300">/</span>
-		<span class="font-semibold text-slate-700">Problems</span>
+		<span class="font-semibold text-slate-700">Проблемные</span>
 	</x-slot:breadcrumbs>
 </x-admin.page-header>
 
@@ -48,7 +48,7 @@
 	<x-admin.filters-bar>
 		<div class="lg:col-span-3">
 			<x-admin.filter-input
-				label="Search login"
+				label="Поиск по логину"
 				placeholder="login contains..."
 				icon="search"
 				wire:model.live="q"
@@ -104,10 +104,10 @@
 				<tr>
 					<x-admin.th class="w-10"></x-admin.th>
 					<x-admin.th>ID</x-admin.th>
-					<x-admin.th>Game</x-admin.th>
-					<x-admin.th>Platform</x-admin.th>
-					<x-admin.th>Login</x-admin.th>
-					<x-admin.th>Status</x-admin.th>
+					<x-admin.th>Игра</x-admin.th>
+					<x-admin.th>Платформа</x-admin.th>
+					<x-admin.th>Логин</x-admin.th>
+					<x-admin.th>Статус</x-admin.th>
 					<x-admin.th>Assigned</x-admin.th>
 					<x-admin.th>Deadline</x-admin.th>
 					<x-admin.th align="right">Action</x-admin.th>

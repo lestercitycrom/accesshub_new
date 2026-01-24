@@ -32,7 +32,7 @@
 								type="text"
 								name="{{ config('admin-kit.global_search.query_key', 'q') }}"
 								value="{{ request(config('admin-kit.global_search.query_key', 'q')) }}"
-								placeholder="{{ config('admin-kit.global_search.placeholder', 'Search...') }}"
+								placeholder="{{ config('admin-kit.global_search.placeholder', 'Поиск...') }}"
 								class="w-[360px] rounded-xl bg-white/10 border border-white/10 pl-10 pr-3 py-2 text-sm text-white placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-white/20"
 							/>
 						</div>
@@ -78,7 +78,7 @@
 					@endphp
 						<details class="relative hidden sm:block">
 							<summary class="list-none cursor-pointer select-none rounded-xl px-3 py-2 text-sm font-semibold bg-white/10 hover:bg-white/15 inline-flex items-center gap-2">
-								<span class="text-slate-100">Actions</span>
+								<span class="text-slate-100">Действия</span>
 								<span class="text-slate-300">▾</span>
 							</summary>
 
@@ -123,7 +123,7 @@
 								class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold
 									bg-white text-slate-900 hover:bg-slate-100 active:bg-slate-200"
 							>
-								Logout
+								Выйти
 							</button>
 						</form>
 					@endif

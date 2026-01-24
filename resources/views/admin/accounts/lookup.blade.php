@@ -1,24 +1,24 @@
 <div class="space-y-6">
 	<x-admin.page-header
-		title="Account Lookup"
+		title="Поиск аккаунтов"
 		subtitle="Поиск аккаунтов по различным критериям."
 		:meta="'<span class=&quot;font-semibold text-slate-700&quot;>Tip:</span> Используйте фильтры для быстрого поиска нужных аккаунтов.'"
 	>
-		<x-admin.page-actions primaryLabel="Create" primaryIcon="plus" :primaryHref="route('admin.accounts.create')" />
+		<x-admin.page-actions primaryLabel="Создать" primaryIcon="plus" :primaryHref="route('admin.accounts.create')" />
 	</x-admin.page-header>
 
 <x-admin.filters-bar>
 	<div class="lg:col-span-4">
 		<x-admin.filter-input
-			label="Search"
-			placeholder="Login, ID, Order ID..."
+			label="Поиск"
+			placeholder="Логин, ID, номер заказа..."
 			icon="search"
 			wire:model.live="q"
 		/>
 	</div>
 
 	<div class="lg:col-span-2">
-		<x-admin.filter-select label="Status" icon="list" wire:model.live="statusFilter">
+		<x-admin.filter-select label="Статус" icon="list" wire:model.live="statusFilter">
 			<option value="">All</option>
 			@foreach($statusOptions as $status)
 				<option value="{{ $status }}">{{ $status }}</option>
@@ -27,7 +27,7 @@
 	</div>
 
 	<div class="lg:col-span-2">
-		<x-admin.filter-select label="Game" icon="database" wire:model.live="gameFilter">
+		<x-admin.filter-select label="Игра" icon="database" wire:model.live="gameFilter">
 			<option value="">All</option>
 			@foreach($gameOptions as $game)
 				<option value="{{ $game }}">{{ $game }}</option>
@@ -36,7 +36,7 @@
 	</div>
 
 	<div class="lg:col-span-2">
-		<x-admin.filter-select label="Platform" icon="database" wire:model.live="platformFilter">
+		<x-admin.filter-select label="Платформа" icon="database" wire:model.live="platformFilter">
 			<option value="">All</option>
 			@foreach($platformOptions as $platform)
 				<option value="{{ $platform }}">{{ $platform }}</option>
@@ -70,7 +70,7 @@
 				href="{{ route('admin.accounts.create') }}">
 				<span class="inline-flex items-center gap-2">
 					<x-admin.icon name="plus" class="h-4 w-4" />
-					Create
+					Создать
 				</span>
 			</a>
 		</div>
@@ -86,12 +86,12 @@
 			<x-slot:head>
 				<tr>
 					<x-admin.th>ID</x-admin.th>
-					<x-admin.th>Login</x-admin.th>
-					<x-admin.th>Game</x-admin.th>
-					<x-admin.th>Platform</x-admin.th>
-					<x-admin.th>Status</x-admin.th>
+					<x-admin.th>Логин</x-admin.th>
+					<x-admin.th>Игра</x-admin.th>
+					<x-admin.th>Платформа</x-admin.th>
+					<x-admin.th>Статус</x-admin.th>
 					<x-admin.th>Assigned To</x-admin.th>
-					<x-admin.th align="right">Actions</x-admin.th>
+					<x-admin.th align="right">Действия</x-admin.th>
 				</tr>
 			</x-slot:head>
 
