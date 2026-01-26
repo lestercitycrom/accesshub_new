@@ -38,7 +38,7 @@ class Login extends Component
 
         session()->regenerate();
 
-        $this->redirectIntended(default: route('home'), navigate: true);
+        $this->redirect(route('admin.accounts.index'), navigate: true);
     }
 
     protected function ensureIsNotRateLimited(): void
