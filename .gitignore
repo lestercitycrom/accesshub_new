@@ -4,36 +4,46 @@ temp/
 
 # Environment variables
 .env
-.env.local
-.env.production
-.env.staging
+.env.*
+!.env.example
 
 # Laravel specific
+/bootstrap/cache/*.php
+/storage/*.key
+
 /storage/app/private/*
 !/storage/app/private/.gitkeep
+
 /storage/framework/cache/data/*
 !/storage/framework/cache/data/.gitkeep
+
 /storage/framework/sessions/*
 !/storage/framework/sessions/.gitkeep
+
 /storage/framework/views/*
 !/storage/framework/views/.gitkeep
+
 /storage/logs/*
 !/storage/logs/.gitkeep
 
-# Node modules
-node_modules/
+# Node / front-end
+/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Composer
-vendor/
+/vendor/
 
 # IDE
-.vscode/
-.idea/
-.cursor/
+/.vscode/
+/.idea/
+/.cursor/
 
 # OS
 .DS_Store
 Thumbs.db
 
 # Vite
-public/hot
+/public/hot
