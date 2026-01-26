@@ -57,7 +57,7 @@ it('denies access when telegram user is missing', function (): void {
 	$result = $service->issue(999, 'ORD-DENY-1', 'cs2', 'steam', 1);
 
 	expect($result->ok())->toBeFalse();
-	expect($result->message())->toBe('Доступ запрещен.');
+	expect($result->message())->toBe('Доступ запрещен. Аккаунт на модерации или отключен.');
 })->group('Stage2');
 
 it('denies access when telegram user is inactive', function (): void {
@@ -68,7 +68,7 @@ it('denies access when telegram user is inactive', function (): void {
 	$result = $service->issue(111, 'ORD-DENY-2', 'cs2', 'steam', 1);
 
 	expect($result->ok())->toBeFalse();
-	expect($result->message())->toBe('Доступ запрещен.');
+	expect($result->message())->toBe('Доступ запрещен. Аккаунт на модерации или отключен.');
 })->group('Stage2');
 
 it('allows access for admin role', function (): void {
@@ -168,7 +168,7 @@ it('returns error when no available accounts', function (): void {
 	$result = $service->issue(111, 'ORD-NA', 'cs2', 'steam', 1);
 
 	expect($result->ok())->toBeFalse();
-	expect($result->message())->toBe('Недостаточно доступных аккаунтов.');
+	expect($result->message())->toBe('Нет аккаунтов для указанной игры и платформы.');
 })->group('Stage2');
 
 it('filters by game and platform', function (): void {
@@ -213,7 +213,7 @@ it('does not issue non-active accounts', function (): void {
 	$result = $service->issue(111, 'ORD-NONACTIVE', 'cs2', 'steam', 1);
 
 	expect($result->ok())->toBeFalse();
-	expect($result->message())->toBe('Недостаточно доступных аккаунтов.');
+	expect($result->message())->toBe('Нет аккаунтов для указанной игры и платформы.');
 })->group('Stage2');
 
 it('does not issue account when next_release_at is in the future and available_uses is zero', function (): void {
@@ -233,7 +233,7 @@ it('does not issue account when next_release_at is in the future and available_u
 	$result = $service->issue(111, 'ORD-FUTURE', 'cs2', 'steam', 1);
 
 	expect($result->ok())->toBeFalse();
-	expect($result->message())->toBe('Недостаточно доступных аккаунтов.');
+	expect($result->message())->toBe('Нет доступных аккаунтов сейчас. Попробуйте позже.');
 })->group('Stage2');
 
 it('sets next_release_at when available_uses reaches zero', function (): void {
@@ -296,7 +296,7 @@ it('fails atomically for qty=2 if only one account is available', function (): v
 	$result = $service->issue(111, 'ORD-QTY2-FAIL', 'cs2', 'steam', 2);
 
 	expect($result->ok())->toBeFalse();
-	expect($result->message())->toBe('Недостаточно доступных аккаунтов.');
+	expect($result->message())->toBe('Недостаточно доступных аккаунтов. Уменьшите количество или попробуйте позже.');
 
 	$account->refresh();
 
@@ -357,7 +357,9 @@ it('does not issue the same account twice for the same order_id (excludes alread
 	$result2 = $service->issue(111, 'ORD-IDEMP', 'cs2', 'steam', 1);
 
 	expect($result2->ok())->toBeFalse();
-	expect($result2->message())->toBe('Недостаточно доступных аккаунтов.');
+	expect($result2->message())->toBe(
+		'По этому заказу уже выданы все доступные аккаунты. Используйте новый order_id или дождитесь пополнения.'
+	);
 
 	// Ensure no extra issuances were created
 	expect(Issuance::query()->where('order_id', 'ORD-IDEMP')->count())->toBe(2);

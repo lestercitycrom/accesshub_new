@@ -1,7 +1,7 @@
 <div class="space-y-6">
 	<x-admin.page-header
 		title="Выдачи"
-		subtitle="История выдач: фильтры, список, экспорт и кулдаун."
+		subtitle="История выдач: фильтры, список, экспорт и cooldown."
 	>
 		@if(isset($exportUrl))
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
@@ -105,7 +105,7 @@
 					<x-admin.th>Игра</x-admin.th>
 					<x-admin.th>Платформа</x-admin.th>
 					<x-admin.th>Кол-во</x-admin.th>
-					<x-admin.th>Кулдаун</x-admin.th>
+					<x-admin.th>Cooldown</x-admin.th>
 				</tr>
 			</x-slot:head>
 

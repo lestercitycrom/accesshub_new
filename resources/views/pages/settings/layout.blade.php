@@ -1,23 +1,52 @@
-<div class="flex items-start max-md:flex-col">
-    <div class="me-10 w-full pb-4 md:w-[220px]">
-        <flux:navlist aria-label="Настройки">
-            <flux:navlist.item :href="route('profile.edit')" wire:navigate>{{ __('Profile') }}</flux:navlist.item>
-            <flux:navlist.item :href="route('user-password.edit')" wire:navigate>{{ __('Password') }}</flux:navlist.item>
-            @if (Laravel\Fortify\Features::canManageTwoFactorAuthentication())
-                <flux:navlist.item :href="route('two-factor.show')" wire:navigate>{{ __('Two-Factor Auth') }}</flux:navlist.item>
-            @endif
-            <flux:navlist.item :href="route('appearance.edit')" wire:navigate>Внешний вид</flux:navlist.item>
-        </flux:navlist>
-    </div>
+<div class="flex items-start gap-6 max-md:flex-col">
+	<div class="w-full md:w-[240px]">
+		<x-admin.card title="Разделы">
+			<nav class="flex flex-col gap-2">
+				@php
+					$isProfile = request()->routeIs('profile.edit');
+					$isPassword = request()->routeIs('user-password.edit');
+					$isTwoFactor = request()->routeIs('two-factor.show');
+					$isAppearance = request()->routeIs('appearance.edit');
+				@endphp
 
-    <flux:separator class="md:hidden" />
+				<a href="{{ route('profile.edit') }}"
+					class="rounded-xl px-3 py-2 text-sm font-semibold border transition
+						{{ $isProfile ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' }}">
+					Профиль
+				</a>
+				<a href="{{ route('user-password.edit') }}"
+					class="rounded-xl px-3 py-2 text-sm font-semibold border transition
+						{{ $isPassword ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' }}">
+					Пароль
+				</a>
+				@if (Laravel\Fortify\Features::canManageTwoFactorAuthentication())
+					<a href="{{ route('two-factor.show') }}"
+						class="rounded-xl px-3 py-2 text-sm font-semibold border transition
+							{{ $isTwoFactor ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' }}">
+						Двухфакторная аутентификация
+					</a>
+				@endif
+				<a href="{{ route('appearance.edit') }}"
+					class="rounded-xl px-3 py-2 text-sm font-semibold border transition
+						{{ $isAppearance ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' }}">
+					Внешний вид
+				</a>
+			</nav>
+		</x-admin.card>
+	</div>
 
-    <div class="flex-1 self-stretch max-md:pt-6">
-        <flux:heading>{{ $heading ?? '' }}</flux:heading>
-        <flux:subheading>{{ $subheading ?? '' }}</flux:subheading>
+	<div class="flex-1 self-stretch">
+		<x-admin.card>
+			@if(!empty($heading))
+				<div class="text-sm font-semibold text-slate-900">{{ $heading }}</div>
+			@endif
+			@if(!empty($subheading))
+				<div class="mt-1 text-sm text-slate-500">{{ $subheading }}</div>
+			@endif
 
-        <div class="mt-5 w-full max-w-lg">
-            {{ $slot }}
-        </div>
-    </div>
+			<div class="mt-5 w-full max-w-lg">
+				{{ $slot }}
+			</div>
+		</x-admin.card>
+	</div>
 </div>

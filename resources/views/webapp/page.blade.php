@@ -252,18 +252,24 @@
 
 		function setButtonLoading(button, isLoading) {
 			if (!button) return;
+			const existingSpinner = button.querySelector('.btn-spinner');
 			if (isLoading) {
 				if (button.dataset.loading === '1') return;
 				button.dataset.loading = '1';
-				button.dataset.prevHtml = button.innerHTML;
-				button.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>';
 				button.disabled = true;
+				if (!existingSpinner) {
+					const spinner = document.createElement('span');
+					spinner.className = 'btn-spinner ms-2';
+					spinner.setAttribute('aria-hidden', 'true');
+					button.appendChild(spinner);
+				}
 			} else {
 				if (button.dataset.loading !== '1') return;
 				button.disabled = false;
-				button.innerHTML = button.dataset.prevHtml || button.textContent;
+				if (existingSpinner) {
+					existingSpinner.remove();
+				}
 				delete button.dataset.loading;
-				delete button.dataset.prevHtml;
 			}
 		}
 

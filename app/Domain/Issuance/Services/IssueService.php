@@ -37,11 +37,11 @@ final class IssueService
 		$user = TelegramUser::query()->where('telegram_id', $telegramId)->first();
 
 		if ($user === null || $user->is_active !== true) {
-			return IssuanceResult::fail('Доступ запрещен.');
+			return IssuanceResult::fail('Доступ запрещен. Аккаунт на модерации или отключен.');
 		}
 
 		if (!in_array($user->role, [TelegramRole::OPERATOR, TelegramRole::ADMIN], true)) {
-			return IssuanceResult::fail('Доступ запрещен.');
+			return IssuanceResult::fail('Недостаточно прав. Обратитесь к администратору.');
 		}
 
 		$cooldownDays = (int) config(
@@ -55,6 +55,29 @@ final class IssueService
 				->where('order_id', $orderId)
 				->pluck('account_id')
 				->all();
+
+			$baseQuery = Account::query()
+				->where('game', $game)
+				->where('platform', $platform)
+				->where('status', AccountStatus::ACTIVE);
+
+			$availableQuery = (clone $baseQuery)
+				->where(static function ($q) use ($now): void {
+					$q->where('available_uses', '>', 0)
+						->orWhere(static function ($q2) use ($now): void {
+							$q2->whereNotNull('next_release_at')
+								->where('next_release_at', '<=', $now->toDateTimeString());
+						});
+				});
+
+			$availableNotIssuedQuery = (clone $availableQuery)
+				->when($alreadyIssuedAccountIds !== [], static function ($q) use ($alreadyIssuedAccountIds): void {
+					$q->whereNotIn('id', $alreadyIssuedAccountIds);
+				});
+
+			$activeCount = (clone $baseQuery)->count();
+			$availableCount = (clone $availableQuery)->count();
+			$availableNotIssuedCount = (clone $availableNotIssuedQuery)->count();
 
 			// Select candidates:
 			// - ACTIVE accounts only
@@ -82,7 +105,21 @@ final class IssueService
 			$accounts = $query->get()->all();
 
 			if (count($accounts) < $qty) {
-				return IssuanceResult::fail('Недостаточно доступных аккаунтов.');
+				if ($activeCount === 0) {
+					return IssuanceResult::fail('Нет аккаунтов для указанной игры и платформы.');
+				}
+
+				if ($availableCount === 0) {
+					return IssuanceResult::fail('Нет доступных аккаунтов сейчас. Попробуйте позже.');
+				}
+
+				if ($alreadyIssuedAccountIds !== [] && $availableNotIssuedCount === 0) {
+					return IssuanceResult::fail(
+						'По этому заказу уже выданы все доступные аккаунты. Используйте новый order_id или дождитесь пополнения.'
+					);
+				}
+
+				return IssuanceResult::fail('Недостаточно доступных аккаунтов. Уменьшите количество или попробуйте позже.');
 			}
 
 			$items = [];

@@ -88,6 +88,10 @@
 	</x-admin.filters-bar>
 
 	<x-admin.card>
+		<div class="text-xs text-slate-500 mb-3">
+			Назначен — Telegram ID оператора, к которому закреплён аккаунт (обычно при STOLEN).
+			Дедлайн — срок статуса STOLEN; продлевается кнопкой «Продлить».
+		</div>
 		<x-admin.table-toolbar :density="($density ?? 'normal')" :showDensity="true">
 			<x-admin.button variant="secondary" size="sm" wire:click="releaseToPool">Вернуть</x-admin.button>
 		</x-admin.table-toolbar>

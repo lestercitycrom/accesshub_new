@@ -8,6 +8,9 @@
 	@vite(['resources/css/app.css', 'resources/js/app.js'])
 	@livewireStyles
 
+	<link rel="icon" href="/accesshub_logo_strict_2_plane_lock_128.png" type="image/png">
+	<link rel="apple-touch-icon" href="/accesshub_logo_strict_2_plane_lock_128.png">
+
 	<title>@yield('title', config('admin-kit.brand.name', 'Admin'))</title>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">

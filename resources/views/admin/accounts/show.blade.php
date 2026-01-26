@@ -67,6 +67,10 @@
 						<x-admin.badge variant="gray">Дедлайн: —</x-admin.badge>
 					@endif
 				</div>
+				<div class="text-xs text-slate-500">
+					Назначен — Telegram ID оператора, к которому закреплён аккаунт (обычно при статусе STOLEN).
+					Дедлайн — срок статуса STOLEN; продлевается кнопкой «Перенести на 1 день».
+				</div>
 
 				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
 					<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
@@ -175,7 +179,7 @@
 							<th class="px-4 py-3 text-left">Заказ</th>
 							<th class="px-4 py-3 text-left">Пользователь</th>
 							<th class="px-4 py-3 text-left">Кол-во</th>
-							<th class="px-4 py-3 text-left">Кулдаун</th>
+							<th class="px-4 py-3 text-left">Cooldown</th>
 						</tr>
 					</thead>
 

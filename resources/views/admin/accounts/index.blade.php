@@ -10,7 +10,6 @@
 	<x-admin.page-header
 		title="Аккаунты"
 		subtitle="Поиск, фильтры, быстрый доступ к карточке и экспорт."
-		:meta="'<span class=&quot;font-semibold text-slate-700&quot;>Подсказка:</span> Используйте глобальный поиск сверху для быстрого поиска.'"
 	>
 		<x-admin.page-actions primaryLabel="Создать" primaryIcon="database" :primaryHref="route('admin.accounts.create')">
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
@@ -92,6 +91,10 @@
 	</x-admin.filters-bar>
 
 	<x-admin.card title="Аккаунты">
+		<div class="text-xs text-slate-500 mb-3">
+			Назначен — Telegram ID оператора, к которому закреплён аккаунт (обычно при STOLEN).
+			Дедлайн — срок статуса STOLEN; продлевается кнопкой «Перенести на 1 день».
+		</div>
 		<x-admin.table density="normal" :sticky="true" :zebra="true">
 			<x-slot:head>
 				<tr>

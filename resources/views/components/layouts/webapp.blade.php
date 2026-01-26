@@ -8,6 +8,9 @@
 	<meta http-equiv="Pragma" content="no-cache">
 	<meta http-equiv="Expires" content="0">
 
+	<link rel="icon" href="/accesshub_logo_strict_2_plane_lock_128.png" type="image/png">
+	<link rel="apple-touch-icon" href="/accesshub_logo_strict_2_plane_lock_128.png">
+
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 	<script src="https://telegram.org/js/telegram-web-app.js"></script>
 

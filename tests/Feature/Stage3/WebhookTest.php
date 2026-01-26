@@ -184,6 +184,6 @@ it('returns error message when no accounts available', function (): void {
 	$response->assertStatus(200);
 
 	Http::assertSent(function ($request): bool {
-		return str_contains($request['text'], 'Ошибка выдачи: Недостаточно доступных аккаунтов.');
+		return str_contains($request['text'], 'Ошибка выдачи: Нет аккаунтов для указанной игры и платформы.');
 	});
 });
