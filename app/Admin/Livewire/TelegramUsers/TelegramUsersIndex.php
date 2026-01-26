@@ -17,6 +17,7 @@ final class TelegramUsersIndex extends Component
 
 	public string $q = '';
 	public array $selected = [];
+	public string $roleFilter = '';
 
 	public function mount(): void
 	{
@@ -26,6 +27,33 @@ final class TelegramUsersIndex extends Component
 	public function updatingQ(): void
 	{
 		$this->resetPage();
+	}
+
+	public function toggleSelectAll(): void
+	{
+		$rows = $this->rows;
+		$ids = $rows->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
+		if ($ids === []) {
+			$this->selected = [];
+			return;
+		}
+
+		$this->selected = count($this->selected) === count($ids) ? [] : $ids;
+	}
+
+	public function updatingRoleFilter(): void
+	{
+		$this->resetPage();
+	}
+
+	public function setRoleFilter(string $role): void
+	{
+		if (!in_array($role, [TelegramRole::OPERATOR->value, TelegramRole::ADMIN->value], true)) {
+			return;
+		}
+
+		$this->roleFilter = $this->roleFilter === $role ? '' : $role;
 	}
 
 	public function toggleActive(bool $active): void
@@ -67,6 +95,9 @@ final class TelegramUsersIndex extends Component
 					->orWhere('username', 'like', $q)
 					->orWhere('first_name', 'like', $q)
 					->orWhere('last_name', 'like', $q);
+			})
+			->when($this->roleFilter !== '', function ($query): void {
+				$query->where('role', $this->roleFilter);
 			})
 			->orderByDesc('id')
 			->paginate(20);

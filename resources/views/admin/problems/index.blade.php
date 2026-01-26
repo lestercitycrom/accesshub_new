@@ -1,4 +1,4 @@
-﻿@php
+@php
 	$activeFilters = 0;
 	$activeFilters += !empty($q ?? null) ? 1 : 0;
 	$activeFilters += !empty($tab ?? null) ? 1 : 0;

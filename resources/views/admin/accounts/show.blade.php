@@ -1,4 +1,4 @@
-﻿<div class="space-y-6">
+<div class="space-y-6">
 	@if(session('message'))
 		<div class="rounded-lg bg-green-50 p-4 text-green-800 border border-green-200">
 			{{ session('message') }}

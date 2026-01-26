@@ -1,4 +1,4 @@
-﻿<div class="space-y-6">
+<div class="space-y-6">
 	<x-admin.page-header
 		title="Пользователи Telegram"
 		subtitle="Справочник операторов/админов и их идентификаторы. Управляйте доступами и ролями."
@@ -16,10 +16,9 @@
 	<x-admin.filters-bar>
 		<div class="lg:col-span-4">
 			<x-admin.filter-input
-				label="Поиск"
 				placeholder="username / имя / telegram id..."
 				icon="search"
-				wire:model.live="q"
+				wire:model.live.debounce.300ms="q"
 			/>
 		</div>
 
@@ -32,17 +31,23 @@
 				Отключить выбранных
 			</x-admin.button>
 
-			<x-admin.button variant="ghost" size="sm" wire:click="setRole('operator')">
-				Роль: оператор
+			<x-admin.button
+				variant="ghost"
+				size="sm"
+				wire:click="setRoleFilter('operator')"
+				class="{{ ($roleFilter ?? '') === 'operator' ? 'bg-slate-100' : '' }}"
+			>
+				Оператор
 			</x-admin.button>
 
-			<x-admin.button variant="ghost" size="sm" wire:click="setRole('admin')">
-				Роль: админ
+			<x-admin.button
+				variant="ghost"
+				size="sm"
+				wire:click="setRoleFilter('admin')"
+				class="{{ ($roleFilter ?? '') === 'admin' ? 'bg-slate-100' : '' }}"
+			>
+				Админ
 			</x-admin.button>
-
-			<div class="ml-2 text-xs text-slate-500">
-				Выбрано: <span class="font-semibold text-slate-700">{{ is_array($selected ?? null) ? count($selected) : 0 }}</span>
-			</div>
 		</div>
 	</x-admin.filters-bar>
 
@@ -54,8 +59,9 @@
 				<tr>
 					<x-admin.th class="w-10">
 						<input type="checkbox" class="rounded border-slate-300"
-							@if(count($selected ?? []) && count($selected) === $rows->count()) checked @endif
-							wire:click="$set('selected', {{ $rows->pluck('id') }})">
+							@if($rows->count() > 0 && count($selected ?? []) === $rows->count()) checked @endif
+							wire:click="toggleSelectAll"
+						>
 					</x-admin.th>
 					<x-admin.th>Telegram ID</x-admin.th>
 					<x-admin.th>Пользователь</x-admin.th>

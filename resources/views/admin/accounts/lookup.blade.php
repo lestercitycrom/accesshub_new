@@ -1,4 +1,4 @@
-﻿<div class="space-y-6">
+<div class="space-y-6">
 	<x-admin.page-header
 		title="Поиск аккаунтов"
 		subtitle="Поиск аккаунтов по различным критериям."

@@ -1,4 +1,4 @@
-﻿<div class="space-y-6">
+<div class="space-y-6">
 	<div class="flex flex-wrap items-start justify-between gap-3">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight text-slate-900">

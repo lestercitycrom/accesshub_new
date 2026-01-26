@@ -1,4 +1,4 @@
-﻿<div class="space-y-6">
+<div class="space-y-6">
 	@php
 		$activeFilters = 0;
 		$activeFilters += !empty($q) ? 1 : 0;

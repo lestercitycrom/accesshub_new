@@ -1,4 +1,4 @@
-﻿@props([
+@props([
 	'viewHref' => null,
 	'editHref' => null,
 	'deleteHref' => null, // optional
