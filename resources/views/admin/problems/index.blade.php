@@ -1,4 +1,4 @@
-@php
+﻿@php
 	$activeFilters = 0;
 	$activeFilters += !empty($q ?? null) ? 1 : 0;
 	$activeFilters += !empty($tab ?? null) ? 1 : 0;
@@ -8,9 +8,9 @@
 <x-admin.page-header
 	title="Проблемные"
 	subtitle="Проблемные аккаунты: STOLEN/RECOVERY/TEMP_HOLD/DEAD + массовые действия."
-	:meta="'Selected: <span class=&quot;font-semibold text-slate-700&quot;>'.(is_array($selected ?? null) ? count($selected) : 0).'</span>'"
+	:meta="'Выбрано: <span class=&quot;font-semibold text-slate-700&quot;>'.(is_array($selected ?? null) ? count($selected) : 0).'</span>'"
 >
-	<x-admin.page-actions primaryLabel="Lookup" primaryIcon="search" :primaryHref="route('admin.account-lookup')">
+	<x-admin.page-actions primaryLabel="Поиск" primaryIcon="search" :primaryHref="route('admin.account-lookup')">
 		<x-admin.button variant="secondary" size="md" wire:click="clear">Сброс</x-admin.button>
 	</x-admin.page-actions>
 
@@ -25,7 +25,7 @@
 		<x-admin.alert variant="success" :message="session('status')" />
 	@endif
 
-	<x-admin.card title="Tabs">
+	<x-admin.card title="Вкладки">
 		<div class="flex flex-wrap items-center gap-2">
 			@foreach($tabs as $t)
 				@php $active = ($tab ?? '') === $t; @endphp
@@ -40,7 +40,7 @@
 			@endforeach
 
 			<div class="ml-2 text-xs text-slate-500">
-				Selected: <span class="font-semibold text-slate-700">{{ is_array($selected ?? null) ? count($selected) : 0 }}</span>
+				Выбрано: <span class="font-semibold text-slate-700">{{ is_array($selected ?? null) ? count($selected) : 0 }}</span>
 			</div>
 		</div>
 	</x-admin.card>
@@ -49,7 +49,7 @@
 		<div class="lg:col-span-3">
 			<x-admin.filter-input
 				label="Поиск по логину"
-				placeholder="login contains..."
+				placeholder="логин содержит..."
 				icon="search"
 				wire:model.live="q"
 			/>
@@ -58,17 +58,17 @@
 		<div class="lg:col-span-2">
 			<div class="flex items-end gap-2">
 				<div class="flex-1">
-					<x-admin.filter-input label="Extend days" type="number" min="1" wire:model="extendDays" />
+					<x-admin.filter-input label="Продлить на дней" type="number" min="1" wire:model="extendDays" />
 				</div>
 				<x-admin.button variant="secondary" size="sm" wire:click="extendDeadline">
-					Extend
+					Продлить
 				</x-admin.button>
 			</div>
 		</div>
 
 		<div class="lg:col-span-2">
 			<x-admin.button variant="secondary" size="sm" wire:click="releaseToPool" class="w-full">
-				Release to pool
+				Вернуть в пул
 			</x-admin.button>
 		</div>
 
@@ -79,24 +79,17 @@
 						<button class="rounded-xl px-3 py-2 text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 							type="button"
 							wire:click="setStatus('{{ $s }}')">
-							Set {{ $s }}
+							Установить {{ $s }}
 						</button>
 					@endforeach
 				</div>
-			</div>
-		</div>
-
-		<div class="lg:col-span-12 flex items-center justify-between gap-2 pt-1">
-			<div class="text-xs text-slate-500 flex items-center gap-2">
-				<x-admin.icon name="filter" class="h-4 w-4" />
-				<span>Extend deadline applies only to STOLEN. Release to pool clears assignment/deadline/flags and sets ACTIVE.</span>
 			</div>
 		</div>
 	</x-admin.filters-bar>
 
 	<x-admin.card>
 		<x-admin.table-toolbar :density="($density ?? 'normal')" :showDensity="true">
-			<x-admin.button variant="secondary" size="sm" wire:click="releaseToPool">Release</x-admin.button>
+			<x-admin.button variant="secondary" size="sm" wire:click="releaseToPool">Вернуть</x-admin.button>
 		</x-admin.table-toolbar>
 
 		<x-admin.table :density="($density ?? 'normal')" :sticky="true">
@@ -108,9 +101,9 @@
 					<x-admin.th>Платформа</x-admin.th>
 					<x-admin.th>Логин</x-admin.th>
 					<x-admin.th>Статус</x-admin.th>
-					<x-admin.th>Assigned</x-admin.th>
-					<x-admin.th>Deadline</x-admin.th>
-					<x-admin.th align="right">Action</x-admin.th>
+					<x-admin.th>Назначен</x-admin.th>
+					<x-admin.th>Дедлайн</x-admin.th>
+					<x-admin.th align="right">Действие</x-admin.th>
 				</tr>
 			</x-slot:head>
 
@@ -148,13 +141,13 @@
 					<x-admin.td align="right">
 						<a class="text-sm font-semibold text-slate-900 hover:text-slate-700 underline"
 							href="{{ route('admin.accounts.show', $row) }}">
-							Open
+							Открыть
 						</a>
 					</x-admin.td>
 				</tr>
 			@empty
 				<tr>
-					<td class="px-4 py-10 text-center text-slate-500" colspan="9">No rows</td>
+					<td class="px-4 py-10 text-center text-slate-500" colspan="9">Записей нет</td>
 				</tr>
 			@endforelse
 		</x-admin.table>

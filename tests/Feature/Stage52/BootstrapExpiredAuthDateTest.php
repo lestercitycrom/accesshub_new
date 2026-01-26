@@ -23,5 +23,5 @@ it('rejects expired auth_date when verification enabled', function (): void {
 	]);
 
 	$response->assertStatus(403);
-	$response->assertSeeText('auth_date expired');
+	$response->assertSeeText('auth_date истёк.');
 })->group('Stage52');

@@ -77,15 +77,29 @@ final class WebhookController
 
 	private function upsertTelegramUser(IncomingUpdate $update): void
 	{
-		TelegramUser::query()->updateOrCreate(
-			['telegram_id' => (int) $update->telegramId],
-			[
+		$telegramId = (int) $update->telegramId;
+
+		$user = TelegramUser::query()
+			->where('telegram_id', $telegramId)
+			->first();
+
+		if ($user) {
+			$user->update([
 				'username' => $update->username,
 				'first_name' => $update->firstName,
 				'last_name' => $update->lastName,
-				'role' => \App\Domain\Telegram\Enums\TelegramRole::OPERATOR,
-				'is_active' => true,
-			]
-		);
+			]);
+
+			return;
+		}
+
+		TelegramUser::query()->create([
+			'telegram_id' => $telegramId,
+			'username' => $update->username,
+			'first_name' => $update->firstName,
+			'last_name' => $update->lastName,
+			'role' => \App\Domain\Telegram\Enums\TelegramRole::OPERATOR,
+			'is_active' => false,
+		]);
 	}
 }

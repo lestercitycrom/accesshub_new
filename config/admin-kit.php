@@ -17,12 +17,11 @@ return [
 	 * Each item: ['label' => 'Accounts', 'route' => 'admin.accounts.index']
 	 */
 	'nav' => [
-		['label' => 'Dashboard', 'route' => 'admin.dashboard'],
-		['label' => 'Accounts', 'route' => 'admin.accounts.index', 'icon' => 'users'],
-		['label' => 'Telegram Users', 'route' => 'admin.telegram-users.index', 'icon' => 'message-circle'],
-		['label' => 'Problems', 'route' => 'admin.problems.index', 'icon' => 'alert-triangle'],
-		['label' => 'Import', 'route' => 'admin.import.accounts', 'icon' => 'upload'],
-		['label' => 'Logs', 'route' => 'admin.issuances.index', 'icon' => 'file-text'],
-		['label' => 'Settings', 'route' => 'admin.settings.index', 'icon' => 'settings'],
+		['label' => 'Панель', 'route' => 'admin.dashboard'],
+		['label' => 'Аккаунты', 'route' => 'admin.accounts.index', 'icon' => 'users'],
+		['label' => 'Пользователи Telegram', 'route' => 'admin.telegram-users.index', 'icon' => 'message-circle'],
+		['label' => 'Проблемные', 'route' => 'admin.problems.index', 'icon' => 'alert-triangle'],
+		['label' => 'Логи', 'route' => 'admin.issuances.index', 'icon' => 'file-text'],
+		['label' => 'Настройки', 'route' => 'admin.settings.index', 'icon' => 'settings'],
 	],
 ];

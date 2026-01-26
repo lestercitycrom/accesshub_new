@@ -1,15 +1,15 @@
-<div class="space-y-6">
+﻿<div class="space-y-6">
 	<x-admin.page-header
 		title="Пользователи Telegram"
-		subtitle="Управление операторами/админами и их активностью."
+		subtitle="Справочник операторов/админов и их идентификаторы. Управляйте доступами и ролями."
 	>
 		<x-admin.page-actions primaryLabel="Добавить" primaryIcon="user-plus" :primaryHref="route('admin.telegram-users.create')">
-			<x-admin.button variant="secondary" size="sm" wire:click="$refresh">
-				<span class="inline-flex items-center gap-2">
-					<x-admin.icon name="refresh" class="h-4 w-4" />
-					Refresh
-				</span>
-			</x-admin.button>
+				<x-admin.button variant="secondary" size="sm" wire:click="$refresh">
+					<span class="inline-flex items-center gap-2">
+						<x-admin.icon name="refresh" class="h-4 w-4" />
+						Обновить
+					</span>
+				</x-admin.button>
 		</x-admin.page-actions>
 	</x-admin.page-header>
 
@@ -17,7 +17,7 @@
 		<div class="lg:col-span-4">
 			<x-admin.filter-input
 				label="Поиск"
-				placeholder="username / name / telegram id..."
+				placeholder="username / имя / telegram id..."
 				icon="search"
 				wire:model.live="q"
 			/>
@@ -25,11 +25,11 @@
 
 		<div class="lg:col-span-8 flex items-end gap-2">
 			<x-admin.button variant="secondary" size="sm" wire:click="toggleActive(true)">
-				Activate
+				Активировать выбранных
 			</x-admin.button>
 
 			<x-admin.button variant="secondary" size="sm" wire:click="toggleActive(false)">
-				Deactivate
+				Отключить выбранных
 			</x-admin.button>
 
 			<x-admin.button variant="ghost" size="sm" wire:click="setRole('operator')">
@@ -41,14 +41,7 @@
 			</x-admin.button>
 
 			<div class="ml-2 text-xs text-slate-500">
-				Selected: <span class="font-semibold text-slate-700">{{ is_array($selected ?? null) ? count($selected) : 0 }}</span>
-			</div>
-		</div>
-
-		<div class="lg:col-span-12 flex items-center justify-between gap-2 pt-1">
-			<div class="text-xs text-slate-500 flex items-center gap-2">
-				<x-admin.icon name="filter" class="h-4 w-4" />
-				<span>Filters apply instantly.</span>
+				Выбрано: <span class="font-semibold text-slate-700">{{ is_array($selected ?? null) ? count($selected) : 0 }}</span>
 			</div>
 		</div>
 	</x-admin.filters-bar>
@@ -67,8 +60,8 @@
 					<x-admin.th>Telegram ID</x-admin.th>
 					<x-admin.th>Пользователь</x-admin.th>
 					<x-admin.th>Роль</x-admin.th>
-					<x-admin.th>Активен</x-admin.th>
-					<x-admin.th align="right" class="w-20">Action</x-admin.th>
+					<x-admin.th>Статус</x-admin.th>
+					<x-admin.th align="right" class="w-20">Действия</x-admin.th>
 				</tr>
 			</x-slot:head>
 
@@ -99,9 +92,9 @@
 
 					<x-admin.td>
 						@if((bool) ($row->is_active ?? false))
-							<x-admin.badge variant="green">yes</x-admin.badge>
+							<x-admin.badge variant="green">Активен</x-admin.badge>
 						@else
-							<x-admin.badge variant="red">no</x-admin.badge>
+							<x-admin.badge variant="red">Отключен</x-admin.badge>
 						@endif
 					</x-admin.td>
 
@@ -114,7 +107,7 @@
 			@empty
 				<tr>
 					<x-admin.td colspan="6" class="text-center py-10 text-slate-500">
-						No users found
+						Пользователи не найдены
 					</x-admin.td>
 				</tr>
 			@endforelse
@@ -124,6 +117,6 @@
 			<div class="pt-3">
 				{{ $rows->links() }}
 			</div>
-		@endif>
+		@endif
 	</x-admin.card>
 </div>

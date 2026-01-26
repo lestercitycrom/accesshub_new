@@ -1,8 +1,8 @@
-<div class="space-y-6">
+﻿<div class="space-y-6">
 	<x-admin.page-header
 		title="Поиск аккаунтов"
 		subtitle="Поиск аккаунтов по различным критериям."
-		:meta="'<span class=&quot;font-semibold text-slate-700&quot;>Tip:</span> Используйте фильтры для быстрого поиска нужных аккаунтов.'"
+		:meta="'<span class=&quot;font-semibold text-slate-700&quot;>Подсказка:</span> Используйте фильтры для быстрого поиска нужных аккаунтов.'"
 	>
 		<x-admin.page-actions primaryLabel="Создать" primaryIcon="plus" :primaryHref="route('admin.accounts.create')" />
 	</x-admin.page-header>
@@ -19,61 +19,54 @@
 
 	<div class="lg:col-span-2">
 		<x-admin.filter-select label="Статус" icon="list" wire:model.live="statusFilter">
-			<option value="">All</option>
+			<option value="">Любой</option>
 			@foreach($statusOptions as $status)
 				<option value="{{ $status }}">{{ $status }}</option>
-			@endforeach>
+			@endforeach
 		</x-admin.filter-select>
 	</div>
 
 	<div class="lg:col-span-2">
 		<x-admin.filter-select label="Игра" icon="database" wire:model.live="gameFilter">
-			<option value="">All</option>
+			<option value="">Любая</option>
 			@foreach($gameOptions as $game)
 				<option value="{{ $game }}">{{ $game }}</option>
-			@endforeach>
+			@endforeach
 		</x-admin.filter-select>
 	</div>
 
 	<div class="lg:col-span-2">
 		<x-admin.filter-select label="Платформа" icon="database" wire:model.live="platformFilter">
-			<option value="">All</option>
+			<option value="">Любая</option>
 			@foreach($platformOptions as $platform)
 				<option value="{{ $platform }}">{{ $platform }}</option>
-			@endforeach>
+			@endforeach
 		</x-admin.filter-select>
 	</div>
 
 	<div class="lg:col-span-2">
-		<x-admin.filter-select label="Assigned" icon="users" wire:model.live="assignedFilter">
-			<option value="">All</option>
-			<option value="1">Assigned</option>
-			<option value="0">Not assigned</option>
+		<x-admin.filter-select label="Назначен" icon="users" wire:model.live="assignedFilter">
+			<option value="">Любой</option>
+			<option value="1">Да</option>
+			<option value="0">Нет</option>
 		</x-admin.filter-select>
 	</div>
 
-	<div class="lg:col-span-12 flex items-center justify-between gap-2 pt-1">
-		<div class="text-xs text-slate-500 flex items-center gap-2">
-			<x-admin.icon name="filter" class="h-4 w-4" />
-			<span>Filters apply instantly.</span>
-		</div>
+	<div class="lg:col-span-12 flex items-center justify-end gap-2 pt-1">
+		<x-admin.button variant="secondary" size="sm" wire:click="$refresh">
+			<span class="inline-flex items-center gap-2">
+				<x-admin.icon name="refresh" class="h-4 w-4" />
+				Обновить
+			</span>
+		</x-admin.button>
 
-		<div class="flex items-center gap-2">
-			<x-admin.button variant="secondary" size="sm" wire:click="$refresh">
-				<span class="inline-flex items-center gap-2">
-					<x-admin.icon name="refresh" class="h-4 w-4" />
-					Refresh
-				</span>
-			</x-admin.button>
-
-			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800"
-				href="{{ route('admin.accounts.create') }}">
-				<span class="inline-flex items-center gap-2">
-					<x-admin.icon name="plus" class="h-4 w-4" />
-					Создать
-				</span>
-			</a>
-		</div>
+		<a class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800"
+			href="{{ route('admin.accounts.create') }}">
+			<span class="inline-flex items-center gap-2">
+				<x-admin.icon name="plus" class="h-4 w-4" />
+				Создать
+			</span>
+		</a>
 	</div>
 </x-admin.filters-bar>
 
@@ -90,7 +83,7 @@
 					<x-admin.th>Игра</x-admin.th>
 					<x-admin.th>Платформа</x-admin.th>
 					<x-admin.th>Статус</x-admin.th>
-					<x-admin.th>Assigned To</x-admin.th>
+					<x-admin.th>Назначен</x-admin.th>
 					<x-admin.th align="right">Действия</x-admin.th>
 				</tr>
 			</x-slot:head>
@@ -119,7 +112,7 @@
 				</tr>
 			@empty
 				<tr>
-					<td class="px-4 py-10 text-center text-slate-500" colspan="7">No accounts found</td>
+					<td class="px-4 py-10 text-center text-slate-500" colspan="7">Аккаунты не найдены</td>
 				</tr>
 			@endforelse
 		</x-admin.table>

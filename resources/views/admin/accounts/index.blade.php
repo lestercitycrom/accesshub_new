@@ -1,21 +1,21 @@
-@php
-	$activeFilters = 0;
-	$activeFilters += !empty($q) ? 1 : 0;
-	$activeFilters += !empty($gameFilter) ? 1 : 0;
-	$activeFilters += !empty($platformFilter) ? 1 : 0;
-	$activeFilters += !empty($statusFilter) ? 1 : 0;
-@endphp
+﻿<div class="space-y-6">
+	@php
+		$activeFilters = 0;
+		$activeFilters += !empty($q) ? 1 : 0;
+		$activeFilters += !empty($gameFilter) ? 1 : 0;
+		$activeFilters += !empty($platformFilter) ? 1 : 0;
+		$activeFilters += !empty($statusFilter) ? 1 : 0;
+	@endphp
 
-<div class="space-y-6">
 	<x-admin.page-header
 		title="Аккаунты"
 		subtitle="Поиск, фильтры, быстрый доступ к карточке и экспорт."
-		:meta="'<span class=&quot;font-semibold text-slate-700&quot;>Подсказка:</span> используйте глобальный поиск сверху для быстрого поиска.'"
+		:meta="'<span class=&quot;font-semibold text-slate-700&quot;>Подсказка:</span> Используйте глобальный поиск сверху для быстрого поиска.'"
 	>
 		<x-admin.page-actions primaryLabel="Создать" primaryIcon="database" :primaryHref="route('admin.accounts.create')">
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 				href="{{ route('admin.account-lookup') }}">
-				Lookup
+				Поиск
 			</a>
 
 			@if(isset($exportUrl))
@@ -24,6 +24,16 @@
 					Экспорт CSV
 				</a>
 			@endif
+
+			<form method="POST" action="{{ route('admin.accounts.import') }}" enctype="multipart/form-data" class="inline-flex items-center gap-2">
+				@csrf
+				<input id="accountsImportFile" name="file" type="file" accept=".csv,.txt" class="hidden"
+					onchange="this.form.submit()">
+
+				<label for="accountsImportFile" class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer">
+					Import CSV
+				</label>
+			</form>
 		</x-admin.page-actions>
 
 		<x-slot:breadcrumbs>
@@ -35,13 +45,15 @@
 
 	@if(session('status'))
 		<x-admin.alert variant="success" :message="session('status')" />
+	@elseif($alertMessage ?? null)
+		<x-admin.alert variant="success" :message="$alertMessage" />
 	@endif
 
 	<x-admin.filters-bar>
 		<div class="lg:col-span-3">
 			<x-admin.filter-input
 				label="Поиск"
-				placeholder="login contains..."
+				placeholder="логин содержит..."
 				icon="search"
 				wire:model.live="q"
 			/>
@@ -50,7 +62,7 @@
 		<div class="lg:col-span-2">
 			<x-admin.filter-input
 				label="Игра"
-				placeholder="cs2 / minecraft..."
+				placeholder="cs2 / minecraft"
 				icon="database"
 				wire:model.live="gameFilter"
 			/>
@@ -59,7 +71,7 @@
 		<div class="lg:col-span-2">
 			<x-admin.filter-input
 				label="Платформа"
-				placeholder="steam / xbox..."
+				placeholder="steam / xbox"
 				icon="database"
 				wire:model.live="platformFilter"
 			/>
@@ -67,22 +79,15 @@
 
 		<div class="lg:col-span-2">
 			<x-admin.filter-select label="Статус" icon="list" wire:model.live="statusFilter">
-				<option value="">Any</option>
+				<option value="">Любой</option>
 				@foreach($statusOptions as $s)
 					<option value="{{ $s }}">{{ $s }}</option>
-				@endforeach>
+				@endforeach
 			</x-admin.filter-select>
 		</div>
 
 		<div class="lg:col-span-3 flex items-end gap-2">
-			<x-admin.button variant="secondary" size="sm" wire:click="clearFilters">Clear</x-admin.button>
-		</div>
-
-		<div class="lg:col-span-12 flex items-center justify-between gap-2 pt-1">
-			<div class="text-xs text-slate-500 flex items-center gap-2">
-				<x-admin.icon name="filter" class="h-4 w-4" />
-				<span>Filters work on top of login search.</span>
-			</div>
+			<x-admin.button variant="secondary" size="sm" wire:click="clearFilters">Сброс</x-admin.button>
 		</div>
 	</x-admin.filters-bar>
 
@@ -95,9 +100,9 @@
 					<x-admin.th>Платформа</x-admin.th>
 					<x-admin.th>Логин</x-admin.th>
 					<x-admin.th>Статус</x-admin.th>
-					<x-admin.th>Assigned</x-admin.th>
-					<x-admin.th>Deadline</x-admin.th>
-					<x-admin.th align="right">Action</x-admin.th>
+					<x-admin.th>Назначен</x-admin.th>
+					<x-admin.th>Дедлайн</x-admin.th>
+					<x-admin.th align="right">Действия</x-admin.th>
 				</tr>
 			</x-slot:head>
 
@@ -132,16 +137,24 @@
 						@endif
 					</x-admin.td>
 
-					<x-admin.td align="right" class="w-20">
+					<x-admin.td align="right" class="w-28">
 						<x-admin.table-actions
 							:viewHref="route('admin.accounts.show', $row)"
 							:editHref="route('admin.accounts.edit', $row)"
-						/>
+						>
+							<x-admin.icon-button
+								icon="trash"
+								title="Удалить"
+								variant="danger"
+								wire:click="deleteAccount({{ $row->id }})"
+								onclick="if(!confirm('Удалить аккаунт #{{ $row->id }}?')){event.preventDefault();event.stopImmediatePropagation();}"
+							/>
+						</x-admin.table-actions>
 					</x-admin.td>
 				</tr>
 			@empty
 				<tr>
-					<td class="px-4 py-10 text-center text-slate-500" colspan="8">No accounts found</td>
+					<td class="px-4 py-10 text-center text-slate-500" colspan="8">Аккаунты не найдены</td>
 				</tr>
 			@endforelse
 		</x-admin.table>

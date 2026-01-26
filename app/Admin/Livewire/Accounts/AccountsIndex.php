@@ -21,6 +21,7 @@ final class AccountsIndex extends Component
 	public string $platformFilter = '';
 	public array $selected = [];
 	public string $density = 'normal';
+	public ?string $alertMessage = null;
 
 	public function mount(): void
 	{
@@ -74,7 +75,23 @@ final class AccountsIndex extends Component
 		$this->statusFilter = '';
 		$this->gameFilter = '';
 		$this->platformFilter = '';
+		$this->alertMessage = null;
 		$this->resetPage();
+	}
+
+	public function deleteAccount(int $accountId): void
+	{
+		Gate::authorize('admin');
+
+		$account = Account::query()->find($accountId);
+		if ($account === null) {
+			return;
+		}
+
+		$account->delete();
+
+		$this->selected = array_values(array_filter($this->selected, fn ($id) => (int) $id !== $accountId));
+		$this->alertMessage = 'Аккаунт удалён.';
 	}
 
 	/**

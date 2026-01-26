@@ -1,11 +1,11 @@
-<div class="space-y-6">
+﻿<div class="space-y-6">
 	<div class="flex flex-wrap items-start justify-between gap-3">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight text-slate-900">
-				{{ $isEdit ? 'Редактировать аккаунт' : 'Создать аккаунт' }}
+				{{ $isEdit ? 'Редактирование аккаунта' : 'Создание аккаунта' }}
 			</h1>
 			<p class="text-sm text-slate-500">
-				{{ $isEdit ? 'Обновление данных аккаунта.' : 'Создание нового аккаунта.' }}
+				{{ $isEdit ? 'Обновите данные аккаунта и сохраните изменения.' : 'Заполните данные для нового аккаунта.' }}
 			</p>
 		</div>
 
@@ -13,13 +13,13 @@
 			@if($isEdit && isset($account))
 				<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 					href="{{ route('admin.accounts.show', $account) }}">
-					Open
+					Открыть
 				</a>
 			@endif
 
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 				href="{{ route('admin.accounts.index') }}">
-				Назад
+				К списку
 			</a>
 		</div>
 	</div>
@@ -32,7 +32,7 @@
 
 	@if($errors->any())
 		<div class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
-			<div class="font-semibold">Validation errors</div>
+			<div class="font-semibold">Ошибки валидации</div>
 			<ul class="mt-2 list-disc pl-5 space-y-1">
 				@foreach($errors->all() as $err)
 					<li class="text-xs">{{ $err }}</li>
@@ -44,7 +44,7 @@
 	<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 		<!-- Main -->
 		<div class="lg:col-span-2 space-y-6">
-			<x-admin.card title="Main">
+			<x-admin.card title="Основное">
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<x-admin.input
 						label="Игра"
@@ -82,21 +82,21 @@
 						<x-admin.input
 							label="Пароль"
 							type="text"
-							placeholder="{{ $isEdit ? 'leave blank to keep current (optional)' : 'password' }}"
+							placeholder="{{ $isEdit ? 'оставьте пустым, чтобы не менять пароль' : 'введите пароль' }}"
 							name="password"
 							:value="old('password', $password ?? '')"
 							wire:model="password"
 							:error="$errors->first('password')"
-							hint="{{ $isEdit ? 'Если оставить пустым — пароль не изменится.' : 'Пароль будет сохранён как есть.' }}"
+							hint="{{ $isEdit ? 'При сохранении пароль будет обновлён и зашифрован.' : 'Пароль будет зашифрован при сохранении.' }}"
 						/>
 					</div>
 				</div>
 			</x-admin.card>
 
-			<x-admin.card title="Meta">
+			<x-admin.card title="Доп. данные">
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<x-admin.input
-						label="Email login"
+						label="Почта: логин"
 						type="text"
 						placeholder="email@example.com"
 						wire:model="metaEmailLogin"
@@ -104,16 +104,16 @@
 					/>
 
 					<x-admin.input
-						label="Email password"
+						label="Почта: пароль"
 						type="text"
-						placeholder="email password"
+						placeholder="пароль почты"
 						wire:model="metaEmailPassword"
 						:error="$errors->first('metaEmailPassword')"
 					/>
 				</div>
 
 				<p class="mt-3 text-xs text-slate-500">
-					Meta — опционально. Можно не заполнять, если не нужно.
+					Доп. данные сохраняются в meta. Поля не обязательны, можно оставить пустыми.
 				</p>
 			</x-admin.card>
 		</div>
@@ -134,9 +134,9 @@
 					</div>
 
 					<x-admin.input
-						label="Assigned to telegram_id"
+						label="Назначен telegram_id"
 						type="number"
-						placeholder="optional"
+						placeholder="необязательно"
 						wire:model="assignedToTelegramId"
 						:error="$errors->first('assignedToTelegramId')"
 					/>
@@ -146,14 +146,14 @@
 						<input type="datetime-local" wire:model="statusDeadlineAt"
 							class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
 						@error('statusDeadlineAt') <div class="text-xs font-medium text-rose-600">{{ $message }}</div> @enderror
-						<div class="text-xs text-slate-500">Опционально. Для STOLEN/RECOVERY чаще используется.</div>
+						<div class="text-xs text-slate-500">Дедлайн обязателен. Для STOLEN/RECOVERY нужно указывать дедлайн.</div>
 					</div>
 				</div>
 			</x-admin.card>
 
-			<x-admin.card title="Flags">
+			<x-admin.card title="Флаги">
 				<div class="space-y-3">
-					<label class="text-xs font-semibold text-slate-700">Flags</label>
+					<label class="text-xs font-semibold text-slate-700">Проблемные метки</label>
 
 					<div class="space-y-2">
 						<label class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
@@ -168,7 +168,7 @@
 					</div>
 
 					<p class="text-xs text-slate-500">
-						Флаги используются для подсказок оператору/боту.
+						Флаги помечают аккаунт как проблемный и блокируют выдачу до решения проблемы.
 					</p>
 				</div>
 			</x-admin.card>
@@ -185,7 +185,7 @@
 				</div>
 
 				<p class="mt-3 text-xs text-slate-500">
-					Сохранение выполнит create/update. Ошибки будут показаны сверху.
+					Сохранение применяется сразу. Проверьте данные перед сохранением.
 				</p>
 			</x-admin.card>
 		</div>

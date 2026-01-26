@@ -1,322 +1,608 @@
-<div class="mx-auto max-w-3xl p-4 space-y-6">
-		<header class="space-y-1">
-			<h1 class="text-xl font-semibold">AccessHub WebApp</h1>
-			<p class="text-sm text-gray-600">
-				Открой в Telegram для авторизации. В dev можно включить ручной bootstrap.
-			</p>
-		</header>
+﻿<x-layouts.webapp>
+<div class="app-shell">
 
-		<div class="rounded-lg bg-white p-4 shadow-sm space-y-2">
-			<div class="text-sm text-gray-700">
-				@if($isBootstrapped)
-					<span class="font-medium">Статус:</span> <span class="text-green-700">Готово</span>
-				@else
-					<span class="font-medium">Статус:</span> <span class="text-amber-700">Не инициализировано</span>
-				@endif
-			</div>
-
-			<div id="bootstrapStatus" class="text-sm text-gray-600"></div>
-
-			@if(!$isBootstrapped)
-				<div class="text-xs text-gray-500">
-					Подсказка: если открыто не в Telegram — нажми «Тестовый bootstrap» (только в dev).
-				</div>
-			@endif
+	<div class="tabs-rail">
+		<div class="tabs-wrap">
+			<ul class="nav nav-tabs">
+				<li class="nav-item">
+					<button id="tabIssue" class="nav-link active" type="button">Выдача</button>
+				</li>
+				<li class="nav-item">
+					<button id="tabHistory" class="nav-link" type="button">История</button>
+				</li>
+			</ul>
 		</div>
+	</div>
 
-		<nav class="flex gap-2">
-			<button
-				type="button"
-				class="rounded-md px-3 py-2 text-sm border border-gray-300 hover:bg-gray-100 {{ $tab === 'issue' ? 'bg-gray-100' : '' }}"
-				wire:click="setTab('issue')"
-			>
-				Выдача
-			</button>
-
-			<button
-				type="button"
-				class="rounded-md px-3 py-2 text-sm border border-gray-300 hover:bg-gray-100 {{ $tab === 'history' ? 'bg-gray-100' : '' }}"
-				wire:click="setTab('history')"
-			>
-				История
-			</button>
-		</nav>
-
-		@if($tab === 'issue')
-			<section class="rounded-lg bg-white p-4 shadow-sm space-y-4">
-				<h2 class="text-base font-semibold">Выдача</h2>
-
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-				<div class="space-y-1">
-					<label class="text-sm font-medium">Номер заказа</label>
-					<input class="w-full rounded-md border-gray-300" type="text" wire:model="orderId">
+	<div class="tab-content">
+		<div id="issueSection" class="tab-pane show active">
+			<div class="card-panel">
+				<div class="tab-header">
+					<div class="tab-icon-wrap">🎮</div>
+					<h2 class="tab-title">Выдача</h2>
+					<div class="tab-subtitle">Заявка и быстрый доступ к аккаунтам</div>
 				</div>
 
-				<div class="space-y-1">
-					<label class="text-sm font-medium">Количество</label>
-					<input class="w-full rounded-md border-gray-300" type="number" min="1" max="2" wire:model="qty">
-				</div>
-
-				<div class="space-y-1">
-					<label class="text-sm font-medium">Платформа</label>
-					<input class="w-full rounded-md border-gray-300" type="text" wire:model="platform">
-				</div>
-
-				<div class="space-y-1">
-					<label class="text-sm font-medium">Игра</label>
-					<input class="w-full rounded-md border-gray-300" type="text" wire:model="game">
-				</div>
-			</div>
-
-				<div class="flex items-center gap-2">
-					<button
-						class="rounded-md bg-black px-4 py-2 text-white hover:opacity-90"
-						type="button"
-						wire:click="issue"
-					>
-						Выдать
-					</button>
-
-					@if($canDevBootstrap)
-						<button
-							id="devBootstrapBtn"
-							class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
-							type="button"
-						>
-							Тестовый bootstrap
-						</button>
-					@endif
-				</div>
-
-				@if($resultText)
-					<pre class="whitespace-pre-wrap rounded-md bg-gray-100 p-3 text-sm">{{ $resultText }}</pre>
-				@endif
-			</section>
-		@endif
-
-		@if($tab === 'history')
-			<section class="rounded-lg bg-white p-4 shadow-sm space-y-3">
-				<h2 class="text-base font-semibold">История (последние 20)</h2>
-
-				@if($resultText)
-					<pre class="whitespace-pre-wrap rounded-md bg-gray-100 p-3 text-sm">{{ $resultText }}</pre>
-				@endif
-
-				<div class="overflow-x-auto">
-					<table class="min-w-full text-sm">
-						<thead>
-							<tr class="text-left text-gray-600">
-								<th class="py-2 pr-3">Выдано</th>
-								<th class="py-2 pr-3">Заказ</th>
-								<th class="py-2 pr-3">Игра</th>
-								<th class="py-2 pr-3">Платформа</th>
-								<th class="py-2 pr-3">Кол-во</th>
-								<th class="py-2 pr-3">Аккаунт</th>
-								<th class="py-2 pr-3">Действия</th>
-							</tr>
-						</thead>
-						<tbody>
-							@forelse($history as $row)
-								@php
-									$accountId = (int) $row->account_id;
-								@endphp
-								<tr class="border-t align-top">
-									<td class="py-2 pr-3">{{ $row->issued_at?->format('Y-m-d H:i') }}</td>
-									<td class="py-2 pr-3">{{ $row->order_id }}</td>
-									<td class="py-2 pr-3">{{ $row->game }}</td>
-									<td class="py-2 pr-3">{{ $row->platform }}</td>
-									<td class="py-2 pr-3">{{ $row->qty }}</td>
-									<td class="py-2 pr-3">
-										<div class="text-xs text-gray-600">#{{ $accountId }}</div>
-										<div class="text-xs text-gray-500">Последнее событие: {{ $this->lastEventTypeFor($accountId) ?? '-' }}</div>
-									</td>
-									<td class="py-2 pr-3 space-y-2">
-										<div class="flex flex-wrap gap-2">
-											<button
-												type="button"
-												class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
-												wire:click="markProblem({{ $accountId }}, 'wrong_password')"
-											>
-												Неверный пароль
-											</button>
-
-											<button
-												type="button"
-												class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
-												wire:click="markProblem({{ $accountId }}, 'stolen')"
-											>
-												Украден
-											</button>
-
-											<button
-												type="button"
-												class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
-												wire:click="markProblem({{ $accountId }}, 'temp_hold')"
-											>
-												Врем. проблема
-											</button>
-
-											<button
-												type="button"
-												class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
-												wire:click="markProblem({{ $accountId }}, 'dead')"
-											>
-												Мёртвый
-											</button>
-
-											<button
-												type="button"
-												class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
-												wire:click="openPasswordForm({{ $accountId }}, 'update')"
-											>
-												Обновить пароль
-											</button>
-										</div>
-
-										@if($passwordAccountId === $accountId)
-											<div class="rounded-md bg-gray-50 p-2 space-y-2">
-												<div class="text-xs text-gray-600">
-													Новый пароль для аккаунта #{{ $accountId }}
-													@if($passwordMode === 'recover_stolen')
-														<span class="text-amber-700">(восстановить STOLEN)</span>
-													@endif
-												</div>
-
-												<input
-													class="w-full rounded-md border-gray-300 text-sm"
-													type="text"
-													wire:model="newPassword"
-													placeholder="Новый пароль"
-												>
-
-												<div class="flex gap-2">
-													<button
-														type="button"
-														class="rounded-md bg-black px-3 py-1 text-xs text-white hover:opacity-90"
-														wire:click="submitPassword"
-													>
-														Сохранить
-													</button>
-
-													<button
-														type="button"
-														class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-100"
-														wire:click="cancelPasswordForm"
-													>
-														Отмена
-													</button>
-												</div>
-											</div>
-										@endif
-									</td>
-								</tr>
-							@empty
-								<tr class="border-t">
-									<td class="py-3 text-gray-500" colspan="7">Нет данных</td>
-								</tr>
-							@endforelse
-						</tbody>
-					</table>
-				</div>
-
-				@if($stolenAccounts->count() > 0)
-					<div class="pt-4">
-						<h3 class="text-sm font-semibold">STOLEN аккаунты, закреплённые за вами</h3>
-
-						<div class="overflow-x-auto">
-							<table class="min-w-full text-sm">
-								<thead>
-									<tr class="text-left text-gray-600">
-										<th class="py-2 pr-3">Аккаунт</th>
-										<th class="py-2 pr-3">Логин</th>
-										<th class="py-2 pr-3">Дедлайн</th>
-										<th class="py-2 pr-3">Действия</th>
-									</tr>
-								</thead>
-								<tbody>
-									@foreach($stolenAccounts as $stolen)
-										<tr class="border-t align-top">
-											<td class="py-2 pr-3">#{{ $stolen->id }}</td>
-											<td class="py-2 pr-3"><code>{{ $stolen->login }}</code></td>
-											<td class="py-2 pr-3">{{ $stolen->status_deadline_at?->format('Y-m-d H:i') ?? '-' }}</td>
-											<td class="py-2 pr-3 space-y-2">
-												<div class="flex flex-wrap gap-2">
-													<button
-														type="button"
-														class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
-														wire:click="openPasswordForm({{ $stolen->id }}, 'recover_stolen')"
-													>
-														Восстановлен
-													</button>
-
-													<button
-														type="button"
-														class="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
-														wire:click="postponeStolen({{ $stolen->id }})"
-													>
-														Перенести на 1 день
-													</button>
-												</div>
-											</td>
-										</tr>
-									@endforeach
-								</tbody>
-							</table>
+				<div class="card-section">
+					<div id="moderationNotice" class="alert alert-warning d-none">
+						Ваш аккаунт на модерации. Доступ появится после подтверждения админом.
+					</div>
+					<div class="row g-2">
+						<div class="col-12">
+							<label class="form-label" for="orderId">Номер заказа</label>
+							<input id="orderId" class="form-control" type="text" placeholder="Номер заказа">
+						</div>
+						<div class="col-6">
+							<label class="form-label" for="qty">Количество</label>
+							<input id="qty" class="form-control" type="number" min="1" max="2" placeholder="Количество" value="1">
+						</div>
+						<div class="col-6">
+							<label class="form-label" for="platform">Платформа</label>
+							<input id="platform" class="form-control" type="text" placeholder="steam / xbox" value="steam">
+						</div>
+						<div class="col-12">
+							<label class="form-label" for="game">Игра</label>
+							<input id="game" class="form-control" type="text" placeholder="cs2 / minecraft" value="cs2">
 						</div>
 					</div>
-				@endif
-			</section>
-		@endif
+
+					<div class="d-flex flex-wrap gap-2 mt-3">
+						<button id="issueBtn" class="btn btn-primary" type="button">Выдать</button>
+					</div>
+				</div>
+
+				<div id="issueResult" class="card-section d-none">
+					<pre id="issueResultText" class="codebox"></pre>
+				</div>
+			</div>
+		</div>
+
+		<div id="historySection" class="tab-pane" style="display:none;">
+			<div class="card-panel">
+				<div class="tab-header">
+					<div class="tab-icon-wrap">🧾</div>
+					<h2 class="tab-title">История</h2>
+					<div class="tab-subtitle">Последние выдачи и действия</div>
+				</div>
+
+				<div class="card-section">
+					<div class="d-flex align-items-center gap-2 mb-2 history-controls">
+						<button id="refreshHistoryBtn" class="btn btn-outline-secondary btn-sm" type="button">Обновить</button>
+						<span id="historyStatus" class="small text-muted"></span>
+						<div class="ms-auto d-flex align-items-center gap-2">
+							<span class="small text-muted">Лимит</span>
+							<select id="historyLimit" class="form-select form-select-sm">
+								<option value="20">20</option>
+								<option value="50">50</option>
+								<option value="100">100</option>
+							</select>
+						</div>
+					</div>
+					<div id="historyList" class="list-stack">
+						<div class="list-empty">Нет данных</div>
+					</div>
+					<div class="d-flex align-items-center justify-content-between mt-3">
+						<div id="historyCount" class="small text-muted"></div>
+						<div class="d-flex align-items-center gap-2">
+							<button id="historyPrev" class="btn btn-outline-secondary btn-sm" type="button">Назад</button>
+							<span id="historyPageInfo" class="small text-muted">Стр. 1/1</span>
+							<button id="historyNext" class="btn btn-outline-secondary btn-sm" type="button">Вперед</button>
+						</div>
+					</div>
+				</div>
+
+				<div class="card-section">
+					<div class="fw-semibold mb-2">STOLEN аккаунты, закреплённые за вами</div>
+					<div id="stolenList" class="list-stack">
+						<div class="list-empty">Нет данных</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
+</div>
+
+<div id="copyright" class="text-center small my-3">@accesshub_123_bot</div>
 
 <script>
 	(function () {
-		const statusEl = document.getElementById('bootstrapStatus');
-		const devBtn = document.getElementById('devBootstrapBtn');
+		const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+		const issueBtn = document.getElementById('issueBtn');
+		const issueResult = document.getElementById('issueResult');
+		const issueResultText = document.getElementById('issueResultText');
+		const moderationNotice = document.getElementById('moderationNotice');
+		const tabIssue = document.getElementById('tabIssue');
+		const tabHistory = document.getElementById('tabHistory');
+		const issueSection = document.getElementById('issueSection');
+		const historySection = document.getElementById('historySection');
+		const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
+		const historyStatus = document.getElementById('historyStatus');
+		const historyList = document.getElementById('historyList');
+		const stolenList = document.getElementById('stolenList');
+		const historyLimit = document.getElementById('historyLimit');
+		const historyPrev = document.getElementById('historyPrev');
+		const historyNext = document.getElementById('historyNext');
+		const historyPageInfo = document.getElementById('historyPageInfo');
+		const historyCount = document.getElementById('historyCount');
 
-		async function bootstrap(payload) {
-			const res = await fetch('/webapp/bootstrap', {
+		let isAdmin = false;
+		let isBootstrapped = false;
+		let isActive = true;
+		let historyPage = 1;
+		let historyPageLimit = 20;
+		let historyTotal = 0;
+		if (historyLimit) {
+			historyPageLimit = parseInt(historyLimit.value, 10) || 20;
+		}
+
+		function switchTab(tab) {
+			if (tab === 'history') {
+				issueSection.style.display = 'none';
+				historySection.style.display = 'block';
+				tabIssue.classList.remove('active');
+				tabHistory.classList.add('active');
+			} else {
+				historySection.style.display = 'none';
+				issueSection.style.display = 'block';
+				tabHistory.classList.remove('active');
+				tabIssue.classList.add('active');
+			}
+		}
+
+		tabIssue.addEventListener('click', () => switchTab('issue'));
+		tabHistory.addEventListener('click', () => {
+			switchTab('history');
+			loadHistory();
+			loadStolen();
+		});
+
+		if (tg) {
+			tg.ready();
+			tg.expand();
+			tg.setBackgroundColor('#0F1722');
+			tg.setHeaderColor('#28323A');
+
+			const user = tg.initDataUnsafe?.user;
+			void user;
+		}
+
+		async function apiPost(url, payload) {
+			const res = await fetch(url, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 					'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
 				},
-				body: JSON.stringify(payload),
+				body: JSON.stringify(payload || {}),
 				credentials: 'same-origin',
 			});
 
-			if (res.status === 204) {
-				statusEl.textContent = 'Bootstrap: готово';
-				window.location.reload();
+			const text = await res.text();
+			return { status: res.status, text };
+		}
+
+		async function apiGet(url) {
+			const res = await fetch(url, {
+				method: 'GET',
+				headers: {
+					'Accept': 'application/json',
+				},
+				credentials: 'same-origin',
+			});
+
+			const data = await res.json().catch(() => null);
+			return { status: res.status, data };
+		}
+
+		async function bootstrap() {
+			if (!tg || !tg.initData) {
+				return false;
+			}
+
+			const result = await apiPost('/webapp/bootstrap', { initData: tg.initData });
+
+			if (result.status === 204) {
+				return true;
+			}
+
+			return false;
+		}
+
+		async function loadMe() {
+			const resp = await apiGet('/webapp/api/me');
+			if (resp.status === 200 && resp.data) {
+				isAdmin = resp.data.role === 'admin';
+				isActive = resp.data.is_active === true;
+				if (!isActive && moderationNotice) {
+					moderationNotice.classList.remove('d-none');
+					if (issueBtn) issueBtn.disabled = true;
+				}
+				return true;
+			}
+			return false;
+		}
+
+		async function apiPostJson(url, payload) {
+			const res = await fetch(url, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+					'Accept': 'application/json',
+				},
+				body: JSON.stringify(payload || {}),
+				credentials: 'same-origin',
+			});
+
+			const data = await res.json().catch(() => null);
+			return { status: res.status, data };
+		}
+
+		function flashHistoryStatus(text) {
+			if (!historyStatus) return;
+			historyStatus.textContent = text || '';
+			if (text) {
+				setTimeout(() => {
+					if (historyStatus.textContent === text) {
+						historyStatus.textContent = '';
+					}
+				}, 3000);
+			}
+		}
+
+		function setButtonLoading(button, isLoading) {
+			if (!button) return;
+			if (isLoading) {
+				if (button.dataset.loading === '1') return;
+				button.dataset.loading = '1';
+				button.dataset.prevHtml = button.innerHTML;
+				button.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>';
+				button.disabled = true;
+			} else {
+				if (button.dataset.loading !== '1') return;
+				button.disabled = false;
+				button.innerHTML = button.dataset.prevHtml || button.textContent;
+				delete button.dataset.loading;
+				delete button.dataset.prevHtml;
+			}
+		}
+
+		async function runAction(button, url, payload) {
+			if (!isBootstrapped) {
+				flashHistoryStatus('Не инициализировано. Обновите WebApp.');
+				return;
+			}
+			if (!isActive) {
+				flashHistoryStatus('Аккаунт на модерации.');
+				return;
+			}
+			setButtonLoading(button, true);
+
+			const resp = await apiPostJson(url, payload);
+			const message = resp.data?.message || (resp.status === 200 ? 'Готово' : 'Ошибка');
+			flashHistoryStatus(message);
+
+			setButtonLoading(button, false);
+		}
+
+		function formatIssuedAt(value) {
+			if (!value) return '-';
+			const parsed = new Date(value.replace(' ', 'T'));
+			if (Number.isNaN(parsed.getTime())) {
+				return value;
+			}
+			const pad = (num) => String(num).padStart(2, '0');
+			return `${pad(parsed.getDate())}.${pad(parsed.getMonth() + 1)}.${String(parsed.getFullYear()).slice(-2)} ${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
+		}
+
+		function renderIssueResult(payload) {
+			const items = payload?.items || [];
+			if (items.length === 0) {
+				issueResultText.textContent = payload?.message || 'Выдача выполнена.';
+				return;
+			}
+			if (items.length === 1) {
+				issueResultText.textContent = `Логин: ${items[0].login}\nПароль: ${items[0].password}`;
+				return;
+			}
+			const lines = items.map((item, index) => `#${index + 1}\nЛогин: ${item.login}\nПароль: ${item.password}`);
+			issueResultText.textContent = lines.join('\n\n');
+		}
+
+		issueBtn.addEventListener('click', async () => {
+			if (!isActive) {
+				issueResult.classList.remove('d-none');
+				issueResultText.textContent = 'Аккаунт на модерации. Доступ появится после подтверждения админом.';
+				return;
+			}
+			const orderId = document.getElementById('orderId').value.trim();
+			const platform = document.getElementById('platform').value.trim();
+			const game = document.getElementById('game').value.trim();
+			const qtyRaw = document.getElementById('qty').value.trim();
+			const qty = qtyRaw === '' ? 0 : Math.max(1, Math.min(2, parseInt(qtyRaw, 10)));
+
+			if (!orderId || !platform || !game || qty <= 0) {
+				issueResult.classList.remove('d-none');
+				issueResultText.textContent = 'Заполните все поля.';
 				return;
 			}
 
-			const txt = await res.text();
-			statusEl.textContent = 'Bootstrap: ' + res.status + ' ' + txt;
-		}
+			issueResult.classList.remove('d-none');
+			issueResultText.textContent = 'Отправка запроса...';
+			setButtonLoading(issueBtn, true);
 
-		try {
-			const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+			const resp = await apiPostJson('/webapp/api/issue', {
+				order_id: orderId,
+				platform,
+				game,
+				qty,
+			});
 
-			if (tg && typeof tg.initData === 'string' && tg.initData.length > 0) {
-				statusEl.textContent = 'Bootstrap: initData получены...';
-				bootstrap({ initData: tg.initData });
-			} else {
-				statusEl.textContent = 'Bootstrap: Telegram не обнаружен.';
+			if (resp.status === 200 && resp.data?.ok) {
+				if (resp.data?.show_in_webapp) {
+					renderIssueResult(resp.data);
+				} else {
+					issueResultText.textContent = resp.data?.message || 'Отправлено в чат.';
+				}
+				setButtonLoading(issueBtn, false);
+				return;
 			}
-		} catch (e) {
-			statusEl.textContent = 'Bootstrap: ошибка';
+
+			if (resp.status === 403) {
+				issueResultText.textContent = 'Не инициализировано. Закройте и откройте WebApp ещё раз.';
+				setButtonLoading(issueBtn, false);
+				return;
+			}
+
+			issueResultText.textContent = resp.data?.error || 'Ошибка выдачи. Проверьте данные.';
+			setButtonLoading(issueBtn, false);
+		});
+
+		function buildProblemButtons(item) {
+			const wrap = document.createElement('div');
+			wrap.className = 'd-flex flex-wrap gap-2';
+
+			const btn = (label, url, payload) => {
+				const b = document.createElement('button');
+				b.type = 'button';
+				b.className = 'btn btn-outline-secondary btn-sm';
+				b.textContent = label;
+				b.addEventListener('click', () => runAction(b, url, payload));
+				wrap.appendChild(b);
+			};
+
+			btn('Неверный пароль', '/webapp/api/problem', { account_id: item.account_id, reason: 'wrong_password' });
+			btn('Нет доступа к почте', '/webapp/api/problem', { account_id: item.account_id, reason: 'no_email' });
+			btn('Аккаунт заблокирован / Не пускает', '/webapp/api/problem', { account_id: item.account_id, reason: 'blocked' });
+			btn('Украден', '/webapp/api/problem', { account_id: item.account_id, reason: 'stolen' });
+			if (isAdmin) {
+				btn('Мёртвый', '/webapp/api/problem', { account_id: item.account_id, reason: 'dead' });
+			}
+
+			const passBtn = document.createElement('button');
+			passBtn.type = 'button';
+			passBtn.className = 'btn btn-outline-secondary btn-sm';
+			passBtn.textContent = 'Обновить пароль';
+			passBtn.addEventListener('click', () => {
+				const newPass = prompt('Введите новый пароль');
+				if (!newPass) return;
+				runAction(passBtn, '/webapp/api/update-password', { account_id: item.account_id, password: newPass });
+			});
+			wrap.appendChild(passBtn);
+
+			return wrap;
 		}
 
-		if (devBtn) {
-			devBtn.addEventListener('click', function () {
-				bootstrap({
-					telegram_id: 111,
-					username: 'dev_user',
-					first_name: 'Dev',
-					last_name: 'User'
-				});
+		function renderHistory(items) {
+			historyList.innerHTML = '';
+			if (!items || items.length === 0) {
+				const empty = document.createElement('div');
+				empty.className = 'list-empty';
+				empty.textContent = 'Нет данных';
+				historyList.appendChild(empty);
+				return;
+			}
+
+			items.forEach(item => {
+				const card = document.createElement('div');
+				card.className = 'list-card';
+
+				const accountId = item.account_id ? `#${item.account_id}` : '-';
+				const login = item.login || '-';
+				const issuedAt = formatIssuedAt(item.issued_at);
+				const qtyValue = item.qty ? `x${item.qty}` : '-';
+
+				card.innerHTML = `
+					<div class="list-row">
+						<div class="list-label">Заказ</div>
+						<div class="list-value">${item.order_id || '-'}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Игра</div>
+						<div class="list-value">${item.game || '-'}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Платформа</div>
+						<div class="list-value">${item.platform || '-'}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Количество</div>
+						<div class="list-value"><span class="chip">${qtyValue}</span></div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Аккаунт</div>
+						<div class="list-value">${accountId}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Логин</div>
+						<div class="list-value"><code>${login}</code></div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Выдано</div>
+						<div class="list-value">${issuedAt}</div>
+					</div>
+				`;
+
+				const actions = document.createElement('div');
+				actions.className = 'list-actions';
+				actions.appendChild(buildProblemButtons(item));
+				card.appendChild(actions);
+				historyList.appendChild(card);
 			});
 		}
+
+		function updateHistoryPager() {
+			const total = Number.isFinite(historyTotal) ? historyTotal : 0;
+			const limit = Number.isFinite(historyPageLimit) ? historyPageLimit : 20;
+			const pages = Math.max(1, Math.ceil(total / limit));
+			const page = Math.min(historyPage, pages);
+
+			if (historyPageInfo) {
+				historyPageInfo.textContent = `Стр. ${page}/${pages}`;
+			}
+			if (historyCount) {
+				if (total === 0) {
+					historyCount.textContent = 'Нет данных';
+				} else {
+					const start = (page - 1) * limit + 1;
+					const end = Math.min(page * limit, total);
+					historyCount.textContent = `Показано ${start}-${end} из ${total}`;
+				}
+			}
+
+			if (historyPrev) historyPrev.disabled = page <= 1;
+			if (historyNext) historyNext.disabled = page >= pages;
+		}
+
+		function renderStolen(items) {
+			stolenList.innerHTML = '';
+			if (!items || items.length === 0) {
+				const empty = document.createElement('div');
+				empty.className = 'list-empty';
+				empty.textContent = 'Нет данных';
+				stolenList.appendChild(empty);
+				return;
+			}
+
+			items.forEach(item => {
+				const card = document.createElement('div');
+				card.className = 'list-card';
+
+				card.innerHTML = `
+					<div class="list-row">
+						<div class="list-label">Аккаунт</div>
+						<div class="list-value">#${item.id}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Логин</div>
+						<div class="list-value"><code>${item.login || '-'}</code></div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Дедлайн</div>
+						<div class="list-value">${item.deadline || '-'}</div>
+					</div>
+				`;
+
+				const wrap = document.createElement('div');
+				wrap.className = 'list-actions';
+
+				const recoverBtn = document.createElement('button');
+				recoverBtn.type = 'button';
+				recoverBtn.className = 'btn btn-outline-secondary btn-sm';
+				recoverBtn.textContent = 'Восстановлен';
+				recoverBtn.addEventListener('click', () => {
+					const newPass = prompt('Введите новый пароль');
+					if (!newPass) return;
+					runAction(recoverBtn, '/webapp/api/recover-stolen', { account_id: item.id, password: newPass });
+				});
+
+				const postponeBtn = document.createElement('button');
+				postponeBtn.type = 'button';
+				postponeBtn.className = 'btn btn-outline-secondary btn-sm';
+				postponeBtn.textContent = 'Перенести на 1 день';
+				postponeBtn.addEventListener('click', () => {
+					runAction(postponeBtn, '/webapp/api/postpone-stolen', { account_id: item.id });
+				});
+
+				wrap.appendChild(recoverBtn);
+				wrap.appendChild(postponeBtn);
+				card.appendChild(wrap);
+				stolenList.appendChild(card);
+			});
+		}
+
+		async function loadHistory() {
+			if (!isActive) {
+				historyStatus.textContent = 'Аккаунт на модерации.';
+				return;
+			}
+			historyStatus.textContent = 'Загрузка...';
+			const resp = await apiGet(`/webapp/api/history?limit=${historyPageLimit}&page=${historyPage}`);
+			if (resp.status === 403) {
+				historyStatus.textContent = 'Не инициализировано.';
+				return;
+			}
+			historyStatus.textContent = '';
+			historyTotal = resp.data?.total ?? 0;
+			renderHistory(resp.data?.items || []);
+			updateHistoryPager();
+		}
+
+		async function loadStolen() {
+			if (!isActive) {
+				return;
+			}
+			const resp = await apiGet('/webapp/api/stolen');
+			if (resp.status === 200) {
+				renderStolen(resp.data?.items || []);
+			}
+		}
+
+		refreshHistoryBtn.addEventListener('click', () => {
+			loadHistory();
+			loadStolen();
+		});
+
+		if (historyLimit) {
+			historyLimit.addEventListener('change', () => {
+				historyPageLimit = parseInt(historyLimit.value, 10) || 20;
+				historyPage = 1;
+				loadHistory();
+			});
+		}
+
+		if (historyPrev) {
+			historyPrev.addEventListener('click', () => {
+				if (historyPage > 1) {
+					historyPage -= 1;
+					loadHistory();
+				}
+			});
+		}
+
+		if (historyNext) {
+			historyNext.addEventListener('click', () => {
+				const pages = Math.max(1, Math.ceil(historyTotal / historyPageLimit));
+				if (historyPage < pages) {
+					historyPage += 1;
+					loadHistory();
+				}
+			});
+		}
+
+		async function init() {
+			let ok = await loadMe();
+			if (!ok) {
+				ok = await bootstrap();
+				if (ok) {
+					await loadMe();
+				}
+			}
+			isBootstrapped = ok;
+		}
+
+		init();
 	})();
 </script>
+</x-layouts.webapp>
+

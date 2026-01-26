@@ -54,6 +54,8 @@ final class AccountStatusService
 				$flags['PASSWORD_UPDATE_REQUIRED'] = true;
 			} elseif (in_array($normalizedReason, ['no_email', 'no_mail', 'email', 'mail', 'no_access_email'], true)) {
 				$account->status = AccountStatus::RECOVERY;
+			} elseif (in_array($normalizedReason, ['blocked', 'not_allowed', 'banned', 'login_blocked'], true)) {
+				$account->status = AccountStatus::TEMP_HOLD;
 			} elseif (in_array($normalizedReason, ['stolen', 'hijacked'], true)) {
 				$account->status = AccountStatus::STOLEN;
 				$account->assigned_to_telegram_id = $telegramId;

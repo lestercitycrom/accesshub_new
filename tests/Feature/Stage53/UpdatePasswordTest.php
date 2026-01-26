@@ -6,14 +6,19 @@ use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
 use App\Domain\Accounts\Models\AccountEvent;
 use App\Domain\Issuance\Models\Issuance;
-use App\WebApp\Livewire\WebAppPage;
+use App\Domain\Telegram\Models\TelegramUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
 
 it('updates password via service and creates PASSWORD_UPDATED event', function (): void {
-	$telegramUser = \App\Domain\Telegram\Models\TelegramUser::factory()->create(['telegram_id' => 111]);
+	config()->set('services.telegram.bot_token', 'test');
+	Http::fake([
+		'https://api.telegram.org/bottest/sendMessage' => Http::response(['ok' => true], 200),
+	]);
+
+	$telegramUser = TelegramUser::factory()->create(['telegram_id' => 111]);
 	$telegramId = $telegramUser->telegram_id;
 
 	$account = Account::factory()->create([
@@ -30,13 +35,36 @@ it('updates password via service and creates PASSWORD_UPDATED event', function (
 		'order_id' => 'ORD-3',
 	]);
 
-	$this->withSession(['webapp.telegram_id' => $telegramId]);
+	$payload = [
+		'update_id' => 10003,
+		'message' => [
+			'message_id' => 1,
+			'from' => [
+				'id' => $telegramId,
+				'is_bot' => false,
+				'first_name' => 'Test',
+			],
+			'chat' => [
+				'id' => $telegramId,
+				'type' => 'private',
+			],
+			'date' => time(),
+			'web_app_data' => [
+				'data' => json_encode([
+					'action' => 'update_password',
+					'payload' => [
+						'account_id' => $account->id,
+						'password' => 'new-pass-123',
+					],
+				]),
+			],
+		],
+	];
 
-	Livewire::test(WebAppPage::class)
-		->call('setTab', 'history')
-		->call('openPasswordForm', $account->id)
-		->set('newPassword', 'new-pass-123')
-		->call('submitPassword');
+	$response = $this->postJson('/api/telegram/webhook', $payload);
+
+	$response->assertStatus(200)
+		->assertJson(['status' => 'ok']);
 
 	$account->refresh();
 
@@ -49,3 +77,4 @@ it('updates password via service and creates PASSWORD_UPDATED event', function (
 		->where('type', 'PASSWORD_UPDATED')
 		->exists())->toBeTrue();
 })->group('Stage53');
+

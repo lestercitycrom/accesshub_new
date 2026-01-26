@@ -318,9 +318,19 @@ final class WebAppPage extends Component
 
 	public function render()
 	{
+		$telegramId = $this->telegramId();
+
+		$isAdmin = $telegramId > 0
+			&& \App\Domain\Telegram\Models\TelegramUser::query()
+				->where('telegram_id', $telegramId)
+				->where('role', \App\Domain\Telegram\Enums\TelegramRole::ADMIN)
+				->exists();
+
 		return view('webapp.page', [
-			'isBootstrapped' => $this->telegramId() > 0,
+			'isBootstrapped' => $telegramId > 0,
 			'canDevBootstrap' => $this->canDevBootstrap(),
+			'telegramId' => $telegramId,
+			'isAdmin' => $isAdmin,
 		]);
 	}
 }

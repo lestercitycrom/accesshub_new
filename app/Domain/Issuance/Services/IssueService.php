@@ -113,11 +113,12 @@ final class IssueService
 					'account_id' => $account->id,
 					'game' => $game,
 					'platform' => $platform,
-					'qty' => $qty,
+					'qty' => 1,
 					'issued_at' => $now,
 					'cooldown_until' => $cooldownUntil,
 					'payload' => [
-						'qty' => $qty,
+						'qty' => 1,
+						'request_qty' => $qty,
 					],
 				]);
 

@@ -14,7 +14,7 @@ it('handles text message webhook successfully', function (): void {
 	config()->set('services.telegram.bot_token', 'test');
 
 	// Setup test data
-	$telegramUser = TelegramUser::factory()->create(['telegram_id' => 987654321]);
+	$telegramUser = TelegramUser::factory()->create(['telegram_id' => 123456789]);
 	$account = Account::factory()->create([
 		'game' => 'cs2',
 		'platform' => 'steam',
@@ -61,7 +61,7 @@ it('handles webapp data webhook successfully', function (): void {
 	config()->set('services.telegram.bot_token', 'test');
 
 	// Setup test data
-	$telegramUser = TelegramUser::factory()->create(['telegram_id' => 987654321]);
+	$telegramUser = TelegramUser::factory()->create(['telegram_id' => 123456789]);
 	$account = Account::factory()->create([
 		'game' => 'dota2',
 		'platform' => 'steam',
@@ -115,6 +115,25 @@ it('auto registers telegram user', function (): void {
 	expect($user->username)->toBe('testuser');
 	expect($user->first_name)->toBe('Test');
 	expect($user->last_name)->toBe('User');
+	expect($user->is_active)->toBeFalse();
+});
+
+it('does not override existing user role or active status on webhook', function (): void {
+	config()->set('services.telegram.bot_token', 'test');
+
+	TelegramUser::factory()->admin()->create([
+		'telegram_id' => 123456789,
+		'is_active' => true,
+		'username' => 'admin_user',
+	]);
+
+	$fixture = json_decode(file_get_contents(base_path('tests/Fixtures/telegram/text_update.json')), true);
+
+	$this->postJson('/api/telegram/webhook', $fixture);
+
+	$user = TelegramUser::where('telegram_id', 123456789)->first();
+	expect($user)->not->toBeNull();
+	expect($user->role->value)->toBe('admin');
 	expect($user->is_active)->toBeTrue();
 });
 

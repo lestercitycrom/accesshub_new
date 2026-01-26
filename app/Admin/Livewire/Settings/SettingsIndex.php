@@ -16,6 +16,7 @@ final class SettingsIndex extends Component
 	public int $maxQty = 3;
 	public string $webappMenuUrl = '';
 	public string $webappMenuText = '';
+	public string $webappIssueDelivery = 'both';
 
 	public function mount(SettingsService $settings): void
 	{
@@ -28,6 +29,10 @@ final class SettingsIndex extends Component
 		$defaultUrl = rtrim((string) config('app.url'), '/') . '/webapp';
 		$this->webappMenuUrl = (string) ($settings->get('webapp_menu_url') ?? $defaultUrl);
 		$this->webappMenuText = (string) ($settings->get('webapp_menu_text') ?? 'Открыть WebApp');
+		$this->webappIssueDelivery = (string) ($settings->get('webapp_issue_delivery') ?? 'both');
+		if (!in_array($this->webappIssueDelivery, ['webapp', 'chat', 'both'], true)) {
+			$this->webappIssueDelivery = 'both';
+		}
 	}
 
 	public function save(SettingsService $settings): void
@@ -38,6 +43,7 @@ final class SettingsIndex extends Component
 			'cooldownDays' => ['required', 'integer', 'min:0', 'max:3650'],
 			'stolenDefaultDeadlineDays' => ['required', 'integer', 'min:1', 'max:365'],
 			'maxQty' => ['required', 'integer', 'min:1', 'max:100'],
+			'webappIssueDelivery' => ['required', 'in:webapp,chat,both'],
 		]);
 
 		$userId = (int) auth()->id();
@@ -45,6 +51,7 @@ final class SettingsIndex extends Component
 		$settings->set('cooldown_days', (int) $this->cooldownDays, $userId);
 		$settings->set('stolen_default_deadline_days', (int) $this->stolenDefaultDeadlineDays, $userId);
 		$settings->set('max_qty', (int) $this->maxQty, $userId);
+		$settings->set('webapp_issue_delivery', $this->webappIssueDelivery, $userId);
 
 		session()->flash('status', 'Настройки сохранены.');
 	}

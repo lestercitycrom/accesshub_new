@@ -6,14 +6,19 @@ use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
 use App\Domain\Accounts\Models\AccountEvent;
 use App\Domain\Issuance\Models\Issuance;
-use App\WebApp\Livewire\WebAppPage;
+use App\Domain\Telegram\Models\TelegramUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
 
 it('marks problem wrong_password and creates account event', function (): void {
-	$telegramUser = \App\Domain\Telegram\Models\TelegramUser::factory()->create(['telegram_id' => 111]);
+	config()->set('services.telegram.bot_token', 'test');
+	Http::fake([
+		'https://api.telegram.org/bottest/sendMessage' => Http::response(['ok' => true], 200),
+	]);
+
+	$telegramUser = TelegramUser::factory()->create(['telegram_id' => 111]);
 	$telegramId = $telegramUser->telegram_id;
 
 	$account = Account::factory()->create([
@@ -29,11 +34,36 @@ it('marks problem wrong_password and creates account event', function (): void {
 		'order_id' => 'ORD-1',
 	]);
 
-	$this->withSession(['webapp.telegram_id' => $telegramId]);
+	$payload = [
+		'update_id' => 10002,
+		'message' => [
+			'message_id' => 1,
+			'from' => [
+				'id' => $telegramId,
+				'is_bot' => false,
+				'first_name' => 'Test',
+			],
+			'chat' => [
+				'id' => $telegramId,
+				'type' => 'private',
+			],
+			'date' => time(),
+			'web_app_data' => [
+				'data' => json_encode([
+					'action' => 'mark_problem',
+					'payload' => [
+						'account_id' => $account->id,
+						'reason' => 'wrong_password',
+					],
+				]),
+			],
+		],
+	];
 
-	Livewire::test(WebAppPage::class)
-		->call('setTab', 'history')
-		->call('markProblem', $account->id, 'wrong_password');
+	$response = $this->postJson('/api/telegram/webhook', $payload);
+
+	$response->assertStatus(200)
+		->assertJson(['status' => 'ok']);
 
 	expect(AccountEvent::query()
 		->where('account_id', $account->id)
@@ -41,3 +71,4 @@ it('marks problem wrong_password and creates account event', function (): void {
 		->where('type', 'MARK_PROBLEM')
 		->exists())->toBeTrue();
 })->group('Stage53');
+

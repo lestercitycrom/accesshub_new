@@ -15,5 +15,5 @@ it('denies dev bootstrap when verification enabled', function (): void {
 	]);
 
 	$response->assertStatus(403);
-	$response->assertSeeText('Empty initData');
+	$response->assertSeeText('Пустые initData.');
 })->group('Stage52');

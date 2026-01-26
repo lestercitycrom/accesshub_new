@@ -12,7 +12,7 @@ use Livewire\Component;
 
 final class ProblemsIndex extends Component
 {
-	public string $tab = 'STOLEN';
+	public string $tab = 'ALL';
 	public string $q = '';
 	public array $selected = [];
 	public int $extendDays = 1;
@@ -132,7 +132,7 @@ final class ProblemsIndex extends Component
 
 	public function clear(): void
 	{
-		$this->tab = 'STOLEN';
+		$this->tab = 'ALL';
 		$this->q = '';
 		$this->selected = [];
 		$this->extendDays = 1;

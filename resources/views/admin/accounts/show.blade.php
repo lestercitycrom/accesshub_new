@@ -1,4 +1,4 @@
-<div class="space-y-6">
+﻿<div class="space-y-6">
 	@if(session('message'))
 		<div class="rounded-lg bg-green-50 p-4 text-green-800 border border-green-200">
 			{{ session('message') }}
@@ -12,7 +12,7 @@
 			</h1>
 
 			<p class="text-sm text-slate-500">
-				{{ $account->game }} / {{ $account->platform }} — <span class="font-semibold text-slate-900">{{ $account->login }}</span>
+				{{ $account->game }} / {{ $account->platform }} · <span class="font-semibold text-slate-900">{{ $account->login }}</span>
 			</p>
 		</div>
 
@@ -24,12 +24,12 @@
 
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 				href="{{ route('admin.account-lookup') }}">
-				Lookup
+				Поиск
 			</a>
 
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 				href="{{ route('admin.accounts.index') }}">
-				Назад
+				К списку
 			</a>
 		</div>
 	</div>
@@ -48,23 +48,23 @@
 
 	<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 		<!-- Summary -->
-		<x-admin.card title="Summary">
+		<x-admin.card title="Сводка">
 			<div class="space-y-4">
 				<div class="flex flex-wrap items-center gap-2">
 					<x-admin.badge :variant="$badge">{{ $st }}</x-admin.badge>
 
 					@if($account->assigned_to_telegram_id)
-						<x-admin.badge variant="violet">Assigned: {{ $account->assigned_to_telegram_id }}</x-admin.badge>
+						<x-admin.badge variant="violet">Назначен: {{ $account->assigned_to_telegram_id }}</x-admin.badge>
 					@else
-						<x-admin.badge variant="gray">Assigned: —</x-admin.badge>
+						<x-admin.badge variant="gray">Назначен: —</x-admin.badge>
 					@endif
 
 					@if($account->status_deadline_at)
 						<x-admin.badge variant="amber">
-							Deadline: {{ $account->status_deadline_at->format('Y-m-d H:i') }}
+							Дедлайн: {{ $account->status_deadline_at->format('Y-m-d H:i') }}
 						</x-admin.badge>
 					@else
-						<x-admin.badge variant="gray">Deadline: —</x-admin.badge>
+						<x-admin.badge variant="gray">Дедлайн: —</x-admin.badge>
 					@endif
 				</div>
 
@@ -87,14 +87,14 @@
 					<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
 						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Пароль</div>
 						<div class="font-semibold text-slate-900 break-all">
-							{{ $account->password ? '••••••••' : '—' }}
+							{{ $account->password ? 'Задан' : '—' }}
 						</div>
 					</div>
 				</div>
 
 				@if(is_array($account->flags) && count($account->flags) > 0)
 					<div class="space-y-2">
-						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Flags</div>
+						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Флаги</div>
 						<div class="flex flex-wrap gap-2">
 							@foreach($account->flags as $k => $v)
 								@if($v)
@@ -112,7 +112,7 @@
 			<div class="space-y-4">
 				<div class="grid grid-cols-1 gap-3">
 					<div class="space-y-1">
-						<label class="text-xs font-semibold text-slate-700">Set status</label>
+						<label class="text-xs font-semibold text-slate-700">Изменить статус аккаунта</label>
 						<select wire:model="setStatus"
 							class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
 							@foreach($statuses as $s)
@@ -122,21 +122,21 @@
 					</div>
 
 					<x-admin.button variant="primary" size="md" wire:click="applyStatus">
-					Применить статус
+						Применить статус
 					</x-admin.button>
 
 					<x-admin.button variant="secondary" size="md" wire:click="releaseToPool">
-						Release to pool
+						Вернуть в пул
 					</x-admin.button>
 				</div>
 
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-					<div class="text-sm font-semibold text-slate-900">Обновить пароль (админ)</div>
+					<div class="text-sm font-semibold text-slate-900">Смена пароля (вручную)</div>
 
 					<x-admin.input
-						label="New password"
+						label="Новый пароль"
 						type="text"
-						placeholder="enter new password..."
+						placeholder="введите новый пароль..."
 						wire:model="newPassword"
 					/>
 
@@ -145,20 +145,20 @@
 					</x-admin.button>
 
 					<p class="text-xs text-slate-500">
-						Сбросит PASSWORD_UPDATE_REQUIRED/ACTION_REQUIRED и вернёт статус в ACTIVE.
+						Статусы PASSWORD_UPDATE_REQUIRED/ACTION_REQUIRED выставляются при смене пароля и возвращаются в ACTIVE.
 					</p>
 				</div>
 			</div>
 		</x-admin.card>
 
 		<!-- Notes -->
-		<x-admin.card title="Примечания">
+		<x-admin.card title="Заметки">
 			<div class="space-y-2 text-sm text-slate-600">
-				<p>Здесь можно держать краткие правила для операторов/админа.</p>
+				<p>Проблемные статусы используются для массовых действий и отметок проблемных аккаунтов.</p>
 				<ul class="list-disc pl-5 space-y-1">
-					<li>STOLEN → назначение + дедлайн</li>
-					<li>RECOVERY → обновить пароль</li>
-					<li>Release to pool → очистка assignment/deadline/flags</li>
+					<li>STOLEN — аккаунт украден + блокировка выдачи</li>
+					<li>RECOVERY — аккаунт в процессе восстановления</li>
+					<li>TEMP_HOLD и DEAD — используйте для ручных пометок и блокировки</li>
 				</ul>
 			</div>
 		</x-admin.card>
@@ -166,16 +166,16 @@
 
 	<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 		<!-- Issuances -->
-		<x-admin.card title="Issuances (last 20)">
+		<x-admin.card title="Выдачи (последние 20)">
 			<div class="overflow-x-auto rounded-2xl border border-slate-200">
 				<table class="min-w-full text-sm">
 					<thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
 						<tr>
-							<th class="px-4 py-3 text-left">Выдано</th>
+							<th class="px-4 py-3 text-left">Дата</th>
 							<th class="px-4 py-3 text-left">Заказ</th>
-							<th class="px-4 py-3 text-left">Operator</th>
-							<th class="px-4 py-3 text-left">Qty</th>
-							<th class="px-4 py-3 text-left">Cooldown</th>
+							<th class="px-4 py-3 text-left">Пользователь</th>
+							<th class="px-4 py-3 text-left">Кол-во</th>
+							<th class="px-4 py-3 text-left">Кулдаун</th>
 						</tr>
 					</thead>
 
@@ -196,7 +196,7 @@
 						@empty
 							<tr>
 								<td class="px-4 py-10 text-center text-slate-500" colspan="5">
-									No issuances
+									Выдач нет
 								</td>
 							</tr>
 						@endforelse
@@ -211,10 +211,10 @@
 				<table class="min-w-full text-sm">
 					<thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
 						<tr>
-							<th class="px-4 py-3 text-left">At</th>
-							<th class="px-4 py-3 text-left">Type</th>
-							<th class="px-4 py-3 text-left">Actor</th>
-							<th class="px-4 py-3 text-left">Payload</th>
+							<th class="px-4 py-3 text-left">Дата</th>
+							<th class="px-4 py-3 text-left">Тип</th>
+							<th class="px-4 py-3 text-left">Telegram ID</th>
+							<th class="px-4 py-3 text-left">Данные</th>
 						</tr>
 					</thead>
 
@@ -233,7 +233,7 @@
 						@empty
 							<tr>
 								<td class="px-4 py-10 text-center text-slate-500" colspan="4">
-									No events
+									Событий нет
 								</td>
 							</tr>
 						@endforelse

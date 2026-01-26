@@ -1,7 +1,7 @@
-<div class="space-y-6">
+﻿<div class="space-y-6">
 	<x-admin.page-header
-		title="Issuances"
-		subtitle="Журнал выдач: фильтры, экспорт, переход к аккаунту."
+		title="Выдачи"
+		subtitle="История выдач: фильтры, список, экспорт и кулдаун."
 	>
 		@if(isset($exportUrl))
 			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
@@ -11,7 +11,7 @@
 		@endif
 
 		<x-admin.button variant="secondary" size="md" wire:click="clearFilters">
-			Clear
+			Сброс
 		</x-admin.button>
 
 		{{-- Density toggle --}}
@@ -19,12 +19,12 @@
 			<button type="button"
 				wire:click="$set('density', 'normal')"
 				class="rounded-l-xl px-3 py-2 text-xs font-semibold border border-slate-200 {{ ($density ?? 'normal') === 'normal' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50' }}">
-				Normal
+				Обычная
 			</button>
 			<button type="button"
 				wire:click="$set('density', 'compact')"
 				class="rounded-r-xl px-3 py-2 text-xs font-semibold border-y border-r border-slate-200 {{ ($density ?? 'normal') === 'compact' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50' }}">
-				Compact
+				Компактная
 			</button>
 		</div>
 	</x-admin.page-header>
@@ -32,7 +32,7 @@
 	<x-admin.filters-bar>
 		<div class="lg:col-span-2">
 			<x-admin.filter-input
-				label="Номер заказа"
+				label="ID заказа"
 				placeholder="ORD-..."
 				icon="hash"
 				wire:model.live="orderId"
@@ -77,26 +77,18 @@
 
 		<div class="lg:col-span-2">
 			<div class="space-y-1">
-				<label class="text-[11px] font-semibold text-slate-600">Date from</label>
+				<label class="text-[11px] font-semibold text-slate-600">Дата от</label>
 				<input type="date" wire:model.live="dateFrom"
 					class="w-full rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300">
 			</div>
 		</div>
-
-		<div class="lg:col-span-12 flex items-center justify-between gap-2 pt-1">
-			<div class="text-xs text-slate-500 flex items-center gap-2">
-				<x-admin.icon name="filter" class="h-4 w-4" />
-				<span>Filters apply instantly.</span>
-			</div>
-
-			<div class="flex items-center gap-2">
-				<x-admin.button variant="secondary" size="sm" wire:click="$refresh">
-					<span class="inline-flex items-center gap-2">
-						<x-admin.icon name="refresh" class="h-4 w-4" />
-						Refresh
-					</span>
-				</x-admin.button>
-			</div>
+		<div class="lg:col-span-12 flex items-center justify-end gap-2 pt-1">
+			<x-admin.button variant="secondary" size="sm" wire:click="$refresh">
+				<span class="inline-flex items-center gap-2">
+					<x-admin.icon name="refresh" class="h-4 w-4" />
+					Обновить
+				</span>
+			</x-admin.button>
 		</div>
 	</x-admin.filters-bar>
 
@@ -106,14 +98,14 @@
 		<x-admin.table :density="($density ?? 'normal')" :zebra="true" :sticky="true">
 			<x-slot:head>
 				<tr>
-					<x-admin.th>Выдано</x-admin.th>
+					<x-admin.th>Дата</x-admin.th>
 					<x-admin.th>Заказ</x-admin.th>
 					<x-admin.th>Аккаунт</x-admin.th>
-					<x-admin.th>Operator</x-admin.th>
+					<x-admin.th>Пользователь</x-admin.th>
 					<x-admin.th>Игра</x-admin.th>
 					<x-admin.th>Платформа</x-admin.th>
-					<x-admin.th>Qty</x-admin.th>
-					<x-admin.th>Cooldown</x-admin.th>
+					<x-admin.th>Кол-во</x-admin.th>
+					<x-admin.th>Кулдаун</x-admin.th>
 				</tr>
 			</x-slot:head>
 
@@ -140,7 +132,7 @@
 				</tr>
 			@empty
 				<tr>
-					<td class="px-4 py-10 text-center text-slate-500" colspan="8">No rows</td>
+					<td class="px-4 py-10 text-center text-slate-500" colspan="8">Выдач нет</td>
 				</tr>
 			@endforelse
 		</x-admin.table>

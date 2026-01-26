@@ -21,19 +21,28 @@ final class HistoryController
 		$limit = (int) $request->query('limit', 20);
 		$limit = max(1, min(200, $limit));
 
+		$page = (int) $request->query('page', 1);
+		$page = max(1, $page);
+		$offset = ($page - 1) * $limit;
+
 		$orderId = trim((string) $request->query('order_id', ''));
 
 		$query = Issuance::query()
 			->with(['account'])
 			->where('telegram_id', $telegramId)
-			->orderByDesc('issued_at')
-			->limit($limit);
+			->orderByDesc('issued_at');
 
 		if ($orderId !== '') {
 			$query->where('order_id', $orderId);
 		}
 
-		$items = $query->get()->map(static function (Issuance $issuance): array {
+		$total = (clone $query)->count();
+
+		$items = $query
+			->offset($offset)
+			->limit($limit)
+			->get()
+			->map(static function (Issuance $issuance): array {
 			return [
 				'order_id' => $issuance->order_id,
 				'game' => $issuance->game,
@@ -48,6 +57,9 @@ final class HistoryController
 
 		return response()->json([
 			'items' => $items,
+			'total' => $total,
+			'page' => $page,
+			'limit' => $limit,
 		]);
 	}
 }

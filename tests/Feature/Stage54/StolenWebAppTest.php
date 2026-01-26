@@ -6,13 +6,17 @@ use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
 use App\Domain\Accounts\Models\AccountEvent;
 use App\Domain\Telegram\Models\TelegramUser;
-use App\WebApp\Livewire\WebAppPage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
 
 it('allows operator to postpone stolen by one day', function (): void {
+	config()->set('services.telegram.bot_token', 'test');
+	Http::fake([
+		'https://api.telegram.org/bottest/sendMessage' => Http::response(['ok' => true], 200),
+	]);
+
 	$operator = TelegramUser::factory()->create(['telegram_id' => 111]);
 
 	$account = Account::factory()->create([
@@ -21,13 +25,37 @@ it('allows operator to postpone stolen by one day', function (): void {
 		'status_deadline_at' => now(),
 	]);
 
-	$this->withSession(['webapp.telegram_id' => $operator->telegram_id]);
-
 	$oldDeadline = $account->status_deadline_at;
 
-	Livewire::test(WebAppPage::class)
-		->call('setTab', 'history')
-		->call('postponeStolen', $account->id);
+	$payload = [
+		'update_id' => 20001,
+		'message' => [
+			'message_id' => 1,
+			'from' => [
+				'id' => $operator->telegram_id,
+				'is_bot' => false,
+				'first_name' => 'Test',
+			],
+			'chat' => [
+				'id' => $operator->telegram_id,
+				'type' => 'private',
+			],
+			'date' => time(),
+			'web_app_data' => [
+				'data' => json_encode([
+					'action' => 'postpone_stolen',
+					'payload' => [
+						'account_id' => $account->id,
+					],
+				]),
+			],
+		],
+	];
+
+	$response = $this->postJson('/api/telegram/webhook', $payload);
+
+	$response->assertStatus(200)
+		->assertJson(['status' => 'ok']);
 
 	$account->refresh();
 	expect($account->status_deadline_at)->not->toEqual($oldDeadline);
@@ -39,6 +67,11 @@ it('allows operator to postpone stolen by one day', function (): void {
 });
 
 it('allows operator to recover stolen via password form', function (): void {
+	config()->set('services.telegram.bot_token', 'test');
+	Http::fake([
+		'https://api.telegram.org/bottest/sendMessage' => Http::response(['ok' => true], 200),
+	]);
+
 	$operator = TelegramUser::factory()->create(['telegram_id' => 222]);
 
 	$account = Account::factory()->create([
@@ -48,13 +81,36 @@ it('allows operator to recover stolen via password form', function (): void {
 		'flags' => ['ACTION_REQUIRED' => true],
 	]);
 
-	$this->withSession(['webapp.telegram_id' => $operator->telegram_id]);
+	$payload = [
+		'update_id' => 20002,
+		'message' => [
+			'message_id' => 1,
+			'from' => [
+				'id' => $operator->telegram_id,
+				'is_bot' => false,
+				'first_name' => 'Test',
+			],
+			'chat' => [
+				'id' => $operator->telegram_id,
+				'type' => 'private',
+			],
+			'date' => time(),
+			'web_app_data' => [
+				'data' => json_encode([
+					'action' => 'recover_stolen',
+					'payload' => [
+						'account_id' => $account->id,
+						'password' => 'new_stolen_pass',
+					],
+				]),
+			],
+		],
+	];
 
-	Livewire::test(WebAppPage::class)
-		->call('setTab', 'history')
-		->call('openPasswordForm', $account->id, 'recover_stolen')
-		->set('newPassword', 'new_stolen_pass')
-		->call('submitPassword');
+	$response = $this->postJson('/api/telegram/webhook', $payload);
+
+	$response->assertStatus(200)
+		->assertJson(['status' => 'ok']);
 
 	$account->refresh();
 	expect($account->status)->toBe(AccountStatus::ACTIVE);
@@ -67,3 +123,4 @@ it('allows operator to recover stolen via password form', function (): void {
 		->where('type', 'STOLEN_RECOVERED')
 		->exists())->toBeTrue();
 });
+

@@ -88,6 +88,19 @@
 							hint="Текст кнопки меню в Telegram (до 64 символов)"
 						/>
 					</div>
+
+					<div class="sm:col-span-2">
+						<x-admin.select
+							label="Где показывать результат выдачи"
+							wire:model="webappIssueDelivery"
+							:error="$errors->first('webappIssueDelivery')"
+							hint="Выбор: окно WebApp, чат Telegram или оба варианта."
+						>
+							<option value="webapp">Только в окне WebApp</option>
+							<option value="chat">Только в чате Telegram</option>
+							<option value="both">И в окне WebApp, и в чате</option>
+						</x-admin.select>
+					</div>
 				</div>
 
 				<div class="mt-6 flex items-center gap-2">

@@ -40,16 +40,22 @@ final class BootstrapController
 			$telegramId = (int) $result['telegram_id'];
 			$user = is_array($result['user'] ?? null) ? $result['user'] : [];
 
-			TelegramUser::query()->updateOrCreate(
-				['telegram_id' => $telegramId],
-				[
-					'username' => isset($user['username']) ? (string) $user['username'] : null,
-					'first_name' => isset($user['first_name']) ? (string) $user['first_name'] : null,
-					'last_name' => isset($user['last_name']) ? (string) $user['last_name'] : null,
+			$existing = TelegramUser::query()->where('telegram_id', $telegramId)->first();
+			$update = [
+				'username' => isset($user['username']) ? (string) $user['username'] : null,
+				'first_name' => isset($user['first_name']) ? (string) $user['first_name'] : null,
+				'last_name' => isset($user['last_name']) ? (string) $user['last_name'] : null,
+			];
+
+			if ($existing) {
+				$existing->update($update);
+			} else {
+				TelegramUser::query()->create($update + [
+					'telegram_id' => $telegramId,
 					'role' => TelegramRole::OPERATOR,
-					'is_active' => true,
-				]
-			);
+					'is_active' => false,
+				]);
+			}
 
 			// Prevent session fixation
 			$request->session()->regenerate();
@@ -64,16 +70,22 @@ final class BootstrapController
 			return response('Не передан telegram_id (dev bootstrap).', 422);
 		}
 
-		TelegramUser::query()->updateOrCreate(
-			['telegram_id' => $devTelegramId],
-			[
-				'username' => (string) $request->input('username', 'dev_user'),
-				'first_name' => (string) $request->input('first_name', 'Dev'),
-				'last_name' => (string) $request->input('last_name', 'User'),
+		$existing = TelegramUser::query()->where('telegram_id', $devTelegramId)->first();
+		$update = [
+			'username' => (string) $request->input('username', 'dev_user'),
+			'first_name' => (string) $request->input('first_name', 'Dev'),
+			'last_name' => (string) $request->input('last_name', 'User'),
+		];
+
+		if ($existing) {
+			$existing->update($update);
+		} else {
+			TelegramUser::query()->create($update + [
+				'telegram_id' => $devTelegramId,
 				'role' => TelegramRole::OPERATOR,
-				'is_active' => true,
-			]
-		);
+				'is_active' => false,
+			]);
+		}
 
 		$request->session()->regenerate();
 		$request->session()->put('webapp.telegram_id', $devTelegramId);
