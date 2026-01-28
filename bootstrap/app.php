@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
             'no-cache' => \App\Http\Middleware\NoCache::class,
+            'log-webapp' => \App\Http\Middleware\LogWebAppRequests::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

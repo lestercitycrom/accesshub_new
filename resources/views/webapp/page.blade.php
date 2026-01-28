@@ -231,19 +231,30 @@
 		}
 
 		async function apiPostJson(url, payload) {
-			const res = await fetch(url, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
-					'Accept': 'application/json',
-				},
-				body: JSON.stringify(payload || {}),
-				credentials: 'same-origin',
-			});
+			console.log('apiPostJson: Sending request', { url, payload });
+			try {
+				const res = await fetch(url, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+						'Accept': 'application/json',
+					},
+					body: JSON.stringify(payload || {}),
+					credentials: 'same-origin',
+				});
 
-			const data = await res.json().catch(() => null);
-			return { status: res.status, data };
+				console.log('apiPostJson: Response status', res.status);
+				const data = await res.json().catch((e) => {
+					console.error('apiPostJson: Failed to parse JSON', e);
+					return null;
+				});
+				console.log('apiPostJson: Response data', data);
+				return { status: res.status, data };
+			} catch (e) {
+				console.error('apiPostJson: Fetch error', e);
+				return { status: 0, data: null, error: e.message };
+			}
 		}
 
 		function flashHistoryStatus(text) {

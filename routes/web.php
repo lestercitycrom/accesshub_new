@@ -28,7 +28,9 @@ Route::withoutMiddleware(['auth', 'admin'])->group(function () {
     Route::get('/webapp/api/me', App\WebApp\Http\Controllers\MeController::class)->name('webapp.me');
     Route::get('/webapp/api/history', App\WebApp\Http\Controllers\HistoryController::class)->name('webapp.history');
     Route::get('/webapp/api/stolen', App\WebApp\Http\Controllers\StolenController::class)->name('webapp.stolen');
-    Route::post('/webapp/api/issue', App\WebApp\Http\Controllers\IssueController::class)->name('webapp.issue');
+    Route::post('/webapp/api/issue', App\WebApp\Http\Controllers\IssueController::class)
+        ->middleware('log-webapp')
+        ->name('webapp.issue');
     Route::post('/webapp/api/problem', App\WebApp\Http\Controllers\ProblemController::class)->name('webapp.problem');
     Route::post('/webapp/api/update-password', App\WebApp\Http\Controllers\UpdatePasswordController::class)->name('webapp.update-password');
     Route::post('/webapp/api/recover-stolen', App\WebApp\Http\Controllers\RecoverStolenController::class)->name('webapp.recover-stolen');
