@@ -330,14 +330,28 @@
 				return;
 			}
 			const orderId = document.getElementById('orderId').value.trim();
-			const platform = document.getElementById('platform').value.trim();
-			const game = document.getElementById('game').value.trim();
+			const platformSelect = document.getElementById('platform');
+			const gameSelect = document.getElementById('game');
+			const platform = platformSelect ? platformSelect.value.trim() : '';
+			const game = gameSelect ? gameSelect.value.trim() : '';
 			const qtyRaw = document.getElementById('qty').value.trim();
 			const qty = qtyRaw === '' ? 0 : Math.max(1, Math.min(2, parseInt(qtyRaw, 10)));
+
+			console.log('Issue request data:', {
+				orderId,
+				platform,
+				game,
+				qty,
+				platformSelectValue: platformSelect?.value,
+				gameSelectValue: gameSelect?.value,
+				platformSelectOptions: platformSelect ? Array.from(platformSelect.options).map(o => ({value: o.value, text: o.text})) : [],
+				gameSelectOptions: gameSelect ? Array.from(gameSelect.options).map(o => ({value: o.value, text: o.text})) : [],
+			});
 
 			if (!orderId || !platform || !game || qty <= 0) {
 				issueResult.classList.remove('d-none');
 				issueResultText.textContent = 'Заполните все поля.';
+				console.error('Validation failed:', {orderId, platform, game, qty});
 				return;
 			}
 
@@ -345,12 +359,16 @@
 			issueResultText.textContent = 'Отправка запроса...';
 			setButtonLoading(issueBtn, true);
 
-			const resp = await apiPostJson('/webapp/api/issue', {
+			const requestPayload = {
 				order_id: orderId,
 				platform,
 				game,
 				qty,
-			});
+			};
+			console.log('Sending request:', requestPayload);
+
+			const resp = await apiPostJson('/webapp/api/issue', requestPayload);
+			console.log('Response:', resp);
 
 			if (resp.status === 200 && resp.data?.ok) {
 				if (resp.data?.show_in_webapp) {
@@ -703,11 +721,18 @@
 
 			function selectOption(optionEl) {
 				const value = optionEl.dataset.value;
+				const text = optionEl.textContent;
 				select.value = value;
+				// Update select display text
+				const selectedOption = Array.from(select.options).find(opt => opt.value === value);
+				if (selectedOption) {
+					select.selectedIndex = Array.from(select.options).indexOf(selectedOption);
+				}
 				select.dispatchEvent(new Event('change', { bubbles: true }));
 				dropdown.classList.remove('active');
 				searchInput.value = '';
 				filterOptions('');
+				console.log(`Selected ${selectId}:`, {value, text, selectValue: select.value});
 			}
 
 			function highlightNext() {

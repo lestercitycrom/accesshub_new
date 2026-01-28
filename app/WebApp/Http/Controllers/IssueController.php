@@ -23,10 +23,18 @@ final class IssueController
 
 	public function __invoke(Request $request): JsonResponse
 	{
+		Log::info('IssueController: Request received', [
+			'method' => $request->method(),
+			'url' => $request->fullUrl(),
+			'all_input' => $request->all(),
+			'session_telegram_id' => $request->session()->get('webapp.telegram_id', 0),
+		]);
+
 		try {
 			$telegramId = (int) $request->session()->get('webapp.telegram_id', 0);
 
 			if ($telegramId <= 0) {
+				Log::warning('IssueController: Telegram ID not found in session');
 				return response()->json(['error' => 'Не инициализировано.'], 403);
 			}
 
@@ -36,7 +44,19 @@ final class IssueController
 			$qtyRaw = (int) $request->input('qty', 1);
 			$qty = max(1, min(2, $qtyRaw));
 
+			Log::info('IssueController: Parsed input', [
+				'order_id' => $orderId,
+				'platform' => $platform,
+				'game' => $game,
+				'qty' => $qty,
+			]);
+
 			if ($orderId === '' || $platform === '' || $game === '') {
+				Log::warning('IssueController: Empty fields', [
+					'order_id_empty' => $orderId === '',
+					'platform_empty' => $platform === '',
+					'game_empty' => $game === '',
+				]);
 				return response()->json(['error' => 'Заполните все поля.'], 422);
 			}
 
