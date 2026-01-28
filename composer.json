@@ -84,6 +84,9 @@
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ],
+        "remove-bom": [
+            "@php scripts/remove-bom.php"
         ]
     },
     "extra": {

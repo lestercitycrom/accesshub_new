@@ -8,6 +8,10 @@ indent_style = space
 insert_final_newline = true
 trim_trailing_whitespace = true
 
+[*.php]
+# Ensure no BOM is added to PHP files
+# BOM causes "strict_types declaration must be the very first statement" errors
+
 [*.md]
 trim_trailing_whitespace = false
 
