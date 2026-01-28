@@ -110,6 +110,12 @@ final class IssueService
 
 			// Log for debugging
 			if (count($accounts) === 0) {
+				// Get sample accounts to see what's in database
+				$sampleAccounts = Account::query()
+					->where('game', $game)
+					->limit(3)
+					->get(['id', 'game', 'platform', 'status']);
+				
 				Log::info('IssueService: No accounts found', [
 					'game' => $game,
 					'platform' => $platform,
@@ -117,6 +123,13 @@ final class IssueService
 					'order_id' => $orderId,
 					'active_count' => $activeCount,
 					'available_count' => $availableCount,
+					'available_not_issued_count' => $availableNotIssuedCount,
+					'sample_accounts' => $sampleAccounts->map(fn($a) => [
+						'id' => $a->id,
+						'game' => $a->game,
+						'platform' => is_array($a->platform) ? $a->platform : json_decode($a->platform, true),
+						'status' => $a->status->value,
+					])->toArray(),
 				]);
 			}
 

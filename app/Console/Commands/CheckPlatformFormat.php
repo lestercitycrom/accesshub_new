@@ -60,13 +60,45 @@ final class CheckPlatformFormat extends Command
 			$this->line("  ID {$account->id}: {$display} (type: {$type})");
 		});
 
-		// Test different query methods
-		$this->info("\nTesting queries with 'steam' platform...");
+		// Show all unique platforms in database
+		$this->info("\nAll unique platforms in database:");
+		$allPlatforms = Account::query()
+			->pluck('platform')
+			->filter()
+			->flatMap(function ($platform) {
+				if (is_array($platform)) {
+					return $platform;
+				}
+				$decoded = json_decode($platform, true);
+				if (is_array($decoded)) {
+					return $decoded;
+				}
+				return [$platform];
+			})
+			->unique()
+			->sort()
+			->values()
+			->toArray();
+		
+		if (empty($allPlatforms)) {
+			$this->warn("  No platforms found!");
+		} else {
+			foreach ($allPlatforms as $p) {
+				$count = Account::query()
+					->whereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$p])
+					->count();
+				$this->line("  - {$p}: {$count} accounts");
+			}
+		}
+
+		// Test with first available platform from database
+		$testPlatform = !empty($allPlatforms) ? $allPlatforms[0] : 'steam';
+		$this->info("\nTesting queries with '{$testPlatform}' platform (first from database)...");
 		
 		// Method 1: whereJsonContains
 		try {
 			$count1 = Account::query()
-				->whereJsonContains('platform', 'steam')
+				->whereJsonContains('platform', $testPlatform)
 				->count();
 			$this->info("Method 1 (whereJsonContains): Found {$count1} accounts");
 		} catch (\Exception $e) {
@@ -76,7 +108,7 @@ final class CheckPlatformFormat extends Command
 		// Method 2: JSON_CONTAINS with string
 		try {
 			$count2 = Account::query()
-				->whereRaw('JSON_CONTAINS(platform, ?)', [json_encode('steam')])
+				->whereRaw('JSON_CONTAINS(platform, ?)', [json_encode($testPlatform)])
 				->count();
 			$this->info("Method 2 (JSON_CONTAINS with string): Found {$count2} accounts");
 		} catch (\Exception $e) {
@@ -86,19 +118,19 @@ final class CheckPlatformFormat extends Command
 		// Method 3: JSON_CONTAINS with array
 		try {
 			$count3 = Account::query()
-				->whereRaw('JSON_CONTAINS(platform, ?)', [json_encode(['steam'])])
+				->whereRaw('JSON_CONTAINS(platform, ?)', [json_encode([$testPlatform])])
 				->count();
 			$this->info("Method 3 (JSON_CONTAINS with array): Found {$count3} accounts");
 		} catch (\Exception $e) {
 			$this->error("Method 3 failed: " . $e->getMessage());
 		}
 
-		// Method 4: JSON_SEARCH
+		// Method 4: JSON_SEARCH (recommended)
 		try {
 			$count4 = Account::query()
-				->whereRaw('JSON_SEARCH(platform, "one", ?) IS NOT NULL', ['steam'])
+				->whereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$testPlatform])
 				->count();
-			$this->info("Method 4 (JSON_SEARCH): Found {$count4} accounts");
+			$this->info("Method 4 (JSON_SEARCH): Found {$count4} accounts ✓");
 		} catch (\Exception $e) {
 			$this->error("Method 4 failed: " . $e->getMessage());
 		}
@@ -106,11 +138,51 @@ final class CheckPlatformFormat extends Command
 		// Method 5: Direct check with LIKE (fallback)
 		try {
 			$count5 = Account::query()
-				->whereRaw('platform LIKE ?', ['%"steam"%'])
+				->whereRaw('platform LIKE ?', ['%"' . $testPlatform . '"%'])
 				->count();
 			$this->info("Method 5 (LIKE fallback): Found {$count5} accounts");
 		} catch (\Exception $e) {
 			$this->error("Method 5 failed: " . $e->getMessage());
+		}
+
+		// Test with ACTIVE status filter
+		$this->info("\nTesting with ACTIVE status filter...");
+		try {
+			$countActive = Account::query()
+				->where('status', 'ACTIVE')
+				->whereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$testPlatform])
+				->count();
+			$this->info("Found {$countActive} ACTIVE accounts with '{$testPlatform}' platform");
+		} catch (\Exception $e) {
+			$this->error("Failed: " . $e->getMessage());
+		}
+
+		// Show account statuses distribution
+		$this->info("\nAccount statuses distribution:");
+		$statuses = Account::query()
+			->selectRaw('status, COUNT(*) as count')
+			->groupBy('status')
+			->orderByDesc('count')
+			->get();
+		foreach ($statuses as $stat) {
+			$this->line("  - {$stat->status}: {$stat->count} accounts");
+		}
+
+		// Show sample accounts with test platform and ACTIVE status
+		$this->info("\nSample ACTIVE accounts with '{$testPlatform}' platform (first 3):");
+		$sampleAccounts = Account::query()
+			->where('status', 'ACTIVE')
+			->whereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$testPlatform])
+			->limit(3)
+			->get(['id', 'game', 'platform', 'status', 'available_uses', 'next_release_at']);
+		
+		if ($sampleAccounts->isEmpty()) {
+			$this->warn("  No ACTIVE accounts found with '{$testPlatform}' platform!");
+		} else {
+			foreach ($sampleAccounts as $acc) {
+				$platform = is_array($acc->platform) ? json_encode($acc->platform) : $acc->platform;
+				$this->line("  ID {$acc->id}: game='{$acc->game}', platform={$platform}, available_uses={$acc->available_uses}");
+			}
 		}
 
 		return 0;
