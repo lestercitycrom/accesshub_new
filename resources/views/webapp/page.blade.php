@@ -332,6 +332,8 @@
 			const orderId = document.getElementById('orderId').value.trim();
 			const platformSelect = document.getElementById('platform');
 			const gameSelect = document.getElementById('game');
+			
+			// Get values directly from select elements - they should already be synced by selectOption()
 			const platform = platformSelect ? platformSelect.value.trim() : '';
 			const game = gameSelect ? gameSelect.value.trim() : '';
 			const qtyRaw = document.getElementById('qty').value.trim();
@@ -344,8 +346,10 @@
 				qty,
 				platformSelectValue: platformSelect?.value,
 				gameSelectValue: gameSelect?.value,
-				platformSelectOptions: platformSelect ? Array.from(platformSelect.options).map(o => ({value: o.value, text: o.text})) : [],
-				gameSelectOptions: gameSelect ? Array.from(gameSelect.options).map(o => ({value: o.value, text: o.text})) : [],
+				platformSelectSelectedIndex: platformSelect?.selectedIndex,
+				gameSelectSelectedIndex: gameSelect?.selectedIndex,
+				platformSelectOptions: platformSelect ? Array.from(platformSelect.options).map((o, i) => ({index: i, value: o.value, text: o.text, selected: o.selected})) : [],
+				gameSelectOptions: gameSelect ? Array.from(gameSelect.options).map((o, i) => ({index: i, value: o.value, text: o.text, selected: o.selected})) : [],
 			});
 
 			if (!orderId || !platform || !game || qty <= 0) {
@@ -669,11 +673,14 @@
 			let selectedIndex = -1;
 
 			function updateOptions() {
+				const currentValue = select.value; // Save current selection
+				
 				options = Array.from(select.options).map((opt, idx) => ({
 					value: opt.value,
 					text: opt.textContent,
 					index: idx,
-					element: null
+					element: null,
+					selected: opt.value === currentValue
 				}));
 
 				optionsContainer.innerHTML = '';
@@ -681,6 +688,9 @@
 					if (idx === 0 && opt.value === '') return; // Skip placeholder
 					const optionEl = document.createElement('div');
 					optionEl.className = 'searchable-select-option';
+					if (opt.selected) {
+						optionEl.classList.add('selected');
+					}
 					optionEl.textContent = opt.text;
 					optionEl.dataset.value = opt.value;
 					optionEl.dataset.index = idx;
@@ -722,17 +732,32 @@
 			function selectOption(optionEl) {
 				const value = optionEl.dataset.value;
 				const text = optionEl.textContent;
-				select.value = value;
-				// Update select display text
-				const selectedOption = Array.from(select.options).find(opt => opt.value === value);
-				if (selectedOption) {
-					select.selectedIndex = Array.from(select.options).indexOf(selectedOption);
+				
+				// Find and select the matching option in the original select
+				const matchingOption = Array.from(select.options).find(opt => opt.value === value);
+				if (matchingOption) {
+					select.selectedIndex = Array.from(select.options).indexOf(matchingOption);
+					select.value = value;
+				} else {
+					// Fallback: set value directly
+					select.value = value;
 				}
+				
+				// Mark selected option visually in dropdown
+				options.forEach(opt => {
+					if (opt.element) {
+						opt.element.classList.remove('selected');
+					}
+				});
+				if (optionEl) {
+					optionEl.classList.add('selected');
+				}
+				
 				select.dispatchEvent(new Event('change', { bubbles: true }));
 				dropdown.classList.remove('active');
 				searchInput.value = '';
 				filterOptions('');
-				console.log(`Selected ${selectId}:`, {value, text, selectValue: select.value});
+				console.log(`Selected ${selectId}:`, {value, text, selectValue: select.value, selectedIndex: select.selectedIndex});
 			}
 
 			function highlightNext() {
@@ -768,6 +793,20 @@
 				visible[nextIndex].classList.add('highlighted');
 				visible[nextIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 			}
+
+			// Sync visual selection when select value changes externally
+			select.addEventListener('change', () => {
+				const currentValue = select.value;
+				options.forEach(opt => {
+					if (opt.element) {
+						if (opt.value === currentValue) {
+							opt.element.classList.add('selected');
+						} else {
+							opt.element.classList.remove('selected');
+						}
+					}
+				});
+			});
 
 			// Events
 			select.addEventListener('focus', () => {

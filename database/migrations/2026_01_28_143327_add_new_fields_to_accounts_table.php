@@ -33,10 +33,19 @@ return new class () extends Migration
 
 		// Create new unique index on game + login with key length for TEXT columns
 		// MySQL requires key length for TEXT/BLOB columns in indexes
-		DB::statement('ALTER TABLE `accounts` ADD UNIQUE `accounts_game_login_unique` (`game`(255), `login`(255))');
-
-		// Recreate index on status + game with key length for TEXT column
-		DB::statement('ALTER TABLE `accounts` ADD INDEX `accounts_status_game_index` (`status`, `game`(255))');
+		// SQLite doesn't support key length specification, so we check the driver
+		$driver = DB::connection()->getDriverName();
+		if ($driver === 'mysql') {
+			DB::statement('ALTER TABLE `accounts` ADD UNIQUE `accounts_game_login_unique` (`game`(255), `login`(255))');
+			DB::statement('ALTER TABLE `accounts` ADD INDEX `accounts_status_game_index` (`status`, `game`(255))');
+		} else {
+			// For SQLite and other databases, use standard Laravel methods
+			// Note: SQLite doesn't support unique indexes on TEXT columns with length specification
+			Schema::table('accounts', function (Blueprint $table): void {
+				$table->unique(['game', 'login'], 'accounts_game_login_unique');
+				$table->index(['status', 'game'], 'accounts_status_game_index');
+			});
+		}
 
 		// Migrate existing platform data to JSON array format
 		DB::table('accounts')->chunkById(100, function ($accounts): void {
@@ -56,9 +65,17 @@ return new class () extends Migration
 
 	public function down(): void
 	{
-		// Drop indexes created with DB::statement
-		DB::statement('ALTER TABLE `accounts` DROP INDEX `accounts_game_login_unique`');
-		DB::statement('ALTER TABLE `accounts` DROP INDEX `accounts_status_game_index`');
+		// Drop indexes by name
+		$driver = DB::connection()->getDriverName();
+		if ($driver === 'mysql') {
+			DB::statement('ALTER TABLE `accounts` DROP INDEX `accounts_game_login_unique`');
+			DB::statement('ALTER TABLE `accounts` DROP INDEX `accounts_status_game_index`');
+		} else {
+			Schema::table('accounts', function (Blueprint $table): void {
+				$table->dropUnique('accounts_game_login_unique');
+				$table->dropIndex('accounts_status_game_index');
+			});
+		}
 
 		Schema::table('accounts', function (Blueprint $table): void {
 			// Remove new fields
