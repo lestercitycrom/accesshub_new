@@ -13,6 +13,7 @@ use App\Domain\Telegram\Enums\TelegramRole;
 use App\Domain\Telegram\Models\TelegramUser;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 final class IssueService
 {
@@ -51,16 +52,18 @@ final class IssueService
 		$now = CarbonImmutable::now();
 
 		return DB::transaction(function () use ($telegramId, $orderId, $game, $platform, $qty, $cooldownDays, $now): IssuanceResult {
-			$alreadyIssuedAccountIds = Issuance::query()
-				->where('order_id', $orderId)
-				->pluck('account_id')
-				->all();
+			try {
+				$alreadyIssuedAccountIds = Issuance::query()
+					->where('order_id', $orderId)
+					->pluck('account_id')
+					->all();
 
-			// Search for accounts where the requested platform is in the platform array
-			$baseQuery = Account::query()
-				->where('game', $game)
-				->whereJsonContains('platform', $platform)
-				->where('status', AccountStatus::ACTIVE);
+				// Search for accounts where the requested platform is in the platform array
+				// Use JSON_CONTAINS which works with both whereJsonContains syntax and raw SQL
+				$baseQuery = Account::query()
+					->where('game', $game)
+					->where('status', AccountStatus::ACTIVE)
+					->whereRaw('JSON_CONTAINS(platform, ?)', [json_encode($platform)]);
 
 			$availableQuery = (clone $baseQuery)
 				->where(static function ($q) use ($now): void {
@@ -85,8 +88,8 @@ final class IssueService
 			// - either available_uses > 0 OR next_release_at is reached (will normalize to 1)
 			$query = Account::query()
 				->where('game', $game)
-				->whereJsonContains('platform', $platform)
 				->where('status', AccountStatus::ACTIVE)
+				->whereRaw('JSON_CONTAINS(platform, ?)', [json_encode($platform)])
 				->when($alreadyIssuedAccountIds !== [], static function ($q) use ($alreadyIssuedAccountIds): void {
 					$q->whereNotIn('id', $alreadyIssuedAccountIds);
 				})
@@ -104,6 +107,18 @@ final class IssueService
 
 			/** @var array<int, Account> $accounts */
 			$accounts = $query->get()->all();
+
+			// Log for debugging
+			if (count($accounts) === 0) {
+				Log::info('IssueService: No accounts found', [
+					'game' => $game,
+					'platform' => $platform,
+					'telegram_id' => $telegramId,
+					'order_id' => $orderId,
+					'active_count' => $activeCount,
+					'available_count' => $availableCount,
+				]);
+			}
 
 			if (count($accounts) < $qty) {
 				if ($activeCount === 0) {
@@ -181,6 +196,18 @@ final class IssueService
 			}
 
 			return IssuanceResult::success($items);
+
+			} catch (\Exception $e) {
+				Log::error('IssueService: Exception during issuance', [
+					'error' => $e->getMessage(),
+					'trace' => $e->getTraceAsString(),
+					'game' => $game,
+					'platform' => $platform,
+					'telegram_id' => $telegramId,
+					'order_id' => $orderId,
+				]);
+				return IssuanceResult::fail('Ошибка при выдаче: ' . $e->getMessage());
+			}
 		});
 	}
 
