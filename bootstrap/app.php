@@ -16,6 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'no-cache' => \App\Http\Middleware\NoCache::class,
             'log-webapp' => \App\Http\Middleware\LogWebAppRequests::class,
         ]);
+        
+        // Exclude WebApp API routes from CSRF verification
+        // They use session-based auth via Telegram initData, not CSRF tokens
+        $middleware->validateCsrfTokens(except: [
+            'webapp/api/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
