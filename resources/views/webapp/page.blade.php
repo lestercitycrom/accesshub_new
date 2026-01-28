@@ -803,38 +803,75 @@
 		async function loadPlatforms() {
 			try {
 				const resp = await apiGet('/webapp/api/schema');
+				console.log('Schema API response:', resp);
+				
 				if (resp.status === 200 && resp.data?.tabs) {
 					const issueTab = resp.data.tabs.find(tab => tab.id === 'issue');
+					console.log('Issue tab:', issueTab);
+					
 					if (issueTab?.fields) {
 						const platformField = issueTab.fields.find(field => field.name === 'platform');
 						const gameField = issueTab.fields.find(field => field.name === 'game');
 						
+						console.log('Platform field:', platformField);
+						console.log('Game field:', gameField);
+						
 						// Populate platform select
 						const platformSelect = document.getElementById('platform');
-						if (platformSelect && platformField?.options) {
-							platformSelect.innerHTML = '<option value="">Выберите платформу...</option>';
-							platformField.options.forEach(option => {
-								const opt = document.createElement('option');
-								opt.value = option.value;
-								opt.textContent = option.label;
-								platformSelect.appendChild(opt);
-							});
-							initSearchableSelect('platform');
+						if (platformSelect) {
+							if (platformField?.options && platformField.options.length > 0) {
+								console.log('Platform options:', platformField.options);
+								platformSelect.innerHTML = '<option value="">Выберите платформу...</option>';
+								platformField.options.forEach(option => {
+									const opt = document.createElement('option');
+									opt.value = option.value;
+									opt.textContent = option.label;
+									platformSelect.appendChild(opt);
+								});
+								// Reinitialize searchable select after populating options
+								const existingDropdown = platformSelect.parentElement.querySelector('.searchable-select-dropdown');
+								if (existingDropdown) {
+									existingDropdown.remove();
+								}
+								initSearchableSelect('platform');
+							} else {
+								console.error('No platform options:', platformField?.options);
+								platformSelect.innerHTML = '<option value="">Нет доступных платформ</option>';
+							}
+						} else {
+							console.error('Platform select element not found');
 						}
 						
 						// Populate game select
 						const gameSelect = document.getElementById('game');
-						if (gameSelect && gameField?.options) {
-							gameSelect.innerHTML = '<option value="">Выберите игру...</option>';
-							gameField.options.forEach(option => {
-								const opt = document.createElement('option');
-								opt.value = option.value;
-								opt.textContent = option.label;
-								gameSelect.appendChild(opt);
-							});
-							initSearchableSelect('game');
+						if (gameSelect) {
+							if (gameField?.options && gameField.options.length > 0) {
+								console.log('Game options:', gameField.options);
+								gameSelect.innerHTML = '<option value="">Выберите игру...</option>';
+								gameField.options.forEach(option => {
+									const opt = document.createElement('option');
+									opt.value = option.value;
+									opt.textContent = option.label;
+									gameSelect.appendChild(opt);
+								});
+								// Reinitialize searchable select after populating options
+								const existingDropdown = gameSelect.parentElement.querySelector('.searchable-select-dropdown');
+								if (existingDropdown) {
+									existingDropdown.remove();
+								}
+								initSearchableSelect('game');
+							} else {
+								console.error('No game options:', gameField?.options);
+								gameSelect.innerHTML = '<option value="">Нет доступных игр</option>';
+							}
+						} else {
+							console.error('Game select element not found');
 						}
+					} else {
+						console.error('No fields in issue tab');
 					}
+				} else {
+					console.error('Invalid schema response:', resp);
 				}
 			} catch (e) {
 				console.error('Failed to load platforms:', e);

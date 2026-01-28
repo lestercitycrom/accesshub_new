@@ -6,6 +6,7 @@ namespace App\WebApp\Http\Controllers;
 
 use App\Domain\Accounts\Models\Account;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 final class SchemaController
 {
@@ -41,6 +42,13 @@ final class SchemaController
 			->values()
 			->map(fn($platform) => ['value' => $platform, 'label' => ucfirst($platform)])
 			->toArray();
+
+		Log::info('SchemaController: Returning schema', [
+			'games_count' => count($games),
+			'platforms_count' => count($platforms),
+			'games_sample' => array_slice($games, 0, 5),
+			'platforms_sample' => array_slice($platforms, 0, 5),
+		]);
 
 		return response()->json([
 			'version' => 1,
