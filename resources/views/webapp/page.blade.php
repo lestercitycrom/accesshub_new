@@ -38,15 +38,19 @@
 						</div>
 						<div class="col-6">
 							<label class="form-label" for="platform">Платформа</label>
-							<select id="platform" class="form-select">
-								<option value="">Выберите платформу...</option>
-							</select>
+							<div class="searchable-select-wrapper">
+								<select id="platform" class="form-select searchable-select">
+									<option value="">Выберите платформу...</option>
+								</select>
+							</div>
 						</div>
 						<div class="col-12">
 							<label class="form-label" for="game">Игра</label>
-							<select id="game" class="form-select">
-								<option value="">Выберите игру...</option>
-							</select>
+							<div class="searchable-select-wrapper">
+								<select id="game" class="form-select searchable-select">
+									<option value="">Выберите игру...</option>
+								</select>
+							</div>
 						</div>
 					</div>
 
@@ -606,6 +610,184 @@
 			});
 		}
 
+		function initSearchableSelect(selectId) {
+			const select = document.getElementById(selectId);
+			if (!select) return;
+
+			const wrapper = select.closest('.searchable-select-wrapper');
+			if (!wrapper) return;
+
+			// Create dropdown
+			const dropdown = document.createElement('div');
+			dropdown.className = 'searchable-select-dropdown';
+			
+			const searchContainer = document.createElement('div');
+			searchContainer.className = 'searchable-select-search';
+			const searchInput = document.createElement('input');
+			searchInput.type = 'text';
+			searchInput.placeholder = 'Поиск...';
+			searchContainer.appendChild(searchInput);
+			
+			const optionsContainer = document.createElement('div');
+			optionsContainer.className = 'searchable-select-options';
+			
+			dropdown.appendChild(searchContainer);
+			dropdown.appendChild(optionsContainer);
+			wrapper.appendChild(dropdown);
+
+			let options = [];
+			let selectedIndex = -1;
+
+			function updateOptions() {
+				options = Array.from(select.options).map((opt, idx) => ({
+					value: opt.value,
+					text: opt.textContent,
+					index: idx,
+					element: null
+				}));
+
+				optionsContainer.innerHTML = '';
+				options.forEach((opt, idx) => {
+					if (idx === 0 && opt.value === '') return; // Skip placeholder
+					const optionEl = document.createElement('div');
+					optionEl.className = 'searchable-select-option';
+					optionEl.textContent = opt.text;
+					optionEl.dataset.value = opt.value;
+					optionEl.dataset.index = idx;
+					opt.element = optionEl;
+					optionsContainer.appendChild(optionEl);
+				});
+
+				filterOptions('');
+			}
+
+			function filterOptions(query) {
+				const q = query.toLowerCase().trim();
+				let visibleCount = 0;
+				let firstVisible = null;
+
+				options.forEach((opt, idx) => {
+					if (idx === 0 && opt.value === '') return;
+					const matches = !q || opt.text.toLowerCase().includes(q);
+					if (opt.element) {
+						if (matches) {
+							opt.element.classList.remove('hidden');
+							if (visibleCount === 0) {
+								firstVisible = opt.element;
+								opt.element.classList.add('highlighted');
+							} else {
+								opt.element.classList.remove('highlighted');
+							}
+							visibleCount++;
+						} else {
+							opt.element.classList.add('hidden');
+							opt.element.classList.remove('highlighted');
+						}
+					}
+				});
+
+				selectedIndex = firstVisible ? parseInt(firstVisible.dataset.index) : -1;
+			}
+
+			function selectOption(optionEl) {
+				const value = optionEl.dataset.value;
+				select.value = value;
+				select.dispatchEvent(new Event('change', { bubbles: true }));
+				dropdown.classList.remove('active');
+				searchInput.value = '';
+				filterOptions('');
+			}
+
+			function highlightNext() {
+				const visible = Array.from(optionsContainer.querySelectorAll('.searchable-select-option:not(.hidden)'));
+				if (visible.length === 0) return;
+				
+				const current = optionsContainer.querySelector('.highlighted');
+				let nextIndex = 0;
+				
+				if (current) {
+					const currentIndex = visible.indexOf(current);
+					nextIndex = (currentIndex + 1) % visible.length;
+					current.classList.remove('highlighted');
+				}
+				
+				visible[nextIndex].classList.add('highlighted');
+				visible[nextIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+			}
+
+			function highlightPrev() {
+				const visible = Array.from(optionsContainer.querySelectorAll('.searchable-select-option:not(.hidden)'));
+				if (visible.length === 0) return;
+				
+				const current = optionsContainer.querySelector('.highlighted');
+				let nextIndex = visible.length - 1;
+				
+				if (current) {
+					const currentIndex = visible.indexOf(current);
+					nextIndex = currentIndex > 0 ? currentIndex - 1 : visible.length - 1;
+					current.classList.remove('highlighted');
+				}
+				
+				visible[nextIndex].classList.add('highlighted');
+				visible[nextIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+			}
+
+			// Events
+			select.addEventListener('focus', () => {
+				dropdown.classList.add('active');
+				searchInput.focus();
+				updateOptions();
+			});
+
+			select.addEventListener('click', (e) => {
+				e.preventDefault();
+				select.focus();
+			});
+
+			searchInput.addEventListener('input', (e) => {
+				filterOptions(e.target.value);
+			});
+
+			searchInput.addEventListener('keydown', (e) => {
+				if (e.key === 'ArrowDown') {
+					e.preventDefault();
+					highlightNext();
+				} else if (e.key === 'ArrowUp') {
+					e.preventDefault();
+					highlightPrev();
+				} else if (e.key === 'Enter') {
+					e.preventDefault();
+					const highlighted = optionsContainer.querySelector('.highlighted');
+					if (highlighted) {
+						selectOption(highlighted);
+					}
+				} else if (e.key === 'Escape') {
+					dropdown.classList.remove('active');
+					select.blur();
+				}
+			});
+
+			optionsContainer.addEventListener('click', (e) => {
+				const optionEl = e.target.closest('.searchable-select-option');
+				if (optionEl && !optionEl.classList.contains('hidden')) {
+					selectOption(optionEl);
+				}
+			});
+
+			// Close on outside click
+			document.addEventListener('click', (e) => {
+				if (!wrapper.contains(e.target) && !select.contains(e.target)) {
+					dropdown.classList.remove('active');
+				}
+			});
+
+			// Update when select options change
+			const observer = new MutationObserver(updateOptions);
+			observer.observe(select, { childList: true });
+
+			updateOptions();
+		}
+
 		async function loadPlatforms() {
 			try {
 				const resp = await apiGet('/webapp/api/schema');
@@ -625,6 +807,7 @@
 								opt.textContent = option.label;
 								platformSelect.appendChild(opt);
 							});
+							initSearchableSelect('platform');
 						}
 						
 						// Populate game select
@@ -637,6 +820,7 @@
 								opt.textContent = option.label;
 								gameSelect.appendChild(opt);
 							});
+							initSearchableSelect('game');
 						}
 					}
 				}
