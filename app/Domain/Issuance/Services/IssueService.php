@@ -59,11 +59,11 @@ final class IssueService
 					->all();
 
 				// Search for accounts where the requested platform is in the platform array
-				// Use JSON_CONTAINS which works with both whereJsonContains syntax and raw SQL
+				// Use JSON_SEARCH which finds string values in JSON arrays more reliably
 				$baseQuery = Account::query()
 					->where('game', $game)
 					->where('status', AccountStatus::ACTIVE)
-					->whereRaw('JSON_CONTAINS(platform, ?)', [json_encode($platform)]);
+					->whereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$platform]);
 
 			$availableQuery = (clone $baseQuery)
 				->where(static function ($q) use ($now): void {
@@ -89,7 +89,7 @@ final class IssueService
 			$query = Account::query()
 				->where('game', $game)
 				->where('status', AccountStatus::ACTIVE)
-				->whereRaw('JSON_CONTAINS(platform, ?)', [json_encode($platform)])
+				->whereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$platform])
 				->when($alreadyIssuedAccountIds !== [], static function ($q) use ($alreadyIssuedAccountIds): void {
 					$q->whereNotIn('id', $alreadyIssuedAccountIds);
 				})
