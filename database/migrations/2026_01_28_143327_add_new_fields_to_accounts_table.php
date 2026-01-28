@@ -29,13 +29,14 @@ return new class () extends Migration
 			$table->text('comment')->nullable()->after('mail_account_password');
 			$table->date('two_fa_mail_account_date')->nullable()->after('comment');
 			$table->text('recover_code')->nullable()->after('two_fa_mail_account_date');
-
-			// Create new unique index on game + login (platform is now array)
-			$table->unique(['game', 'login']);
-
-			// Recreate index on status + game (platform removed as it's now JSON)
-			$table->index(['status', 'game']);
 		});
+
+		// Create new unique index on game + login with key length for TEXT columns
+		// MySQL requires key length for TEXT/BLOB columns in indexes
+		DB::statement('ALTER TABLE `accounts` ADD UNIQUE `accounts_game_login_unique` (`game`(255), `login`(255))');
+
+		// Recreate index on status + game with key length for TEXT column
+		DB::statement('ALTER TABLE `accounts` ADD INDEX `accounts_status_game_index` (`status`, `game`(255))');
 
 		// Migrate existing platform data to JSON array format
 		DB::table('accounts')->chunkById(100, function ($accounts): void {
@@ -55,11 +56,11 @@ return new class () extends Migration
 
 	public function down(): void
 	{
-		Schema::table('accounts', function (Blueprint $table): void {
-			// Drop new unique index
-			$table->dropUnique(['game', 'login']);
-			$table->dropIndex(['status', 'game']);
+		// Drop indexes created with DB::statement
+		DB::statement('ALTER TABLE `accounts` DROP INDEX `accounts_game_login_unique`');
+		DB::statement('ALTER TABLE `accounts` DROP INDEX `accounts_status_game_index`');
 
+		Schema::table('accounts', function (Blueprint $table): void {
 			// Remove new fields
 			$table->dropColumn([
 				'mail_account_login',
