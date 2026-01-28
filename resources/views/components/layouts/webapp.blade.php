@@ -165,10 +165,17 @@
 			box-shadow: none !important;
 		}
 
+		.form-select option {
+			background-color: var(--ah-panel) !important;
+			color: var(--ah-text) !important;
+		}
+
 		.form-select:focus {
 			border-color: rgba(36, 129, 201, .55) !important;
 			box-shadow: 0 0 0 2px var(--ah-accent-weak) !important;
 			outline: none !important;
+			background-color: var(--ah-input) !important;
+			color: var(--ah-text) !important;
 		}
 
 		.history-controls .form-select {
