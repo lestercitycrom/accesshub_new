@@ -368,7 +368,19 @@
 				return;
 			}
 
-			issueResultText.textContent = resp.data?.error || 'Ошибка выдачи. Проверьте данные.';
+			// Handle different error scenarios
+			let errorMessage = 'Ошибка выдачи. Проверьте данные.';
+			if (resp.data?.error) {
+				errorMessage = resp.data.error;
+			} else if (resp.status >= 500) {
+				errorMessage = 'Ошибка сервера. Попробуйте позже или обратитесь к администратору.';
+			} else if (resp.status === 422 && resp.data) {
+				errorMessage = resp.data.error || resp.data.message || 'Неверные данные.';
+			} else if (!resp.data) {
+				errorMessage = 'Ошибка соединения. Проверьте интернет и попробуйте снова.';
+			}
+
+			issueResultText.textContent = errorMessage;
 			setButtonLoading(issueBtn, false);
 		});
 
