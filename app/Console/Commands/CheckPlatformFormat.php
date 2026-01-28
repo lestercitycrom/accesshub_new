@@ -165,15 +165,18 @@ final class CheckPlatformFormat extends Command
 			->orderByDesc('count')
 			->get();
 		foreach ($statuses as $stat) {
-			$this->line("  - {$stat->status}: {$stat->count} accounts");
+			$statusValue = $stat->status instanceof \App\Domain\Accounts\Enums\AccountStatus 
+				? $stat->status->value 
+				: (string) $stat->status;
+			$this->line("  - {$statusValue}: {$stat->count} accounts");
 		}
 
 		// Show sample accounts with test platform and ACTIVE status
-		$this->info("\nSample ACTIVE accounts with '{$testPlatform}' platform (first 3):");
+		$this->info("\nSample ACTIVE accounts with '{$testPlatform}' platform (first 5):");
 		$sampleAccounts = Account::query()
 			->where('status', 'ACTIVE')
 			->whereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$testPlatform])
-			->limit(3)
+			->limit(5)
 			->get(['id', 'game', 'platform', 'status', 'available_uses', 'next_release_at']);
 		
 		if ($sampleAccounts->isEmpty()) {
@@ -181,9 +184,57 @@ final class CheckPlatformFormat extends Command
 		} else {
 			foreach ($sampleAccounts as $acc) {
 				$platform = is_array($acc->platform) ? json_encode($acc->platform) : $acc->platform;
-				$this->line("  ID {$acc->id}: game='{$acc->game}', platform={$platform}, available_uses={$acc->available_uses}");
+				$statusValue = $acc->status instanceof \App\Domain\Accounts\Enums\AccountStatus 
+					? $acc->status->value 
+					: (string) $acc->status;
+				$nextRelease = $acc->next_release_at ? $acc->next_release_at->format('Y-m-d H:i:s') : 'NULL';
+				$this->line("  ID {$acc->id}: game='{$acc->game}', platform={$platform}, status={$statusValue}, available_uses={$acc->available_uses}, next_release_at={$nextRelease}");
 			}
 		}
+
+		// Check availability
+		$this->info("\nAvailability check for '{$testPlatform}' platform:");
+		$now = now();
+		$availableQuery = Account::query()
+			->where('status', 'ACTIVE')
+			->whereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$testPlatform])
+			->where(function ($q) use ($now) {
+				$q->where('available_uses', '>', 0)
+					->orWhere(function ($q2) use ($now) {
+						$q2->whereNotNull('next_release_at')
+							->where('next_release_at', '<=', $now->toDateTimeString());
+					});
+			});
+		
+		$availableCount = $availableQuery->count();
+		$this->info("  Available accounts (available_uses > 0 OR next_release_at <= now): {$availableCount}");
+		
+		$withUses = Account::query()
+			->where('status', 'ACTIVE')
+			->whereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$testPlatform])
+			->where('available_uses', '>', 0)
+			->count();
+		$this->info("  Accounts with available_uses > 0: {$withUses}");
+		
+		$onCooldown = Account::query()
+			->where('status', 'ACTIVE')
+			->whereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$testPlatform])
+			->where('available_uses', '<=', 0)
+			->whereNotNull('next_release_at')
+			->where('next_release_at', '>', $now->toDateTimeString())
+			->count();
+		$this->info("  Accounts on cooldown (available_uses = 0, next_release_at > now): {$onCooldown}");
+		
+		$noUsesNoCooldown = Account::query()
+			->where('status', 'ACTIVE')
+			->whereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$testPlatform])
+			->where('available_uses', '<=', 0)
+			->where(function ($q) use ($now) {
+				$q->whereNull('next_release_at')
+					->orWhere('next_release_at', '>', $now->toDateTimeString());
+			})
+			->count();
+		$this->info("  Accounts with no uses and no valid cooldown: {$noUsesNoCooldown}");
 
 		return 0;
 	}
