@@ -18,5 +18,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+            if (str_starts_with($request->path(), 'webapp/api/issue')) {
+                \Illuminate\Support\Facades\Log::error('Exception in WebApp issue route', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'path' => $request->path(),
+                    'method' => $request->method(),
+                    'input' => $request->all(),
+                ]);
+            }
+        });
     })->create();

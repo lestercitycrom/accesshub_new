@@ -23,11 +23,14 @@ final class IssueController
 
 	public function __invoke(Request $request): JsonResponse
 	{
-		Log::info('IssueController: Request received', [
+		// Log immediately at the start - this should always execute
+		\Illuminate\Support\Facades\Log::info('IssueController: INVOKE CALLED', [
 			'method' => $request->method(),
 			'url' => $request->fullUrl(),
+			'path' => $request->path(),
 			'all_input' => $request->all(),
 			'session_telegram_id' => $request->session()->get('webapp.telegram_id', 0),
+			'headers' => $request->headers->all(),
 		]);
 
 		try {
