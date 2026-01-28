@@ -20,23 +20,32 @@ final class TextIssueParser
 		}
 
 		$orderId = $lines[0];
+		$secondLine = trim($lines[1]);
 
 		// Parse second line: "game platform x2" or "game platform"
-		$secondLineParts = explode(' ', $lines[1]);
-		if (count($secondLineParts) < 2) {
-			return null;
+		// Platform is always the last word before optional x2/x3/etc
+		// Game is everything before the platform
+		
+		// Check for qty pattern (x2, x3, etc.) at the end
+		$qty = 1; // default
+		$qtyPattern = '/\s+x(\d+)$/i';
+		if (preg_match($qtyPattern, $secondLine, $qtyMatches)) {
+			$qty = (int) $qtyMatches[1];
+			// Remove qty part from line
+			$secondLine = preg_replace($qtyPattern, '', $secondLine);
 		}
 
-		$game = $secondLineParts[0];
-		$platform = $secondLineParts[1];
+		// Split by last space to separate game and platform
+		$lastSpacePos = strrpos($secondLine, ' ');
+		if ($lastSpacePos === false) {
+			return null; // Need at least game and platform separated by space
+		}
 
-		// Check for qty (x2, x3, etc.)
-		$qty = 1; // default
-		if (isset($secondLineParts[2])) {
-			$qtyPart = $secondLineParts[2];
-			if (preg_match('/^x(\d+)$/', $qtyPart, $matches)) {
-				$qty = (int) $matches[1];
-			}
+		$game = trim(substr($secondLine, 0, $lastSpacePos));
+		$platform = trim(substr($secondLine, $lastSpacePos + 1));
+
+		if ($game === '' || $platform === '') {
+			return null;
 		}
 
 		return new IncomingIssueRequest(
