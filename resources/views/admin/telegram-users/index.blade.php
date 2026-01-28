@@ -63,10 +63,10 @@
 							wire:click="toggleSelectAll"
 						>
 					</x-admin.th>
-					<x-admin.th>Telegram ID</x-admin.th>
-					<x-admin.th>Пользователь</x-admin.th>
-					<x-admin.th>Роль</x-admin.th>
-					<x-admin.th>Статус</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'telegram_id'" :direction="$sortBy === 'telegram_id' ? $sortDirection : null" sortField="telegram_id">Telegram ID</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'username'" :direction="$sortBy === 'username' ? $sortDirection : null" sortField="username">Пользователь</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'role'" :direction="$sortBy === 'role' ? $sortDirection : null" sortField="role">Роль</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'is_active'" :direction="$sortBy === 'is_active' ? $sortDirection : null" sortField="is_active">Статус</x-admin.th>
 					<x-admin.th align="right" class="w-20">Действия</x-admin.th>
 				</tr>
 			</x-slot:head>

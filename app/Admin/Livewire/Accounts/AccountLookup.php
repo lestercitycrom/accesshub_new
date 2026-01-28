@@ -21,6 +21,8 @@ final class AccountLookup extends Component
 	public string $platformFilter = '';
 	public string $assignedFilter = '';
 	public string $density = 'normal';
+	public string $sortBy = 'id';
+	public string $sortDirection = 'desc';
 
 	public function mount(): void
 	{
@@ -57,6 +59,17 @@ final class AccountLookup extends Component
 		$this->resetPage();
 	}
 
+	public function sort(string $field): void
+	{
+		if ($this->sortBy === $field) {
+			$this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+		} else {
+			$this->sortBy = $field;
+			$this->sortDirection = 'asc';
+		}
+		$this->resetPage();
+	}
+
 	/**
 	 * @return LengthAwarePaginator<Account>
 	 */
@@ -82,7 +95,8 @@ final class AccountLookup extends Component
 				$query->where('game', $this->gameFilter);
 			})
 			->when($this->platformFilter !== '', function ($query): void {
-				$query->where('platform', $this->platformFilter);
+				// Search in platform array using JSON contains
+				$query->whereJsonContains('platform', $this->platformFilter);
 			})
 			->when($this->assignedFilter !== '', function ($query): void {
 				if ($this->assignedFilter === 'assigned') {
@@ -91,7 +105,14 @@ final class AccountLookup extends Component
 					$query->whereNull('assigned_to_telegram_id');
 				}
 			})
-			->orderByDesc('id')
+			->when($this->sortBy === 'platform', function ($query): void {
+				// For JSON columns, we need special handling
+				$direction = $this->sortDirection === 'asc' ? 'asc' : 'desc';
+				$query->orderByRaw("JSON_EXTRACT(platform, '$[0]') {$direction}");
+			})
+			->when($this->sortBy !== 'platform', function ($query): void {
+				$query->orderBy($this->sortBy, $this->sortDirection);
+			})
 			->paginate(20);
 	}
 
@@ -113,13 +134,27 @@ final class AccountLookup extends Component
 
 	public function getPlatformOptionsProperty(): array
 	{
-		return Account::query()
-			->distinct()
+		// Extract all platforms from JSON arrays
+		$platforms = Account::query()
 			->pluck('platform')
 			->filter()
+			->flatMap(function ($platform) {
+				if (is_array($platform)) {
+					return $platform;
+				}
+				// Try to decode JSON if it's a string
+				$decoded = json_decode($platform, true);
+				if (is_array($decoded)) {
+					return $decoded;
+				}
+				return [$platform];
+			})
+			->unique()
 			->sort()
 			->values()
 			->toArray();
+
+		return $platforms;
 	}
 
 	public function render()

@@ -98,13 +98,13 @@
 		<x-admin.table density="normal" :sticky="true" :zebra="true">
 			<x-slot:head>
 				<tr>
-					<x-admin.th>ID</x-admin.th>
-					<x-admin.th>Игра</x-admin.th>
-					<x-admin.th>Платформа</x-admin.th>
-					<x-admin.th>Логин</x-admin.th>
-					<x-admin.th>Статус</x-admin.th>
-					<x-admin.th>Назначен</x-admin.th>
-					<x-admin.th>Дедлайн</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'id'" :direction="$sortBy === 'id' ? $sortDirection : null" sortField="id">ID</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'game'" :direction="$sortBy === 'game' ? $sortDirection : null" sortField="game">Игра</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'platform'" :direction="$sortBy === 'platform' ? $sortDirection : null" sortField="platform">Платформа</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'login'" :direction="$sortBy === 'login' ? $sortDirection : null" sortField="login">Логин</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'status'" :direction="$sortBy === 'status' ? $sortDirection : null" sortField="status">Статус</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'assigned_to_telegram_id'" :direction="$sortBy === 'assigned_to_telegram_id' ? $sortDirection : null" sortField="assigned_to_telegram_id">Назначен</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'status_deadline_at'" :direction="$sortBy === 'status_deadline_at' ? $sortDirection : null" sortField="status_deadline_at">Дедлайн</x-admin.th>
 					<x-admin.th align="right">Действия</x-admin.th>
 				</tr>
 			</x-slot:head>
@@ -113,7 +113,17 @@
 				<tr class="hover:bg-slate-50/70">
 					<x-admin.td class="font-semibold text-slate-900">{{ $row->id }}</x-admin.td>
 					<x-admin.td>{{ $row->game }}</x-admin.td>
-					<x-admin.td>{{ $row->platform }}</x-admin.td>
+					<x-admin.td>
+						@if(is_array($row->platform))
+							<div class="flex flex-wrap gap-1">
+								@foreach($row->platform as $p)
+									<x-admin.badge variant="blue" class="text-xs">{{ $p }}</x-admin.badge>
+								@endforeach
+							</div>
+						@else
+							{{ $row->platform }}
+						@endif
+					</x-admin.td>
 
 					<x-admin.td>
 						<div class="font-semibold text-slate-900">{{ $row->login }}</div>
@@ -168,4 +178,24 @@
 			</div>
 		@endif
 	</x-admin.card>
+
+	<!-- Danger Zone -->
+	<div class="rounded-2xl border-2 border-red-200 bg-red-50 p-6">
+		<div class="flex items-start justify-between gap-4">
+			<div class="flex-1">
+				<h3 class="text-lg font-semibold text-red-900">Опасная зона</h3>
+				<p class="mt-1 text-sm text-red-700">
+					Удаление всех аккаунтов — необратимая операция. Все данные будут безвозвратно удалены.
+				</p>
+			</div>
+			<x-admin.button
+				variant="danger"
+				size="md"
+				wire:click="deleteAllAccounts"
+				onclick="if(!confirm('Вы уверены, что хотите удалить ВСЕ аккаунты? Это действие необратимо!')){event.preventDefault();event.stopImmediatePropagation();}"
+			>
+				Удалить все аккаунты
+			</x-admin.button>
+		</div>
+	</div>
 </div>

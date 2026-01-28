@@ -63,7 +63,24 @@ function fakeTelegramStage61(): void
 it('imports baseline accounts and ignores duplicates', function (): void {
 	importBaselineAccounts($this);
 
-	expect(Account::query()->count())->toBe(7);
+	// Check session status for debugging
+	$status = session('status');
+	if ($status === null) {
+		$this->fail("Import returned no status message");
+	}
+	
+	if (str_contains($status, 'Ошибка') || str_contains($status, 'Отсутствуют')) {
+		$this->fail("Import failed: {$status}");
+	}
+
+	// Old format CSV has 8 rows, but last one is duplicate (cs2_s1 appears twice)
+	// With new logic: game+login is unique, so duplicates are updated, not ignored
+	// Expected: 7 unique accounts (cs2_s1, cs2_s2, cs2_s3, dota_s1, dota_s2, cs2_x1, mc_s1)
+	$count = Account::query()->count();
+	if ($count === 0) {
+		$this->fail("No accounts imported. Status: {$status}");
+	}
+	expect($count)->toBe(7);
 })->group('Stage61');
 
 it('issues accounts per order and avoids reuse within the same order', function (): void {

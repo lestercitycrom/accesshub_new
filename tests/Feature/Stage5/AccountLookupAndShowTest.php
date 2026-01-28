@@ -37,12 +37,15 @@ it('lookup finds account by order_id via issuances', function (): void {
 		'status' => AccountStatus::ACTIVE,
 	]);
 
+	// Platform is now array in Account, but string in Issuance
+	$platform = is_array($account->platform) ? $account->platform[0] : $account->platform;
+	
 	Issuance::factory()->create([
 		'telegram_id' => $operator->telegram_id,
 		'account_id' => $account->id,
 		'order_id' => 'ORD-X',
 		'game' => $account->game,
-		'platform' => $account->platform,
+		'platform' => $platform,
 	]);
 
 	Livewire::test(\App\Admin\Livewire\Accounts\AccountLookup::class)
@@ -62,12 +65,15 @@ it('account show renders issuances and events', function (): void {
 		'password' => 'p1',
 	]);
 
+	// Platform is now array in Account, but string in Issuance
+	$platform = is_array($account->platform) ? $account->platform[0] : $account->platform;
+	
 	Issuance::factory()->create([
 		'telegram_id' => $operator->telegram_id,
 		'account_id' => $account->id,
 		'order_id' => 'ORD-1',
 		'game' => $account->game,
-		'platform' => $account->platform,
+		'platform' => $platform,
 	]);
 
 	AccountEvent::factory()->create([

@@ -100,13 +100,13 @@
 			<x-slot:head>
 				<tr>
 					<x-admin.th class="w-10"></x-admin.th>
-					<x-admin.th>ID</x-admin.th>
-					<x-admin.th>Игра</x-admin.th>
-					<x-admin.th>Платформа</x-admin.th>
-					<x-admin.th>Логин</x-admin.th>
-					<x-admin.th>Статус</x-admin.th>
-					<x-admin.th>Назначен</x-admin.th>
-					<x-admin.th>Дедлайн</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'id'" :direction="$sortBy === 'id' ? $sortDirection : null" sortField="id">ID</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'game'" :direction="$sortBy === 'game' ? $sortDirection : null" sortField="game">Игра</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'platform'" :direction="$sortBy === 'platform' ? $sortDirection : null" sortField="platform">Платформа</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'login'" :direction="$sortBy === 'login' ? $sortDirection : null" sortField="login">Логин</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'status'" :direction="$sortBy === 'status' ? $sortDirection : null" sortField="status">Статус</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'assigned_to_telegram_id'" :direction="$sortBy === 'assigned_to_telegram_id' ? $sortDirection : null" sortField="assigned_to_telegram_id">Назначен</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'status_deadline_at'" :direction="$sortBy === 'status_deadline_at' ? $sortDirection : null" sortField="status_deadline_at">Дедлайн</x-admin.th>
 					<x-admin.th align="right">Действие</x-admin.th>
 				</tr>
 			</x-slot:head>
@@ -119,7 +119,17 @@
 
 					<x-admin.td class="font-semibold text-slate-900">{{ $row->id }}</x-admin.td>
 					<x-admin.td>{{ $row->game }}</x-admin.td>
-					<x-admin.td>{{ $row->platform }}</x-admin.td>
+					<x-admin.td>
+						@if(is_array($row->platform))
+							<div class="flex flex-wrap gap-1">
+								@foreach($row->platform as $p)
+									<x-admin.badge variant="blue" class="text-xs">{{ $p }}</x-admin.badge>
+								@endforeach
+							</div>
+						@else
+							{{ $row->platform }}
+						@endif
+					</x-admin.td>
 					<x-admin.td class="font-semibold text-slate-900">{{ $row->login }}</x-admin.td>
 
 					<x-admin.td>

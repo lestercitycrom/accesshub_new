@@ -98,14 +98,14 @@
 		<x-admin.table :density="($density ?? 'normal')" :zebra="true" :sticky="true">
 			<x-slot:head>
 				<tr>
-					<x-admin.th>Дата</x-admin.th>
-					<x-admin.th>Заказ</x-admin.th>
-					<x-admin.th>Аккаунт</x-admin.th>
-					<x-admin.th>Пользователь</x-admin.th>
-					<x-admin.th>Игра</x-admin.th>
-					<x-admin.th>Платформа</x-admin.th>
-					<x-admin.th>Кол-во</x-admin.th>
-					<x-admin.th>Cooldown</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'issued_at'" :direction="$sortBy === 'issued_at' ? $sortDirection : null" sortField="issued_at">Дата</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'order_id'" :direction="$sortBy === 'order_id' ? $sortDirection : null" sortField="order_id">Заказ</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'account_id'" :direction="$sortBy === 'account_id' ? $sortDirection : null" sortField="account_id">Аккаунт</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'telegram_id'" :direction="$sortBy === 'telegram_id' ? $sortDirection : null" sortField="telegram_id">Пользователь</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'game'" :direction="$sortBy === 'game' ? $sortDirection : null" sortField="game">Игра</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'platform'" :direction="$sortBy === 'platform' ? $sortDirection : null" sortField="platform">Платформа</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'qty'" :direction="$sortBy === 'qty' ? $sortDirection : null" sortField="qty">Кол-во</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'cooldown_until'" :direction="$sortBy === 'cooldown_until' ? $sortDirection : null" sortField="cooldown_until">Cooldown</x-admin.th>
 				</tr>
 			</x-slot:head>
 

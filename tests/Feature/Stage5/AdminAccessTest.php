@@ -18,10 +18,10 @@ it('forbids non-admin user', function (): void {
 })->group('Stage5.1');
 
 it('allows admin user', function (): void {
-	$user = User::factory()->create(['is_admin' => true]);
+	$user = User::factory()->create(['is_admin' => true, 'email_verified_at' => now()]);
 
 	$this->actingAs($user)
 	->get('/admin')
-	->assertRedirect('/admin/dashboard');
+	->assertRedirect('/admin/accounts');
 
 })->group('Stage5.1');

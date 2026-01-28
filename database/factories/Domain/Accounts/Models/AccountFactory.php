@@ -19,7 +19,7 @@ final class AccountFactory extends Factory
 	{
 		return [
 			'game' => $this->faker->randomElement(['cs2', 'dota2', 'pubg']),
-			'platform' => $this->faker->randomElement(['steam', 'epic']),
+			'platform' => [$this->faker->randomElement(['steam', 'epic', 'PS4', 'PS5'])], // Array of platforms
 			'login' => $this->faker->unique()->userName(),
 			'password' => 'secret123', // Will be encrypted by cast
 			'status' => AccountStatus::ACTIVE,
@@ -30,6 +30,11 @@ final class AccountFactory extends Factory
 			'status_deadline_at' => null,
 			'flags' => null,
 			'meta' => null,
+			'mail_account_login' => null,
+			'mail_account_password' => null,
+			'comment' => null,
+			'two_fa_mail_account_date' => null,
+			'recover_code' => null,
 		];
 	}
 

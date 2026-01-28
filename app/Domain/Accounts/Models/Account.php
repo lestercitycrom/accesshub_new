@@ -29,6 +29,11 @@ final class Account extends Model
 		'status_deadline_at',
 		'flags',
 		'meta',
+		'mail_account_login',
+		'mail_account_password',
+		'comment',
+		'two_fa_mail_account_date',
+		'recover_code',
 	];
 
 	protected $casts = [
@@ -41,6 +46,9 @@ final class Account extends Model
 		'flags' => 'array',
 		'meta' => 'array',
 		'password' => 'encrypted', // Encrypt/decrypt automatically
+		'platform' => 'array', // Array of platforms: ["PS4", "PS5"]
+		'mail_account_password' => 'encrypted', // Encrypt/decrypt automatically
+		'two_fa_mail_account_date' => 'date',
 	];
 
 	public function issuances(): HasMany

@@ -22,6 +22,8 @@ final class IssuancesIndex extends Component
 	public string $dateFrom = '';
 	public string $dateTo = '';
 	public string $density = 'normal';
+	public string $sortBy = 'issued_at';
+	public string $sortDirection = 'desc';
 
 	public function mount(): void
 	{
@@ -38,6 +40,17 @@ final class IssuancesIndex extends Component
 
 	public function updatedDensity(): void
 	{
+		$this->resetPage();
+	}
+
+	public function sort(string $field): void
+	{
+		if ($this->sortBy === $field) {
+			$this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+		} else {
+			$this->sortBy = $field;
+			$this->sortDirection = 'asc';
+		}
 		$this->resetPage();
 	}
 
@@ -95,7 +108,7 @@ final class IssuancesIndex extends Component
 			$query->whereDate('issued_at', '<=', $dateTo);
 		}
 
-		return $query->orderByDesc('issued_at')->paginate(20);
+		return $query->orderBy($this->sortBy, $this->sortDirection)->paginate(20);
 	}
 
 	public function render()

@@ -10,7 +10,10 @@ test('login screen can be rendered', function () {
 });
 
 test('users can authenticate using the login screen', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->create([
+        'is_admin' => true,
+        'email_verified_at' => now(),
+    ]);
 
     $response = $this->post(route('login.store'), [
         'email' => $user->email,
@@ -19,7 +22,7 @@ test('users can authenticate using the login screen', function () {
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('admin.accounts.index', absolute: false));
 
     $this->assertAuthenticated();
 });

@@ -22,6 +22,8 @@ final class AccountsIndex extends Component
 	public array $selected = [];
 	public string $density = 'normal';
 	public ?string $alertMessage = null;
+	public string $sortBy = 'id';
+	public string $sortDirection = 'desc';
 
 	public function mount(): void
 	{
@@ -69,6 +71,17 @@ final class AccountsIndex extends Component
 		$this->selected = [];
 	}
 
+	public function sort(string $field): void
+	{
+		if ($this->sortBy === $field) {
+			$this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+		} else {
+			$this->sortBy = $field;
+			$this->sortDirection = 'asc';
+		}
+		$this->resetPage();
+	}
+
 	public function clearFilters(): void
 	{
 		$this->q = '';
@@ -76,6 +89,8 @@ final class AccountsIndex extends Component
 		$this->gameFilter = '';
 		$this->platformFilter = '';
 		$this->alertMessage = null;
+		$this->sortBy = 'id';
+		$this->sortDirection = 'desc';
 		$this->resetPage();
 	}
 
@@ -94,6 +109,17 @@ final class AccountsIndex extends Component
 		$this->alertMessage = 'Аккаунт удалён.';
 	}
 
+	public function deleteAllAccounts(): void
+	{
+		Gate::authorize('admin');
+
+		$count = Account::query()->count();
+		Account::query()->delete();
+
+		$this->alertMessage = "Удалено аккаунтов: {$count}.";
+		$this->resetPage();
+	}
+
 	/**
 	 * @return LengthAwarePaginator<Account>
 	 */
@@ -103,9 +129,12 @@ final class AccountsIndex extends Component
 			->when($this->q !== '', function ($query): void {
 				$q = '%' . $this->q . '%';
 
-				$query->where('login', 'like', $q)
-					->orWhere('game', 'like', $q)
-					->orWhere('platform', 'like', $q);
+				$query->where(function ($subQuery) use ($q): void {
+					$subQuery->where('login', 'like', $q)
+						->orWhere('game', 'like', $q)
+						// Search in platform JSON array
+						->orWhereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$this->q]);
+				});
 			})
 			->when($this->statusFilter !== '', function ($query): void {
 				$query->where('status', $this->statusFilter);
@@ -114,9 +143,17 @@ final class AccountsIndex extends Component
 				$query->where('game', $this->gameFilter);
 			})
 			->when($this->platformFilter !== '', function ($query): void {
-				$query->where('platform', $this->platformFilter);
+				// Search in platform array using JSON contains
+				$query->whereJsonContains('platform', $this->platformFilter);
 			})
-			->orderByDesc('id')
+			->when($this->sortBy === 'platform', function ($query): void {
+				// For JSON columns, we need special handling
+				$direction = $this->sortDirection === 'asc' ? 'asc' : 'desc';
+				$query->orderByRaw("JSON_EXTRACT(platform, '$[0]') {$direction}");
+			})
+			->when($this->sortBy !== 'platform', function ($query): void {
+				$query->orderBy($this->sortBy, $this->sortDirection);
+			})
 			->paginate(20);
 	}
 
@@ -138,13 +175,27 @@ final class AccountsIndex extends Component
 
 	public function getPlatformOptionsProperty(): array
 	{
-		return Account::query()
-			->distinct()
+		// Extract all platforms from JSON arrays
+		$platforms = Account::query()
 			->pluck('platform')
 			->filter()
+			->flatMap(function ($platform) {
+				if (is_array($platform)) {
+					return $platform;
+				}
+				// Try to decode JSON if it's a string
+				$decoded = json_decode($platform, true);
+				if (is_array($decoded)) {
+					return $decoded;
+				}
+				return [$platform];
+			})
+			->unique()
 			->sort()
 			->values()
 			->toArray();
+
+		return $platforms;
 	}
 
 	public function render()

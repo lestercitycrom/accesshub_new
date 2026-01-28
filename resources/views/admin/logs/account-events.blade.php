@@ -81,10 +81,10 @@
 		<x-admin.table :density="($density ?? 'normal')" :zebra="true" :sticky="true">
 			<x-slot:head>
 				<tr>
-					<x-admin.th>Дата</x-admin.th>
-					<x-admin.th>Аккаунт</x-admin.th>
-					<x-admin.th>Тип</x-admin.th>
-					<x-admin.th>Telegram ID</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'created_at'" :direction="$sortBy === 'created_at' ? $sortDirection : null" sortField="created_at">Дата</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'account_id'" :direction="$sortBy === 'account_id' ? $sortDirection : null" sortField="account_id">Аккаунт</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'type'" :direction="$sortBy === 'type' ? $sortDirection : null" sortField="type">Тип</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'telegram_id'" :direction="$sortBy === 'telegram_id' ? $sortDirection : null" sortField="telegram_id">Telegram ID</x-admin.th>
 					<x-admin.th>Детали</x-admin.th>
 				</tr>
 			</x-slot:head>

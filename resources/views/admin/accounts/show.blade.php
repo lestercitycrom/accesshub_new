@@ -12,7 +12,7 @@
 			</h1>
 
 			<p class="text-sm text-slate-500">
-				{{ $account->game }} / {{ $account->platform }} · <span class="font-semibold text-slate-900">{{ $account->login }}</span>
+				{{ $account->game }} / {{ is_array($account->platform) ? implode(', ', $account->platform) : $account->platform }} · <span class="font-semibold text-slate-900">{{ $account->login }}</span>
 			</p>
 		</div>
 
@@ -80,7 +80,15 @@
 
 					<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
 						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Платформа</div>
-						<div class="font-semibold text-slate-900">{{ $account->platform }}</div>
+						<div class="font-semibold text-slate-900">
+							@if(is_array($account->platform))
+								@foreach($account->platform as $p)
+									<x-admin.badge variant="blue">{{ $p }}</x-admin.badge>
+								@endforeach
+							@else
+								{{ $account->platform }}
+							@endif
+						</div>
 					</div>
 
 					<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
@@ -106,6 +114,47 @@
 								@endif
 							@endforeach
 						</div>
+					</div>
+				@endif
+
+				@if($account->mail_account_login || $account->mail_account_password || $account->comment || $account->two_fa_mail_account_date || $account->recover_code)
+					<div class="space-y-3 pt-4 border-t border-slate-200">
+						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Дополнительная информация</div>
+						
+						@if($account->mail_account_login)
+							<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+								<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Mail Account Login</div>
+								<div class="font-semibold text-slate-900 break-all">{{ $account->mail_account_login }}</div>
+							</div>
+						@endif
+
+						@if($account->mail_account_password)
+							<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+								<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Mail Account Password</div>
+								<div class="font-semibold text-slate-900 break-all">{{ $account->mail_account_password ? 'Задан' : '—' }}</div>
+							</div>
+						@endif
+
+						@if($account->comment)
+							<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+								<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Comment</div>
+								<div class="font-semibold text-slate-900 break-all whitespace-pre-wrap">{{ $account->comment }}</div>
+							</div>
+						@endif
+
+						@if($account->two_fa_mail_account_date)
+							<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+								<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">2-fa Mail Account Date</div>
+								<div class="font-semibold text-slate-900">{{ $account->two_fa_mail_account_date->format('Y-m-d') }}</div>
+							</div>
+						@endif
+
+						@if($account->recover_code)
+							<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+								<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Recover Code</div>
+								<div class="font-semibold text-slate-900 break-all whitespace-pre-wrap">{{ $account->recover_code }}</div>
+							</div>
+						@endif
 					</div>
 				@endif
 			</div>

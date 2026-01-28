@@ -52,6 +52,7 @@ final class HistoryController
 				'account_id' => $issuance->account_id,
 				'login' => $issuance->account?->login,
 				'password' => $issuance->account?->password,
+				'comment' => $issuance->account?->comment,
 			];
 		})->all();
 

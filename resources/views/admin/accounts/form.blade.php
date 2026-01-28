@@ -59,11 +59,12 @@
 					<x-admin.input
 						label="Платформа"
 						type="text"
-						placeholder="steam"
+						placeholder="steam или PS4&PS5 (несколько через &)"
 						name="platform"
 						:value="old('platform', $platform ?? '')"
 						wire:model="platform"
 						:error="$errors->first('platform')"
+						hint="Можно указать несколько платформ через & (например: PS4&PS5)"
 					/>
 
 					<div class="sm:col-span-2">
@@ -115,6 +116,55 @@
 				<p class="mt-3 text-xs text-slate-500">
 					Доп. данные сохраняются в meta. Поля не обязательны, можно оставить пустыми.
 				</p>
+			</x-admin.card>
+
+			<x-admin.card title="Mail Account">
+				<div class="grid grid-cols-1 gap-4">
+					<x-admin.input
+						label="Mail Account Login"
+						type="text"
+						placeholder="email@example.com"
+						wire:model="mailAccountLogin"
+						:error="$errors->first('mailAccountLogin')"
+					/>
+
+					<x-admin.input
+						label="Mail Account Password"
+						type="text"
+						placeholder="{{ $isEdit ? 'оставьте пустым, чтобы не менять пароль' : 'пароль почты' }}"
+						wire:model="mailAccountPassword"
+						:error="$errors->first('mailAccountPassword')"
+						hint="{{ $isEdit ? 'При сохранении пароль будет обновлён и зашифрован.' : 'Пароль будет зашифрован при сохранении.' }}"
+					/>
+
+					<x-admin.input
+						label="2-fa Mail Account Date"
+						type="date"
+						wire:model="twoFaMailAccountDate"
+						:error="$errors->first('twoFaMailAccountDate')"
+					/>
+
+					<x-admin.input
+						label="Recover Code"
+						type="text"
+						placeholder="recovery codes"
+						wire:model="recoverCode"
+						:error="$errors->first('recoverCode')"
+					/>
+				</div>
+			</x-admin.card>
+
+			<x-admin.card title="Comment">
+				<div class="space-y-2">
+					<label class="text-xs font-semibold text-slate-700">Comment</label>
+					<textarea
+						wire:model="comment"
+						rows="4"
+						class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+						placeholder="Комментарий к аккаунту..."
+					></textarea>
+					@error('comment') <div class="text-xs font-medium text-rose-600">{{ $message }}</div> @enderror
+				</div>
 			</x-admin.card>
 		</div>
 

@@ -59,7 +59,8 @@ it('covers issuance flow and admin logs end-to-end', function (): void {
 
 	importTestAccounts($this);
 
-	expect(Account::query()->where('game', 'cs2')->where('platform', 'steam')->count())->toBe(3);
+	// Platform is now JSON array, use whereJsonContains
+	expect(Account::query()->where('game', 'cs2')->whereJsonContains('platform', 'steam')->count())->toBe(3);
 
 	$operator = TelegramUser::factory()->create(['telegram_id' => 111]);
 	$service = app(IssueService::class);

@@ -1,4 +1,4 @@
-﻿<x-layouts.webapp>
+<x-layouts.webapp>
 <div class="app-shell">
 
 	<div class="tabs-rail">
@@ -38,11 +38,15 @@
 						</div>
 						<div class="col-6">
 							<label class="form-label" for="platform">Платформа</label>
-							<input id="platform" class="form-control" type="text" placeholder="steam / xbox" value="steam">
+							<select id="platform" class="form-select">
+								<option value="">Выберите платформу...</option>
+							</select>
 						</div>
 						<div class="col-12">
 							<label class="form-label" for="game">Игра</label>
-							<input id="game" class="form-control" type="text" placeholder="cs2 / minecraft" value="cs2">
+							<select id="game" class="form-select">
+								<option value="">Выберите игру...</option>
+							</select>
 						</div>
 					</div>
 
@@ -447,6 +451,12 @@
 						<div class="list-label">Выдано</div>
 						<div class="list-value">${issuedAt}</div>
 					</div>
+					${item.comment ? `
+					<div class="list-row">
+						<div class="list-label">Комментарий</div>
+						<div class="list-value">${item.comment}</div>
+					</div>
+					` : ''}
 				`;
 
 				const actions = document.createElement('div');
@@ -596,7 +606,49 @@
 			});
 		}
 
+		async function loadPlatforms() {
+			try {
+				const resp = await apiGet('/webapp/api/schema');
+				if (resp.status === 200 && resp.data?.tabs) {
+					const issueTab = resp.data.tabs.find(tab => tab.id === 'issue');
+					if (issueTab?.fields) {
+						const platformField = issueTab.fields.find(field => field.name === 'platform');
+						const gameField = issueTab.fields.find(field => field.name === 'game');
+						
+						// Populate platform select
+						const platformSelect = document.getElementById('platform');
+						if (platformSelect && platformField?.options) {
+							platformSelect.innerHTML = '<option value="">Выберите платформу...</option>';
+							platformField.options.forEach(option => {
+								const opt = document.createElement('option');
+								opt.value = option.value;
+								opt.textContent = option.label;
+								platformSelect.appendChild(opt);
+							});
+						}
+						
+						// Populate game select
+						const gameSelect = document.getElementById('game');
+						if (gameSelect && gameField?.options) {
+							gameSelect.innerHTML = '<option value="">Выберите игру...</option>';
+							gameField.options.forEach(option => {
+								const opt = document.createElement('option');
+								opt.value = option.value;
+								opt.textContent = option.label;
+								gameSelect.appendChild(opt);
+							});
+						}
+					}
+				}
+			} catch (e) {
+				console.error('Failed to load platforms:', e);
+			}
+		}
+
 		async function init() {
+			// Load platforms and games from schema
+			await loadPlatforms();
+			
 			let ok = await loadMe();
 			if (!ok) {
 				ok = await bootstrap();

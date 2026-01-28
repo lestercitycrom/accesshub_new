@@ -38,7 +38,7 @@ it('can login as admin', function (): void {
 		->set('email', 'testadmin@gmail.com')
 		->set('password', 'admin123')
 		->call('authenticate')
-		->assertRedirect('/');
+		->assertRedirect('/admin/accounts');
 
 	// Проверить что залогинены
 	expect(auth()->check())->toBe(true);

@@ -56,9 +56,10 @@ final class IssueService
 				->pluck('account_id')
 				->all();
 
+			// Search for accounts where the requested platform is in the platform array
 			$baseQuery = Account::query()
 				->where('game', $game)
-				->where('platform', $platform)
+				->whereJsonContains('platform', $platform)
 				->where('status', AccountStatus::ACTIVE);
 
 			$availableQuery = (clone $baseQuery)
@@ -84,7 +85,7 @@ final class IssueService
 			// - either available_uses > 0 OR next_release_at is reached (will normalize to 1)
 			$query = Account::query()
 				->where('game', $game)
-				->where('platform', $platform)
+				->whereJsonContains('platform', $platform)
 				->where('status', AccountStatus::ACTIVE)
 				->when($alreadyIssuedAccountIds !== [], static function ($q) use ($alreadyIssuedAccountIds): void {
 					$q->whereNotIn('id', $alreadyIssuedAccountIds);
@@ -175,6 +176,7 @@ final class IssueService
 					'account_id' => (int) $account->id,
 					'login' => (string) $account->login,
 					'password' => (string) $account->password,
+					'comment' => $account->comment ? (string) $account->comment : null,
 				];
 			}
 

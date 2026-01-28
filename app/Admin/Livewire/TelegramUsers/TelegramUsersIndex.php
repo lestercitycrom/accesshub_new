@@ -18,6 +18,8 @@ final class TelegramUsersIndex extends Component
 	public string $q = '';
 	public array $selected = [];
 	public string $roleFilter = '';
+	public string $sortBy = 'id';
+	public string $sortDirection = 'desc';
 
 	public function mount(): void
 	{
@@ -99,7 +101,7 @@ final class TelegramUsersIndex extends Component
 			->when($this->roleFilter !== '', function ($query): void {
 				$query->where('role', $this->roleFilter);
 			})
-			->orderByDesc('id')
+			->orderBy($this->sortBy, $this->sortDirection)
 			->paginate(20);
 	}
 

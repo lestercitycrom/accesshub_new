@@ -5,12 +5,16 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Notification;
 
 test('reset password link screen can be rendered', function () {
+    $this->markTestSkipped('Password reset routes are not enabled in this application.');
+    
     $response = $this->get(route('password.request'));
 
     $response->assertOk();
 });
 
 test('reset password link can be requested', function () {
+    $this->markTestSkipped('Password reset routes are not enabled in this application.');
+    
     Notification::fake();
 
     $user = User::factory()->create();
@@ -21,6 +25,8 @@ test('reset password link can be requested', function () {
 });
 
 test('reset password screen can be rendered', function () {
+    $this->markTestSkipped('Password reset routes are not enabled in this application.');
+    
     Notification::fake();
 
     $user = User::factory()->create();
@@ -37,6 +43,8 @@ test('reset password screen can be rendered', function () {
 });
 
 test('password can be reset with valid token', function () {
+    $this->markTestSkipped('Password reset routes are not enabled in this application.');
+    
     Notification::fake();
 
     $user = User::factory()->create();

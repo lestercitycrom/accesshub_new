@@ -12,11 +12,13 @@ use Livewire\Component;
 
 final class ProblemsIndex extends Component
 {
-	public string $tab = 'ALL';
+	public string $tab = 'STOLEN';
 	public string $q = '';
 	public array $selected = [];
 	public int $extendDays = 1;
 	public string $density = 'normal';
+	public string $sortBy = 'status';
+	public string $sortDirection = 'asc';
 
 	public function mount(): void
 	{
@@ -36,6 +38,16 @@ final class ProblemsIndex extends Component
 	public function updatedDensity(): void
 	{
 		$this->selected = [];
+	}
+
+	public function sort(string $field): void
+	{
+		if ($this->sortBy === $field) {
+			$this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+		} else {
+			$this->sortBy = $field;
+			$this->sortDirection = 'asc';
+		}
 	}
 
 	public function getTabsProperty(): array
@@ -64,18 +76,35 @@ final class ProblemsIndex extends Component
 			$query->where('login', 'like', '%' . $this->q . '%');
 		}
 
-		// Order by status priority then by deadline
-		$query->orderByRaw("
-			CASE
-				WHEN status = 'STOLEN' THEN 1
-				WHEN status = 'RECOVERY' THEN 2
-				WHEN status = 'TEMP_HOLD' THEN 3
-				WHEN status = 'DEAD' THEN 4
-				ELSE 5
-			END
-		")
-		->orderBy('status_deadline_at')
-		->orderByDesc('updated_at');
+		// Apply sorting
+		if ($this->sortBy === 'status') {
+			// Custom sorting by status priority
+			$query->orderByRaw("
+				CASE
+					WHEN status = 'STOLEN' THEN 1
+					WHEN status = 'RECOVERY' THEN 2
+					WHEN status = 'TEMP_HOLD' THEN 3
+					WHEN status = 'DEAD' THEN 4
+					ELSE 5
+				END
+			" . ($this->sortDirection === 'desc' ? ' DESC' : ''));
+		} elseif ($this->sortBy === 'platform') {
+			// For JSON columns, we need special handling
+			$direction = $this->sortDirection === 'asc' ? 'asc' : 'desc';
+			$query->orderByRaw("JSON_EXTRACT(platform, '$[0]') {$direction}");
+		} else {
+			$query->orderBy($this->sortBy, $this->sortDirection);
+		}
+		
+		// Secondary sorting by deadline if not already sorted by it
+		if ($this->sortBy !== 'status_deadline_at') {
+			$query->orderBy('status_deadline_at');
+		}
+		
+		// Tertiary sorting by updated_at
+		if ($this->sortBy !== 'updated_at') {
+			$query->orderByDesc('updated_at');
+		}
 
 		return $query->get();
 	}

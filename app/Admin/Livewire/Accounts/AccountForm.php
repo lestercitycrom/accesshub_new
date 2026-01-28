@@ -14,7 +14,7 @@ final class AccountForm extends Component
 	public ?Account $account = null;
 
 	public string $game = '';
-	public string $platform = '';
+	public string $platform = ''; // Comma or & separated platforms
 	public string $login = '';
 	public string $password = '';
 	public string $status = 'ACTIVE';
@@ -24,6 +24,11 @@ final class AccountForm extends Component
 	public bool $flagPasswordUpdateRequired = false;
 	public ?string $metaEmailLogin = null;
 	public ?string $metaEmailPassword = null;
+	public ?string $mailAccountLogin = null;
+	public ?string $mailAccountPassword = null;
+	public ?string $comment = null;
+	public ?string $twoFaMailAccountDate = null;
+	public ?string $recoverCode = null;
 
 	public function mount(?Account $account = null): void
 	{
@@ -33,7 +38,8 @@ final class AccountForm extends Component
 
 		if ($account !== null) {
 			$this->game = $account->game;
-			$this->platform = $account->platform;
+			// Convert platform array to string (comma-separated)
+			$this->platform = is_array($account->platform) ? implode('&', $account->platform) : (string) $account->platform;
 			$this->login = $account->login;
 			$this->password = ''; // Don't show existing password
 			$this->status = $account->status->value;
@@ -47,6 +53,13 @@ final class AccountForm extends Component
 			// Initialize meta
 			$this->metaEmailLogin = $account->meta['email_login'] ?? null;
 			$this->metaEmailPassword = $account->meta['email_password'] ?? null;
+
+			// Initialize new fields
+			$this->mailAccountLogin = $account->mail_account_login;
+			$this->mailAccountPassword = ''; // Don't show existing password
+			$this->comment = $account->comment;
+			$this->twoFaMailAccountDate = $account->two_fa_mail_account_date?->format('Y-m-d');
+			$this->recoverCode = $account->recover_code;
 		}
 	}
 
@@ -55,13 +68,18 @@ final class AccountForm extends Component
 		Gate::authorize('admin');
 
 		$this->validate([
-			'game' => ['required', 'string', 'max:255'],
-			'platform' => ['required', 'string', 'max:255'],
-			'login' => ['required', 'string', 'max:255'],
+			'game' => ['required', 'string'],
+			'platform' => ['required', 'string'],
+			'login' => ['required', 'string'],
 			'password' => ['required_if:account,null', 'string', 'min:1'],
 			'status' => ['required', 'in:' . implode(',', array_map(fn($s) => $s->value, AccountStatus::cases()))],
 			'assignedToTelegramId' => ['nullable', 'integer', 'min:1'],
 			'statusDeadlineAt' => ['nullable', 'date'],
+			'mailAccountLogin' => ['nullable', 'string'],
+			'mailAccountPassword' => ['nullable', 'string'],
+			'comment' => ['nullable', 'string'],
+			'twoFaMailAccountDate' => ['nullable', 'date'],
+			'recoverCode' => ['nullable', 'string'],
 		]);
 
 		// Build flags array
@@ -82,19 +100,37 @@ final class AccountForm extends Component
 			$meta['email_password'] = $this->metaEmailPassword;
 		}
 
+		// Process platform: split by "&" or comma and trim
+		$platforms = array_map('trim', preg_split('/[&,]/', $this->platform));
+		$platforms = array_filter($platforms, fn($p) => $p !== '');
+		$platforms = array_values($platforms); // Re-index array
+
+		if (empty($platforms)) {
+			$this->addError('platform', 'Платформа не может быть пустой.');
+			return;
+		}
+
 		$data = [
-			'game' => $this->game,
-			'platform' => $this->platform,
-			'login' => $this->login,
+			'game' => trim($this->game),
+			'platform' => $platforms, // Array of platforms
+			'login' => trim($this->login),
 			'status' => $this->status,
 			'assigned_to_telegram_id' => $this->assignedToTelegramId ? (int) $this->assignedToTelegramId : null,
 			'status_deadline_at' => $this->statusDeadlineAt ?: null,
 			'flags' => !empty($flags) ? $flags : null,
 			'meta' => !empty($meta) ? $meta : null,
+			'mail_account_login' => trim($this->mailAccountLogin) ?: null,
+			'comment' => trim($this->comment) ?: null,
+			'two_fa_mail_account_date' => $this->twoFaMailAccountDate ?: null,
+			'recover_code' => trim($this->recoverCode) ?: null,
 		];
 
 		if ($this->password !== '') {
 			$data['password'] = $this->password;
+		}
+
+		if ($this->mailAccountPassword !== '') {
+			$data['mail_account_password'] = $this->mailAccountPassword;
 		}
 
 		if ($this->account !== null) {
