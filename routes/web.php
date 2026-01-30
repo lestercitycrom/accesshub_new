@@ -24,17 +24,19 @@ Route::withoutMiddleware(['auth', 'admin'])->group(function () {
     Route::post('/webapp/bootstrap', BootstrapController::class)
         ->middleware('throttle:30,1')
         ->name('webapp.bootstrap');
-    Route::get('/webapp/api/schema', App\WebApp\Http\Controllers\SchemaController::class)->name('webapp.schema');
-    Route::get('/webapp/api/me', App\WebApp\Http\Controllers\MeController::class)->name('webapp.me');
-    Route::get('/webapp/api/history', App\WebApp\Http\Controllers\HistoryController::class)->name('webapp.history');
-    Route::get('/webapp/api/stolen', App\WebApp\Http\Controllers\StolenController::class)->name('webapp.stolen');
-    Route::post('/webapp/api/issue', App\WebApp\Http\Controllers\IssueController::class)
-        ->middleware('log-webapp')
-        ->name('webapp.issue');
-    Route::post('/webapp/api/problem', App\WebApp\Http\Controllers\ProblemController::class)->name('webapp.problem');
-    Route::post('/webapp/api/update-password', App\WebApp\Http\Controllers\UpdatePasswordController::class)->name('webapp.update-password');
-    Route::post('/webapp/api/recover-stolen', App\WebApp\Http\Controllers\RecoverStolenController::class)->name('webapp.recover-stolen');
-    Route::post('/webapp/api/postpone-stolen', App\WebApp\Http\Controllers\PostponeStolenController::class)->name('webapp.postpone-stolen');
+    Route::middleware('capture-server-errors')->group(function () {
+        Route::get('/webapp/api/schema', App\WebApp\Http\Controllers\SchemaController::class)->name('webapp.schema');
+        Route::get('/webapp/api/me', App\WebApp\Http\Controllers\MeController::class)->name('webapp.me');
+        Route::get('/webapp/api/history', App\WebApp\Http\Controllers\HistoryController::class)->name('webapp.history');
+        Route::get('/webapp/api/stolen', App\WebApp\Http\Controllers\StolenController::class)->name('webapp.stolen');
+        Route::post('/webapp/api/issue', App\WebApp\Http\Controllers\IssueController::class)
+            ->middleware('log-webapp')
+            ->name('webapp.issue');
+        Route::post('/webapp/api/problem', App\WebApp\Http\Controllers\ProblemController::class)->name('webapp.problem');
+        Route::post('/webapp/api/update-password', App\WebApp\Http\Controllers\UpdatePasswordController::class)->name('webapp.update-password');
+        Route::post('/webapp/api/recover-stolen', App\WebApp\Http\Controllers\RecoverStolenController::class)->name('webapp.recover-stolen');
+        Route::post('/webapp/api/postpone-stolen', App\WebApp\Http\Controllers\PostponeStolenController::class)->name('webapp.postpone-stolen');
+    });
 });
 
 require __DIR__.'/settings.php';
@@ -62,6 +64,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 	Route::get('/problems', App\Admin\Livewire\Problems\ProblemsIndex::class)->name('problems.index');
 
 	Route::get('/settings', App\Admin\Livewire\Settings\SettingsIndex::class)->name('settings.index');
+
+	Route::get('/server', App\Admin\Livewire\Server\ServerErrorsIndex::class)->name('server.errors');
 
 	Route::get('/export/accounts.csv', App\Admin\Http\Controllers\Export\ExportAccountsCsvController::class)->name('export.accounts.csv');
 	Route::get('/export/issuances.csv', App\Admin\Http\Controllers\Export\ExportIssuancesCsvController::class)->name('export.issuances.csv');

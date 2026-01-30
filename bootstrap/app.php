@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
             'no-cache' => \App\Http\Middleware\NoCache::class,
             'log-webapp' => \App\Http\Middleware\LogWebAppRequests::class,
+            'capture-server-errors' => \App\Http\Middleware\CaptureServerErrors::class,
         ]);
         
         // Exclude WebApp API routes from CSRF verification

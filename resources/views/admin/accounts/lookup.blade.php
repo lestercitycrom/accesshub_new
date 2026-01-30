@@ -108,7 +108,9 @@
 						<x-admin.status-badge :status="$account->status->value" />
 					</x-admin.td>
 					<x-admin.td>
-						@if($account->assigned_to_telegram_id)
+						@if($account->assignedOperator)
+							{{ $account->assignedOperator->username ?: $account->assignedOperator->first_name }}
+						@elseif($account->assigned_to_telegram_id)
 							{{ $account->assigned_to_telegram_id }}
 						@else
 							<span class="text-slate-400">—</span>

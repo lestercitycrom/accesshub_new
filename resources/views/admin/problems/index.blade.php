@@ -72,6 +72,19 @@
 			</x-admin.button>
 		</div>
 
+		<div class="lg:col-span-2">
+			<div class="space-y-1">
+				<label class="text-xs font-semibold text-slate-700">Оператор (при установке STOLEN)</label>
+				<select wire:model="assignToTelegramId"
+					class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+					<option value="">— не назначать</option>
+					@foreach($operators ?? [] as $op)
+						<option value="{{ $op->telegram_id }}">{{ $op->username ?: $op->first_name }} ({{ $op->telegram_id }})</option>
+					@endforeach
+				</select>
+			</div>
+		</div>
+
 		<div class="lg:col-span-5">
 			<div class="flex items-end gap-2">
 				<div class="flex flex-wrap gap-2">
@@ -137,7 +150,9 @@
 					</x-admin.td>
 
 					<x-admin.td>
-						@if($row->assigned_to_telegram_id)
+						@if($row->assignedOperator)
+							<x-admin.badge variant="violet">{{ $row->assignedOperator->username ?: $row->assignedOperator->first_name }}</x-admin.badge>
+						@elseif($row->assigned_to_telegram_id)
 							<x-admin.badge variant="violet">{{ $row->assigned_to_telegram_id }}</x-admin.badge>
 						@else
 							<span class="text-slate-400">—</span>

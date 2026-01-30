@@ -7,6 +7,7 @@ namespace App\Domain\Accounts\Services;
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
 use App\Domain\Accounts\Models\AccountEvent;
+use App\Domain\Settings\Services\SettingsService;
 use App\Domain\Telegram\Enums\TelegramRole;
 use App\Domain\Telegram\Models\TelegramUser;
 use Illuminate\Support\Carbon;
@@ -14,6 +15,10 @@ use Illuminate\Support\Facades\DB;
 
 final class AccountStatusService
 {
+	public function __construct(
+		private readonly SettingsService $settings,
+	) {}
+
 	public function setStatus(int $accountId, AccountStatus $status, ?int $telegramId, array $payload = []): void
 	{
 		DB::transaction(function () use ($accountId, $status, $telegramId, $payload): void {
@@ -22,6 +27,27 @@ final class AccountStatusService
 				->findOrFail($accountId);
 
 			$account->status = $status;
+
+			if ($status === AccountStatus::STOLEN) {
+				$assignedId = isset($payload['assigned_to_telegram_id'])
+					? (int) $payload['assigned_to_telegram_id']
+					: null;
+				if ($assignedId > 0) {
+					$account->assigned_to_telegram_id = $assignedId;
+					$deadlineDays = $this->settings->getInt('stolen_default_deadline_days', (int) config('accesshub.stolen.default_deadline_days', 5));
+					$account->status_deadline_at = Carbon::now()->addDays($deadlineDays);
+					$flags = is_array($account->flags) ? $account->flags : [];
+					$flags['ACTION_REQUIRED'] = true;
+					$account->flags = $flags;
+				}
+			} else {
+				$account->assigned_to_telegram_id = null;
+				$account->status_deadline_at = null;
+				$flags = is_array($account->flags) ? $account->flags : [];
+				unset($flags['ACTION_REQUIRED']);
+				$account->flags = $flags;
+			}
+
 			$account->save();
 
 			AccountEvent::query()->create([
@@ -60,7 +86,7 @@ final class AccountStatusService
 				$account->status = AccountStatus::STOLEN;
 				$account->assigned_to_telegram_id = $telegramId;
 
-				$deadlineDays = (int) config('accesshub.stolen.default_deadline_days', 5);
+				$deadlineDays = $this->settings->getInt('stolen_default_deadline_days', (int) config('accesshub.stolen.default_deadline_days', 5));
 				$account->status_deadline_at = $now->copy()->addDays($deadlineDays);
 
 				$flags['ACTION_REQUIRED'] = true;

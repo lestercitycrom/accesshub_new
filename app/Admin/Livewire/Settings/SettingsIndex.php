@@ -18,6 +18,9 @@ final class SettingsIndex extends Component
 	public string $webappMenuText = '';
 	public string $webappIssueDelivery = 'both';
 
+	/** Success message shown after save (visible in Livewire response) */
+	public ?string $successMessage = null;
+
 	public function mount(SettingsService $settings): void
 	{
 		Gate::authorize('admin');
@@ -53,6 +56,7 @@ final class SettingsIndex extends Component
 		$settings->set('max_qty', (int) $this->maxQty, $userId);
 		$settings->set('webapp_issue_delivery', $this->webappIssueDelivery, $userId);
 
+		$this->successMessage = 'Настройки сохранены.';
 		session()->flash('status', 'Настройки сохранены.');
 	}
 
@@ -71,10 +75,8 @@ final class SettingsIndex extends Component
 
 		$ok = $telegram->setChatMenuButton(trim($this->webappMenuText), trim($this->webappMenuUrl));
 
-		session()->flash(
-			'status',
-			$ok ? 'Кнопка меню WebApp установлена.' : 'Не удалось установить кнопку меню WebApp.'
-		);
+		$this->successMessage = $ok ? 'Кнопка меню WebApp установлена.' : 'Не удалось установить кнопку меню WebApp.';
+		session()->flash('status', $this->successMessage);
 	}
 
 	public function render()

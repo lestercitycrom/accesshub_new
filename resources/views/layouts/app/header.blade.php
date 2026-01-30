@@ -9,12 +9,6 @@
 
             <x-app-logo href="{{ route('admin.accounts.index') }}" wire:navigate />
 
-            <flux:navbar class="-mb-px max-lg:hidden">
-                <flux:navbar.item icon="layout-grid" :href="route('admin.accounts.index')" :current="request()->routeIs('admin.accounts.index')" wire:navigate>
-                    Панель
-                </flux:navbar.item>
-            </flux:navbar>
-
             <flux:spacer />
 
             <flux:navbar class="me-1.5 space-x-0.5 rtl:space-x-reverse py-0!">
@@ -50,14 +44,6 @@
                 <x-app-logo :sidebar="true" href="{{ route('admin.accounts.index') }}" wire:navigate />
                 <flux:sidebar.collapse class="in-data-flux-sidebar-on-desktop:not-in-data-flux-sidebar-collapsed-desktop:-mr-2" />
             </flux:sidebar.header>
-
-            <flux:sidebar.nav>
-                <flux:sidebar.group :heading="'Платформа'">
-                    <flux:sidebar.item icon="layout-grid" :href="route('admin.accounts.index')" :current="request()->routeIs('admin.accounts.index')" wire:navigate>
-                        Панель
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
-            </flux:sidebar.nav>
 
             <flux:spacer />
 

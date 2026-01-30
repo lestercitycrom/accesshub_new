@@ -10,14 +10,6 @@
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
-            <flux:sidebar.nav>
-                <flux:sidebar.group :heading="'Платформа'" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('admin.accounts.index')" :current="request()->routeIs('admin.accounts.index')" wire:navigate>
-                        Панель
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
-            </flux:sidebar.nav>
-
             <flux:spacer />
 
             <flux:sidebar.nav>

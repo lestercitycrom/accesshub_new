@@ -6,8 +6,10 @@ namespace App\Domain\Accounts\Models;
 
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Issuance\Models\Issuance;
+use App\Domain\Telegram\Models\TelegramUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class Account extends Model
@@ -48,8 +50,12 @@ final class Account extends Model
 		'password' => 'encrypted', // Encrypt/decrypt automatically
 		'platform' => 'array', // Array of platforms: ["PS4", "PS5"]
 		'mail_account_password' => 'encrypted', // Encrypt/decrypt automatically
-		'two_fa_mail_account_date' => 'date',
 	];
+
+	public function assignedOperator(): BelongsTo
+	{
+		return $this->belongsTo(TelegramUser::class, 'assigned_to_telegram_id', 'telegram_id');
+	}
 
 	public function issuances(): HasMany
 	{

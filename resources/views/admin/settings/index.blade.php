@@ -12,9 +12,9 @@
 		</div>
 	</div>
 
-	@if(session('status'))
+	@if(session('status') || $successMessage)
 		<div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-			{{ session('status') }}
+			{{ $successMessage ?? session('status') }}
 		</div>
 	@endif
 

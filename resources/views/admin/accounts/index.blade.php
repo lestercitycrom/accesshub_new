@@ -135,7 +135,9 @@
 					<x-admin.td><x-admin.status-badge :status="$row->status->value" /></x-admin.td>
 
 					<x-admin.td>
-						@if($row->assigned_to_telegram_id)
+						@if($row->assignedOperator)
+							<x-admin.badge variant="violet">{{ $row->assignedOperator->username ?: $row->assignedOperator->first_name }}</x-admin.badge>
+						@elseif($row->assigned_to_telegram_id)
 							<x-admin.badge variant="violet">{{ $row->assigned_to_telegram_id }}</x-admin.badge>
 						@else
 							<span class="text-slate-400">—</span>

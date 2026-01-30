@@ -14,7 +14,7 @@ it('sets account status and creates event', function (): void {
 	$account = Account::factory()->create(['status' => AccountStatus::ACTIVE]);
 	$telegramUser = TelegramUser::factory()->create();
 
-	$service = new AccountStatusService();
+	$service = app(AccountStatusService::class);
 	$service->setStatus($account->id, AccountStatus::TEMP_HOLD, $telegramUser->telegram_id);
 
 	$account->refresh();
@@ -30,7 +30,7 @@ it('marks account as problem with wrong password reason', function (): void {
 	$account = Account::factory()->create(['status' => AccountStatus::ACTIVE]);
 	$telegramUser = TelegramUser::factory()->create();
 
-	$service = new AccountStatusService();
+	$service = app(AccountStatusService::class);
 	$service->markProblem($account->id, $telegramUser->telegram_id, 'wrong_password');
 
 	$account->refresh();
@@ -46,7 +46,7 @@ it('marks account as recovery when email access is missing', function (): void {
 	$account = Account::factory()->create(['status' => AccountStatus::ACTIVE]);
 	$telegramUser = TelegramUser::factory()->create();
 
-	$service = new AccountStatusService();
+	$service = app(AccountStatusService::class);
 	$service->markProblem($account->id, $telegramUser->telegram_id, 'no_email');
 
 	$account->refresh();
@@ -57,7 +57,7 @@ it('marks account as stolen', function (): void {
 	$account = Account::factory()->create(['status' => AccountStatus::ACTIVE]);
 	$telegramUser = TelegramUser::factory()->create();
 
-	$service = new AccountStatusService();
+	$service = app(AccountStatusService::class);
 	$service->markProblem($account->id, $telegramUser->telegram_id, 'stolen');
 
 	$account->refresh();
@@ -72,7 +72,7 @@ it('marks account as dead for admin only', function (): void {
 	$telegramUser = TelegramUser::factory()->create();
 	$adminUser = TelegramUser::factory()->admin()->create();
 
-	$service = new AccountStatusService();
+	$service = app(AccountStatusService::class);
 	$service->markProblem($account->id, $telegramUser->telegram_id, 'dead');
 
 	$account->refresh();
@@ -87,7 +87,7 @@ it('marks account as temp hold for unknown reason', function (): void {
 	$account = Account::factory()->create(['status' => AccountStatus::ACTIVE]);
 	$telegramUser = TelegramUser::factory()->create();
 
-	$service = new AccountStatusService();
+	$service = app(AccountStatusService::class);
 	$service->markProblem($account->id, $telegramUser->telegram_id, 'some_unknown_reason');
 
 	$account->refresh();
@@ -101,7 +101,7 @@ it('updates password and sets status to active', function (): void {
 	]);
 	$telegramUser = TelegramUser::factory()->create();
 
-	$service = new AccountStatusService();
+	$service = app(AccountStatusService::class);
 	$service->updatePassword($account->id, 'new_password123', $telegramUser->telegram_id);
 
 	$account->refresh();
@@ -122,7 +122,7 @@ it('recovers stolen account', function (): void {
 	]);
 	$telegramUser = TelegramUser::factory()->create();
 
-	$service = new AccountStatusService();
+	$service = app(AccountStatusService::class);
 	$service->recoverStolen($account->id, 'recovered_password', $telegramUser->telegram_id);
 
 	$account->refresh();

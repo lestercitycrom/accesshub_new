@@ -4,28 +4,37 @@ declare(strict_types=1);
 
 namespace App\Telegram\Http\Controllers;
 
+use App\Models\ServerError;
 use App\Telegram\DTO\IncomingUpdate;
 use App\Telegram\Services\BotDispatcher;
 use App\Telegram\Services\TelegramClient;
 use App\Domain\Telegram\Models\TelegramUser;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 
 final class WebhookController
 {
+	private const USER_MESSAGE = 'Произошла внутренняя ошибка сервера. Пожалуйста, сообщите администратору номер обращения: #%d.';
+
 	public function __construct(
 		private readonly BotDispatcher $dispatcher,
 		private readonly TelegramClient $telegramClient,
 	) {}
 
-	public function handle(Request $request)
+	public function handle(Request $request): JsonResponse
 	{
+		$chatId = null;
+		$telegramId = null;
+
 		try {
 			$update = $this->parseUpdate($request->all());
 
 			if (!$update) {
 				return response()->json(['status' => 'ignored'], 200);
 			}
+
+			$chatId = $update->chatId;
+			$telegramId = (int) $update->telegramId;
 
 			// Auto-register Telegram user
 			$this->upsertTelegramUser($update);
@@ -34,16 +43,49 @@ final class WebhookController
 			$responseText = $this->dispatcher->dispatch($update);
 
 			// Send response back to Telegram
-			if ($update->chatId && $responseText) {
-				$this->telegramClient->sendMessage($update->chatId, $responseText);
+			if ($chatId && $responseText) {
+				$this->telegramClient->sendMessage($chatId, $responseText);
 			}
 
 			return response()->json(['status' => 'ok'], 200);
 		} catch (\Throwable $e) {
-			// Log error and return error response
-			\Log::error('Webhook error: ' . $e->getMessage());
-			return response()->json(['status' => 'error'], 500);
+			$telegramIdFromRequest = $this->extractTelegramIdFromRequest($request->all());
+			$chatIdFromRequest = $this->extractChatIdFromRequest($request->all());
+
+			$error = ServerError::log('webhook', $e, $telegramId ?? $telegramIdFromRequest, null, [
+				'update_id' => $request->input('update_id'),
+				'has_message' => $request->has('message'),
+				'has_web_app_data' => $request->has('message.web_app_data'),
+			]);
+
+			\Log::error('Webhook error: ' . $e->getMessage(), ['server_error_id' => $error->id]);
+
+			$userMessage = sprintf(self::USER_MESSAGE, $error->id);
+			$sendChatId = $chatId ?? $chatIdFromRequest;
+			if ($sendChatId) {
+				try {
+					$this->telegramClient->sendMessage($sendChatId, $userMessage);
+				} catch (\Throwable) {
+					// ignore send failure
+				}
+			}
+
+			return response()->json(['status' => 'ok'], 200);
 		}
+	}
+
+	private function extractTelegramIdFromRequest(array $data): ?int
+	{
+		$from = $data['message']['from'] ?? null;
+
+		return $from ? (int) ($from['id'] ?? null) : null;
+	}
+
+	private function extractChatIdFromRequest(array $data): ?string
+	{
+		$chat = $data['message']['chat'] ?? null;
+
+		return $chat ? (string) ($chat['id'] ?? null) : null;
 	}
 
 	private function parseUpdate(array $data): ?IncomingUpdate

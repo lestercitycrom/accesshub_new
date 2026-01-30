@@ -11,17 +11,15 @@
 	<link rel="icon" href="/accesshub_logo_strict_2_plane_lock_128.png" type="image/png">
 	<link rel="apple-touch-icon" href="/accesshub_logo_strict_2_plane_lock_128.png">
 
-	<title>@yield('title', config('admin-kit.brand.name', 'Admin'))</title>
+	<title>@yield('title', config('app.name'))</title>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
 	<header class="sticky top-0 z-40 bg-gradient-to-r from-slate-900 to-slate-800 text-slate-100 border-b border-white/10">
 		<div class="mx-auto {{ config('admin-kit.layout.container', 'max-w-7xl') }} px-4">
 			<div class="h-16 flex items-center justify-between gap-4">
 				<a href="{{ route('admin.accounts.index') }}" class="flex items-center gap-2">
-					<span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 font-semibold">
-						{{ config('admin-kit.brand.badge', 'AK') }}
-					</span>
-					<span class="font-semibold tracking-wide">{{ config('admin-kit.brand.name', 'Admin') }}</span>
+					<img src="/accesshub_logo_strict_2_plane_lock_128.png" alt="" class="h-9 w-9 rounded-xl object-contain" width="36" height="36">
+					<span class="font-semibold tracking-wide">{{ config('app.name') }}</span>
 				</a>
 
 				{{-- Global search --}}
@@ -55,22 +53,34 @@
 							$route = (string) ($item['route'] ?? '');
 							$label = (string) ($item['label'] ?? '');
 							$icon = (string) ($item['icon'] ?? '');
+							$isServer = $route === 'admin.server.errors';
+							$hasRoute = !$isServer && $route !== '' && \Illuminate\Support\Facades\Route::has($route);
 						@endphp
-
-						@if($route !== '' && $label !== '' && \Illuminate\Support\Facades\Route::has($route))
+						@if($label !== 'Панель')
+						@if($isServer && $label !== '')
+							@php $isActive = request()->path() === 'admin/server'; @endphp
+							<a href="{{ url('/admin/server') }}"
+								class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+								<x-admin.icon name="alert-triangle" class="h-4 w-4" />
+								<span>{{ $label }}</span>
+							</a>
+						@elseif($route !== '' && $label !== '' && $hasRoute)
 							@php $isActive = request()->routeIs($route); @endphp
-							<a
-								href="{{ route($route) }}"
-								class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2
-									{{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}"
-							>
-								@if($icon !== '')
-									<x-admin.icon :name="$icon" class="h-4 w-4" />
-								@endif
+							<a href="{{ route($route) }}"
+								class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+								@if($icon !== '')<x-admin.icon :name="$icon" class="h-4 w-4" />@endif
 								<span>{{ $label }}</span>
 							</a>
 						@endif
+						@endif
 					@endforeach
+					{{-- Ссылка «Сервер» всегда в меню (не зависит от config) --}}
+					@php $serverActive = request()->path() === 'admin/server'; @endphp
+					<a href="{{ url('/admin/server') }}"
+						class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $serverActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+						<x-admin.icon name="database" class="h-4 w-4" />
+						<span>Сервер</span>
+					</a>
 				</nav>
 
 				<div class="flex items-center gap-3">
@@ -142,22 +152,34 @@
 							$route = (string) ($item['route'] ?? '');
 							$label = (string) ($item['label'] ?? '');
 							$icon = (string) ($item['icon'] ?? '');
+							$isServer = $route === 'admin.server.errors';
+							$hasRoute = !$isServer && $route !== '' && \Illuminate\Support\Facades\Route::has($route);
 						@endphp
-
-						@if($route !== '' && $label !== '' && \Illuminate\Support\Facades\Route::has($route))
+						@if($label !== 'Панель')
+						@if($isServer && $label !== '')
+							@php $isActive = request()->path() === 'admin/server'; @endphp
+							<a href="{{ url('/admin/server') }}"
+								class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+								<x-admin.icon name="alert-triangle" class="h-4 w-4" />
+								<span>{{ $label }}</span>
+							</a>
+						@elseif($route !== '' && $label !== '' && $hasRoute)
 							@php $isActive = request()->routeIs($route); @endphp
-							<a
-								href="{{ route($route) }}"
-								class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2
-									{{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}"
-							>
-								@if($icon !== '')
-									<x-admin.icon :name="$icon" class="h-4 w-4" />
-								@endif
+							<a href="{{ route($route) }}"
+								class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+								@if($icon !== '')<x-admin.icon :name="$icon" class="h-4 w-4" />@endif
 								<span>{{ $label }}</span>
 							</a>
 						@endif
+						@endif
 					@endforeach
+					{{-- Ссылка «Сервер» всегда в меню (не зависит от config) --}}
+					@php $serverActive = request()->path() === 'admin/server'; @endphp
+					<a href="{{ url('/admin/server') }}"
+						class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $serverActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+						<x-admin.icon name="database" class="h-4 w-4" />
+						<span>Сервер</span>
+					</a>
 				</div>
 
 				{{-- Mobile quick actions --}}

@@ -53,7 +53,9 @@
 				<div class="flex flex-wrap items-center gap-2">
 					<x-admin.badge :variant="$badge">{{ $st }}</x-admin.badge>
 
-					@if($account->assigned_to_telegram_id)
+					@if($account->assignedOperator)
+						<x-admin.badge variant="violet">Назначен: {{ $account->assignedOperator->username ?: $account->assignedOperator->first_name }}</x-admin.badge>
+					@elseif($account->assigned_to_telegram_id)
 						<x-admin.badge variant="violet">Назначен: {{ $account->assigned_to_telegram_id }}</x-admin.badge>
 					@else
 						<x-admin.badge variant="gray">Назначен: —</x-admin.badge>
@@ -99,7 +101,7 @@
 					<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
 						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Пароль</div>
 						<div class="font-semibold text-slate-900 break-all">
-							{{ $account->password ? 'Задан' : '—' }}
+							{{ $account->password ?? '—' }}
 						</div>
 					</div>
 				</div>
@@ -123,15 +125,15 @@
 						
 						@if($account->mail_account_login)
 							<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-								<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Mail Account Login</div>
+								<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Логин почты</div>
 								<div class="font-semibold text-slate-900 break-all">{{ $account->mail_account_login }}</div>
 							</div>
 						@endif
 
 						@if($account->mail_account_password)
 							<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-								<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Mail Account Password</div>
-								<div class="font-semibold text-slate-900 break-all">{{ $account->mail_account_password ? 'Задан' : '—' }}</div>
+								<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Пароль почты</div>
+								<div class="font-semibold text-slate-900 break-all">{{ $account->mail_account_password }}</div>
 							</div>
 						@endif
 
@@ -144,14 +146,14 @@
 
 						@if($account->two_fa_mail_account_date)
 							<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-								<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">2-fa Mail Account Date</div>
-								<div class="font-semibold text-slate-900">{{ $account->two_fa_mail_account_date->format('Y-m-d') }}</div>
+								<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Почта двухфакторной защиты</div>
+								<div class="font-semibold text-slate-900 break-all">{{ $account->two_fa_mail_account_date }}</div>
 							</div>
 						@endif
 
 						@if($account->recover_code)
 							<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-								<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Recover Code</div>
+								<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Код восстановления</div>
 								<div class="font-semibold text-slate-900 break-all whitespace-pre-wrap">{{ $account->recover_code }}</div>
 							</div>
 						@endif
@@ -173,6 +175,19 @@
 							@endforeach
 						</select>
 					</div>
+
+					@if($setStatus === 'STOLEN')
+						<div class="space-y-1">
+							<label class="text-xs font-semibold text-slate-700">Назначить оператора</label>
+							<select wire:model="assignToTelegramId"
+								class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+								<option value="">— не назначать</option>
+								@foreach($operators ?? [] as $op)
+									<option value="{{ $op->telegram_id }}">{{ $op->username ?: $op->first_name }} ({{ $op->telegram_id }})</option>
+								@endforeach
+							</select>
+						</div>
+					@endif
 
 					<x-admin.button variant="primary" size="md" wire:click="applyStatus">
 						Применить статус
@@ -198,7 +213,7 @@
 					</x-admin.button>
 
 					<p class="text-xs text-slate-500">
-						Статусы PASSWORD_UPDATE_REQUIRED/ACTION_REQUIRED выставляются при смене пароля и возвращаются в ACTIVE.
+						Статусы «Требуется обновление пароля» и «Требуются действия» выставляются при смене пароля и возвращаются в ACTIVE.
 					</p>
 				</div>
 			</div>

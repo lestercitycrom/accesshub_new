@@ -7,6 +7,7 @@ namespace App\Admin\Livewire\Problems;
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
 use App\Domain\Accounts\Services\AccountStatusService;
+use App\Domain\Telegram\Models\TelegramUser;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 
@@ -16,6 +17,7 @@ final class ProblemsIndex extends Component
 	public string $q = '';
 	public array $selected = [];
 	public int $extendDays = 1;
+	public ?string $assignToTelegramId = null;
 	public string $density = 'normal';
 	public string $sortBy = 'status';
 	public string $sortDirection = 'asc';
@@ -62,7 +64,7 @@ final class ProblemsIndex extends Component
 
 	public function getRowsProperty()
 	{
-		$query = Account::query();
+		$query = Account::query()->with('assignedOperator');
 
 		// Filter by tab
 		if ($this->tab !== 'ALL') {
@@ -150,13 +152,28 @@ final class ProblemsIndex extends Component
 		}
 
 		$statusEnum = AccountStatus::from($status);
+		$payload = [];
+		if ($statusEnum === AccountStatus::STOLEN && $this->assignToTelegramId !== null && $this->assignToTelegramId !== '') {
+			$tid = (int) $this->assignToTelegramId;
+			if ($tid > 0) {
+				$payload['assigned_to_telegram_id'] = $tid;
+			}
+		}
 
 		foreach ($this->selected as $accountId) {
-			$statusService->setStatus($accountId, $statusEnum, null);
+			$statusService->setStatus($accountId, $statusEnum, null, $payload);
 		}
 
 		$this->selected = [];
 		$this->dispatch('refresh');
+	}
+
+	public function getOperatorsProperty(): \Illuminate\Support\Collection
+	{
+		return TelegramUser::query()
+			->where('is_active', true)
+			->orderBy('username')
+			->get();
 	}
 
 	public function clear(): void
@@ -165,6 +182,7 @@ final class ProblemsIndex extends Component
 		$this->q = '';
 		$this->selected = [];
 		$this->extendDays = 1;
+		$this->assignToTelegramId = null;
 	}
 
 	public function render()
@@ -173,6 +191,7 @@ final class ProblemsIndex extends Component
 			'rows' => $this->rows,
 			'tabs' => $this->tabs,
 			'statuses' => $this->statuses,
+			'operators' => $this->operators,
 		])->layout('layouts.admin');
 	}
 }

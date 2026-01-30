@@ -29,4 +29,18 @@ return [
 		'verify_init_data' => env('INITDATA_VERIFY', false),
 		'max_auth_age_seconds' => (int) env('INITDATA_MAX_AGE', 86400),
 	],
+
+	/** Список платформ для выбора при создании/редактировании аккаунта */
+	'platforms' => [
+		'Steam',
+		'PS4',
+		'PS5',
+		'Xbox',
+		'Epic',
+		'Origin',
+		'Battle.net',
+		'GOG',
+		'Nintendo',
+		'Другое',
+	],
 ];

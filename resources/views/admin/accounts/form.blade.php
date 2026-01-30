@@ -56,22 +56,23 @@
 						:error="$errors->first('game')"
 					/>
 
-					<x-admin.input
-						label="Платформа"
-						type="text"
-						placeholder="steam или PS4&PS5 (несколько через &)"
-						name="platform"
-						:value="old('platform', $platform ?? '')"
-						wire:model="platform"
-						:error="$errors->first('platform')"
-						hint="Можно указать несколько платформ через & (например: PS4&PS5)"
-					/>
+					<div class="space-y-1">
+						<label class="text-xs font-semibold text-slate-700">Платформа</label>
+						<select wire:model="platformSelected" multiple
+							class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[100px]">
+							@foreach($platformOptions ?? [] as $p)
+								<option value="{{ $p }}">{{ $p }}</option>
+							@endforeach
+						</select>
+						@error('platformSelected') <div class="text-xs font-medium text-rose-600">{{ $message }}</div> @enderror
+						<div class="text-xs text-slate-500">Удерживайте Ctrl (Cmd на Mac), чтобы выбрать несколько платформ.</div>
+					</div>
 
 					<div class="sm:col-span-2">
 						<x-admin.input
 							label="Логин"
 							type="text"
-							placeholder="login"
+							placeholder="Введите логин"
 							name="login"
 							:value="old('login', $login ?? '')"
 							wire:model="login"
@@ -83,71 +84,48 @@
 						<x-admin.input
 							label="Пароль"
 							type="text"
-							placeholder="{{ $isEdit ? 'оставьте пустым, чтобы не менять пароль' : 'введите пароль' }}"
+							placeholder="пароль аккаунта"
 							name="password"
 							:value="old('password', $password ?? '')"
 							wire:model="password"
 							:error="$errors->first('password')"
-							hint="{{ $isEdit ? 'При сохранении пароль будет обновлён и зашифрован.' : 'Пароль будет зашифрован при сохранении.' }}"
+							hint="Отображается и сохраняется в зашифрованном виде."
 						/>
 					</div>
 				</div>
 			</x-admin.card>
 
-			<x-admin.card title="Доп. данные">
-				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<x-admin.input
-						label="Почта: логин"
-						type="text"
-						placeholder="email@example.com"
-						wire:model="metaEmailLogin"
-						:error="$errors->first('metaEmailLogin')"
-					/>
-
-					<x-admin.input
-						label="Почта: пароль"
-						type="text"
-						placeholder="пароль почты"
-						wire:model="metaEmailPassword"
-						:error="$errors->first('metaEmailPassword')"
-					/>
-				</div>
-
-				<p class="mt-3 text-xs text-slate-500">
-					Доп. данные сохраняются в meta. Поля не обязательны, можно оставить пустыми.
-				</p>
-			</x-admin.card>
-
 			<x-admin.card title="Mail Account">
 				<div class="grid grid-cols-1 gap-4">
 					<x-admin.input
-						label="Mail Account Login"
+						label="Логин почты"
 						type="text"
-						placeholder="email@example.com"
+						placeholder="Введите логин почты"
 						wire:model="mailAccountLogin"
 						:error="$errors->first('mailAccountLogin')"
 					/>
 
 					<x-admin.input
-						label="Mail Account Password"
+						label="Пароль почты"
 						type="text"
-						placeholder="{{ $isEdit ? 'оставьте пустым, чтобы не менять пароль' : 'пароль почты' }}"
+						placeholder="Введите пароль почты"
 						wire:model="mailAccountPassword"
 						:error="$errors->first('mailAccountPassword')"
-						hint="{{ $isEdit ? 'При сохранении пароль будет обновлён и зашифрован.' : 'Пароль будет зашифрован при сохранении.' }}"
+						hint="Отображается и сохраняется в зашифрованном виде."
 					/>
 
 					<x-admin.input
-						label="2-fa Mail Account Date"
-						type="date"
+						label="Почта двухфакторной защиты"
+						type="text"
+						placeholder="Введите почту двухфакторной защиты"
 						wire:model="twoFaMailAccountDate"
 						:error="$errors->first('twoFaMailAccountDate')"
 					/>
 
 					<x-admin.input
-						label="Recover Code"
+						label="Код восстановления"
 						type="text"
-						placeholder="recovery codes"
+						placeholder="Введите код восстановления"
 						wire:model="recoverCode"
 						:error="$errors->first('recoverCode')"
 					/>
@@ -183,13 +161,17 @@
 						@error('status') <div class="text-xs font-medium text-rose-600">{{ $message }}</div> @enderror
 					</div>
 
-					<x-admin.input
-						label="Назначен telegram_id"
-						type="number"
-						placeholder="необязательно"
-						wire:model="assignedToTelegramId"
-						:error="$errors->first('assignedToTelegramId')"
-					/>
+					<div class="space-y-1">
+						<label class="text-xs font-semibold text-slate-700">Назначен оператор</label>
+						<select wire:model="assignedToTelegramId"
+							class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+							<option value="">— не назначен</option>
+							@foreach($operators ?? [] as $op)
+								<option value="{{ $op->telegram_id }}">{{ $op->username ?: $op->first_name }} ({{ $op->telegram_id }})</option>
+							@endforeach
+						</select>
+						@error('assignedToTelegramId') <div class="text-xs font-medium text-rose-600">{{ $message }}</div> @enderror
+					</div>
 
 					<div class="space-y-1">
 						<label class="text-xs font-semibold text-slate-700">Дедлайн статуса</label>
@@ -208,12 +190,12 @@
 					<div class="space-y-2">
 						<label class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
 							<input type="checkbox" wire:model="flagActionRequired" class="rounded border-slate-300">
-							<span class="text-sm text-slate-700">ACTION_REQUIRED</span>
+							<span class="text-sm text-slate-700">Требуются действия</span>
 						</label>
 
 						<label class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
 							<input type="checkbox" wire:model="flagPasswordUpdateRequired" class="rounded border-slate-300">
-							<span class="text-sm text-slate-700">PASSWORD_UPDATE_REQUIRED</span>
+							<span class="text-sm text-slate-700">Требуется обновление пароля</span>
 						</label>
 					</div>
 

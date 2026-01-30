@@ -9,6 +9,7 @@ use App\Domain\Accounts\Models\Account;
 use App\Domain\Accounts\Models\AccountEvent;
 use App\Domain\Issuance\DTO\IssuanceResult;
 use App\Domain\Issuance\Models\Issuance;
+use App\Domain\Settings\Services\SettingsService;
 use App\Domain\Telegram\Enums\TelegramRole;
 use App\Domain\Telegram\Models\TelegramUser;
 use Carbon\CarbonImmutable;
@@ -17,11 +18,15 @@ use Illuminate\Support\Facades\Log;
 
 final class IssueService
 {
+	public function __construct(
+		private readonly SettingsService $settings,
+	) {}
+
 	public function issue(int $telegramId, string $orderId, string $game, string $platform, int $qty): IssuanceResult
 	{
 		$qty = max(1, $qty);
 
-		$maxQty = (int) config('accesshub.issuance.max_qty', 2);
+		$maxQty = $this->settings->getInt('max_qty', (int) config('accesshub.issuance.max_qty', 2));
 
 		if ($qty > $maxQty) {
 			return IssuanceResult::fail('Превышен лимит количества.');
@@ -45,9 +50,9 @@ final class IssueService
 			return IssuanceResult::fail('Недостаточно прав. Обратитесь к администратору.');
 		}
 
-		$cooldownDays = (int) config(
-			'accesshub.issuance.operator_cooldown_days',
-			(int) config('accesshub.issuance.cooldown_days', 14)
+		$cooldownDays = $this->settings->getInt(
+			'cooldown_days',
+			(int) config('accesshub.issuance.operator_cooldown_days', (int) config('accesshub.issuance.cooldown_days', 14))
 		);
 		$now = CarbonImmutable::now();
 

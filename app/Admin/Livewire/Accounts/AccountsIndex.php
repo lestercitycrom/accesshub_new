@@ -126,6 +126,7 @@ final class AccountsIndex extends Component
 	public function getRowsProperty(): LengthAwarePaginator
 	{
 		return Account::query()
+			->with('assignedOperator')
 			->when($this->q !== '', function ($query): void {
 				$q = '%' . $this->q . '%';
 

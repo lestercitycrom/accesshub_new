@@ -60,7 +60,7 @@ final class TelegramUserForm extends Component
 			]
 		);
 
-		redirect()->route('admin.telegram-users.index');
+		$this->redirect(route('admin.telegram-users.index'), navigate: true);
 	}
 
 	public function render()
