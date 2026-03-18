@@ -43,15 +43,21 @@ final class SchemaController
 			->map(fn($platform) => ['value' => $platform, 'label' => ucfirst($platform)])
 			->toArray();
 
-		Log::info('SchemaController: Returning schema', [
-			'games_count' => count($games),
-			'platforms_count' => count($platforms),
-			'games_sample' => array_slice($games, 0, 5),
-			'platforms_sample' => array_slice($platforms, 0, 5),
-		]);
+		// Build platform → games mapping
+		$platformGames = Account::query()
+			->select(['game', 'platform'])
+			->get()
+			->flatMap(function ($account) {
+				$platforms = is_array($account->platform) ? $account->platform : [];
+				return collect($platforms)->map(fn($p) => ['platform' => $p, 'game' => $account->game]);
+			})
+			->groupBy('platform')
+			->map(fn($items) => $items->pluck('game')->unique()->sort()->values()->all())
+			->all();
 
 		return response()->json([
 			'version' => 1,
+			'platform_games' => $platformGames,
 			'tabs' => [
 				[
 					'id' => 'issue',

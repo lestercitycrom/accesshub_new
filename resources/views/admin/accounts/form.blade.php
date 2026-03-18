@@ -68,7 +68,27 @@
 						<div class="text-xs text-slate-500">Удерживайте Ctrl (Cmd на Mac), чтобы выбрать несколько платформ.</div>
 					</div>
 
-					<div class="sm:col-span-2">
+					<x-admin.input
+					label="Макс. выдач (max_uses)"
+					type="number"
+					placeholder="1"
+					name="maxUses"
+					wire:model="maxUses"
+					:error="$errors->first('maxUses')"
+					hint="Сколько раз аккаунт можно выдать до кулдауна."
+				/>
+
+				<x-admin.input
+					label="Доступно выдач (available_uses)"
+					type="number"
+					placeholder="1"
+					name="availableUses"
+					wire:model="availableUses"
+					:error="$errors->first('availableUses')"
+					hint="Текущий остаток. Меняй вручную при необходимости."
+				/>
+
+				<div class="sm:col-span-2">
 						<x-admin.input
 							label="Логин"
 							type="text"

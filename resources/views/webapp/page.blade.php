@@ -27,6 +27,9 @@
 					<div id="moderationNotice" class="alert alert-warning d-none">
 						Ваш аккаунт на модерации. Доступ появится после подтверждения админом.
 					</div>
+					<div id="browserNotice" class="d-none" style="background:rgba(36,129,201,.13);border:1px solid rgba(36,129,201,.35);border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.5;margin-bottom:8px;">
+						Вы открыли приложение в браузере. Для входа запросите ссылку командой <strong>/link</strong> в боте и откройте её.
+					</div>
 					<div class="row g-2">
 						<div class="col-12">
 							<label class="form-label" for="orderId">Номер заказа</label>
@@ -100,6 +103,15 @@
 				</div>
 
 				<div class="card-section">
+					<div class="fw-semibold mb-2">Поиск заказа</div>
+					<div class="d-flex gap-2 mb-2">
+						<input id="orderSearchInput" class="form-control" type="text" placeholder="Введите номер заказа...">
+						<button id="orderSearchBtn" class="btn btn-primary btn-sm" type="button" style="white-space:nowrap">Найти</button>
+					</div>
+					<div id="orderSearchResult" class="list-stack"></div>
+				</div>
+
+				<div class="card-section">
 					<div class="fw-semibold mb-2">STOLEN аккаунты, закреплённые за вами</div>
 					<div id="stolenList" class="list-stack">
 						<div class="list-empty">Нет данных</div>
@@ -136,6 +148,8 @@
 		let isAdmin = false;
 		let isBootstrapped = false;
 		let isActive = true;
+		let platformGames = {}; // platform → [game, ...]
+		let allGames = [];      // все игры (для сброса)
 		let historyPage = 1;
 		let historyPageLimit = 20;
 		let historyTotal = 0;
@@ -875,88 +889,142 @@
 			updateOptions();
 		}
 
+		function populateGameSelect(games) {
+			const gameSelect = document.getElementById('game');
+			if (!gameSelect) return;
+
+			gameSelect.value = '';
+			gameSelect.innerHTML = '<option value="">Выберите игру...</option>';
+			games.forEach(game => {
+				const opt = document.createElement('option');
+				opt.value = game;
+				opt.textContent = game;
+				gameSelect.appendChild(opt);
+			});
+
+			const existingDropdown = gameSelect.parentElement.querySelector('.searchable-select-dropdown');
+			if (existingDropdown) existingDropdown.remove();
+			initSearchableSelect('game');
+		}
+
 		async function loadPlatforms() {
 			try {
 				const resp = await apiGet('/webapp/api/schema');
-				console.log('Schema API response:', resp);
-				
+
 				if (resp.status === 200 && resp.data?.tabs) {
+					// Сохраняем маппинг платформа → игры
+					platformGames = resp.data.platform_games || {};
+
 					const issueTab = resp.data.tabs.find(tab => tab.id === 'issue');
-					console.log('Issue tab:', issueTab);
-					
-					if (issueTab?.fields) {
-						const platformField = issueTab.fields.find(field => field.name === 'platform');
-						const gameField = issueTab.fields.find(field => field.name === 'game');
-						
-						console.log('Platform field:', platformField);
-						console.log('Game field:', gameField);
-						
-						// Populate platform select
-						const platformSelect = document.getElementById('platform');
-						if (platformSelect) {
-							if (platformField?.options && platformField.options.length > 0) {
-								console.log('Platform options:', platformField.options);
-								platformSelect.innerHTML = '<option value="">Выберите платформу...</option>';
-								platformField.options.forEach(option => {
-									const opt = document.createElement('option');
-									opt.value = option.value;
-									opt.textContent = option.label;
-									platformSelect.appendChild(opt);
-								});
-								// Reinitialize searchable select after populating options
-								const existingDropdown = platformSelect.parentElement.querySelector('.searchable-select-dropdown');
-								if (existingDropdown) {
-									existingDropdown.remove();
-								}
-								initSearchableSelect('platform');
-							} else {
-								console.error('No platform options:', platformField?.options);
-								platformSelect.innerHTML = '<option value="">Нет доступных платформ</option>';
-							}
-						} else {
-							console.error('Platform select element not found');
-						}
-						
-						// Populate game select
-						const gameSelect = document.getElementById('game');
-						if (gameSelect) {
-							if (gameField?.options && gameField.options.length > 0) {
-								console.log('Game options:', gameField.options);
-								gameSelect.innerHTML = '<option value="">Выберите игру...</option>';
-								gameField.options.forEach(option => {
-									const opt = document.createElement('option');
-									opt.value = option.value;
-									opt.textContent = option.label;
-									gameSelect.appendChild(opt);
-								});
-								// Reinitialize searchable select after populating options
-								const existingDropdown = gameSelect.parentElement.querySelector('.searchable-select-dropdown');
-								if (existingDropdown) {
-									existingDropdown.remove();
-								}
-								initSearchableSelect('game');
-							} else {
-								console.error('No game options:', gameField?.options);
-								gameSelect.innerHTML = '<option value="">Нет доступных игр</option>';
-							}
-						} else {
-							console.error('Game select element not found');
-						}
-					} else {
-						console.error('No fields in issue tab');
+					if (!issueTab?.fields) return;
+
+					const platformField = issueTab.fields.find(field => field.name === 'platform');
+					const gameField = issueTab.fields.find(field => field.name === 'game');
+
+					// Сохраняем все игры для первоначального отображения
+					allGames = (gameField?.options || []).map(o => o.value);
+
+					// Заполняем платформы
+					const platformSelect = document.getElementById('platform');
+					if (platformSelect && platformField?.options?.length > 0) {
+						platformSelect.innerHTML = '<option value="">Выберите платформу...</option>';
+						platformField.options.forEach(option => {
+							const opt = document.createElement('option');
+							opt.value = option.value;
+							opt.textContent = option.label;
+							platformSelect.appendChild(opt);
+						});
+						const existingDropdown = platformSelect.parentElement.querySelector('.searchable-select-dropdown');
+						if (existingDropdown) existingDropdown.remove();
+						initSearchableSelect('platform');
+
+						// Фильтруем игры при смене платформы
+						platformSelect.addEventListener('change', () => {
+							const selectedPlatform = platformSelect.value;
+							const games = selectedPlatform && platformGames[selectedPlatform]
+								? platformGames[selectedPlatform]
+								: allGames;
+							populateGameSelect(games);
+						});
 					}
-				} else {
-					console.error('Invalid schema response:', resp);
+
+					// Заполняем игры (изначально все)
+					populateGameSelect(allGames);
 				}
 			} catch (e) {
 				console.error('Failed to load platforms:', e);
 			}
 		}
 
+		const orderSearchBtn = document.getElementById('orderSearchBtn');
+		const orderSearchInput = document.getElementById('orderSearchInput');
+		const orderSearchResult = document.getElementById('orderSearchResult');
+
+		async function runOrderSearch() {
+			const orderId = orderSearchInput?.value.trim();
+			if (!orderId) return;
+
+			setButtonLoading(orderSearchBtn, true);
+			orderSearchResult.innerHTML = '';
+
+			const resp = await apiGet(`/webapp/api/order-search?order_id=${encodeURIComponent(orderId)}`);
+			setButtonLoading(orderSearchBtn, false);
+
+			if (resp.status === 403) {
+				orderSearchResult.innerHTML = '<div class="list-empty">Не инициализировано.</div>';
+				return;
+			}
+
+			if (!resp.data?.found || !resp.data.items?.length) {
+				orderSearchResult.innerHTML = '<div class="list-empty">Заказ не найден.</div>';
+				return;
+			}
+
+			resp.data.items.forEach(item => {
+				const card = document.createElement('div');
+				card.className = 'list-card';
+				card.style.border = item.is_mine
+					? '1px solid rgba(36,129,201,.5)'
+					: '1px solid rgba(255,255,255,.1)';
+
+				card.innerHTML = `
+					<div class="list-row">
+						<div class="list-label">Заказ</div>
+						<div class="list-value">${item.order_id}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Оператор</div>
+						<div class="list-value">${item.is_mine ? '<span style="color:#2481C9;font-weight:600">Вы</span>' : item.operator}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Игра</div>
+						<div class="list-value">${item.game || '-'}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Платформа</div>
+						<div class="list-value">${item.platform || '-'}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Логин</div>
+						<div class="list-value"><code>${item.login || '-'}</code></div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Выдано</div>
+						<div class="list-value">${formatIssuedAt(item.issued_at)}</div>
+					</div>
+				`;
+				orderSearchResult.appendChild(card);
+			});
+		}
+
+		orderSearchBtn?.addEventListener('click', runOrderSearch);
+		orderSearchInput?.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') runOrderSearch();
+		});
+
 		async function init() {
-			// Load platforms and games from schema
 			await loadPlatforms();
-			
+
 			let ok = await loadMe();
 			if (!ok) {
 				ok = await bootstrap();
@@ -965,6 +1033,12 @@
 				}
 			}
 			isBootstrapped = ok;
+
+			if (!isBootstrapped) {
+				const notice = document.getElementById('browserNotice');
+				if (notice) notice.classList.remove('d-none');
+				if (issueBtn) issueBtn.disabled = true;
+			}
 		}
 
 		init();

@@ -21,6 +21,8 @@ final class AccountForm extends Component
 	public string $login = '';
 	public string $password = '';
 	public string $status = 'ACTIVE';
+	public int $maxUses = 1;
+	public int $availableUses = 1;
 	public ?string $assignedToTelegramId = null;
 	public ?string $statusDeadlineAt = null;
 	public bool $flagActionRequired = false;
@@ -48,6 +50,8 @@ final class AccountForm extends Component
 			$this->login = $account->login;
 			$this->password = (string) ($account->password ?? '');
 			$this->status = $account->status->value;
+			$this->maxUses = (int) ($account->max_uses ?? 1);
+			$this->availableUses = (int) ($account->available_uses ?? 1);
 			$this->assignedToTelegramId = $account->assigned_to_telegram_id ? (string) $account->assigned_to_telegram_id : null;
 			$this->statusDeadlineAt = $account->status_deadline_at?->format('Y-m-d\TH:i');
 
@@ -82,6 +86,8 @@ final class AccountForm extends Component
 			'login' => ['required', 'string'],
 			'password' => ['required_if:account,null', 'string', 'min:1'],
 			'status' => ['required', 'in:' . implode(',', array_map(fn($s) => $s->value, AccountStatus::cases()))],
+			'maxUses' => ['required', 'integer', 'min:0'],
+			'availableUses' => ['required', 'integer', 'min:0'],
 			'assignedToTelegramId' => ['nullable', 'string'],
 			'mailAccountLogin' => ['nullable', 'string'],
 			'mailAccountPassword' => ['nullable', 'string'],
@@ -117,6 +123,8 @@ final class AccountForm extends Component
 			'platform' => $platforms,
 			'login' => trim((string) $this->login),
 			'status' => $this->status,
+			'max_uses' => $this->maxUses,
+			'available_uses' => $this->availableUses,
 			'assigned_to_telegram_id' => ($this->assignedToTelegramId !== null && $this->assignedToTelegramId !== '') ? (int) $this->assignedToTelegramId : null,
 			'status_deadline_at' => $statusDeadlineAt,
 			'flags' => !empty($flags) ? $flags : null,

@@ -31,6 +31,7 @@ Route::withoutMiddleware(['auth', 'admin'])->group(function () {
         Route::get('/webapp/api/me', App\WebApp\Http\Controllers\MeController::class)->name('webapp.me');
         Route::get('/webapp/api/history', App\WebApp\Http\Controllers\HistoryController::class)->name('webapp.history');
         Route::get('/webapp/api/stolen', App\WebApp\Http\Controllers\StolenController::class)->name('webapp.stolen');
+        Route::get('/webapp/api/order-search', App\WebApp\Http\Controllers\OrderSearchController::class)->name('webapp.order-search');
         Route::post('/webapp/api/issue', App\WebApp\Http\Controllers\IssueController::class)
             ->middleware('log-webapp')
             ->name('webapp.issue');
