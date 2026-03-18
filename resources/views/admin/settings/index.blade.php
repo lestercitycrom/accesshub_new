@@ -161,4 +161,37 @@
 			</x-admin.card>
 		</div>
 	</div>
+
+	<!-- Danger Zone -->
+	<div class="rounded-2xl border-2 border-red-200 bg-red-50 p-6">
+		<div class="flex flex-col gap-4">
+			<div>
+				<h3 class="text-lg font-semibold text-red-900">Опасная зона</h3>
+				<p class="mt-1 text-sm text-red-700">
+					Удаление всех аккаунтов — необратимая операция. Все данные будут безвозвратно удалены.
+				</p>
+			</div>
+
+			<div class="flex flex-wrap items-end gap-3">
+				<div class="w-64">
+					<x-admin.input
+						label="Подтверждение паролем"
+						type="password"
+						wire:model="confirmPassword"
+						placeholder="Введите ваш пароль"
+						:error="$errors->first('confirmPassword')"
+					/>
+				</div>
+
+				<x-admin.button
+					variant="danger"
+					size="md"
+					wire:click="deleteAllAccounts"
+					onclick="if(!confirm('Вы уверены, что хотите удалить ВСЕ аккаунты? Это действие необратимо!')){event.preventDefault();event.stopImmediatePropagation();}"
+				>
+					Удалить все аккаунты
+				</x-admin.button>
+			</div>
+		</div>
+	</div>
 </div>

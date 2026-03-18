@@ -109,17 +109,6 @@ final class AccountsIndex extends Component
 		$this->alertMessage = 'Аккаунт удалён.';
 	}
 
-	public function deleteAllAccounts(): void
-	{
-		Gate::authorize('admin');
-
-		$count = Account::query()->count();
-		Account::query()->delete();
-
-		$this->alertMessage = "Удалено аккаунтов: {$count}.";
-		$this->resetPage();
-	}
-
 	/**
 	 * @return LengthAwarePaginator<Account>
 	 */

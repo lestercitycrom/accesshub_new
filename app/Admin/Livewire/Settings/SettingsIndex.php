@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Admin\Livewire\Settings;
 
+use App\Domain\Accounts\Models\Account;
 use App\Domain\Settings\Services\SettingsService;
 use App\Telegram\Services\TelegramClient;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 
 final class SettingsIndex extends Component
@@ -20,6 +22,8 @@ final class SettingsIndex extends Component
 
 	/** Success message shown after save (visible in Livewire response) */
 	public ?string $successMessage = null;
+
+	public string $confirmPassword = '';
 
 	public function mount(SettingsService $settings): void
 	{
@@ -77,6 +81,26 @@ final class SettingsIndex extends Component
 
 		$this->successMessage = $ok ? 'Кнопка меню WebApp установлена.' : 'Не удалось установить кнопку меню WebApp.';
 		session()->flash('status', $this->successMessage);
+	}
+
+	public function deleteAllAccounts(): void
+	{
+		Gate::authorize('admin');
+
+		$this->validate([
+			'confirmPassword' => ['required', 'string'],
+		]);
+
+		if (!Hash::check($this->confirmPassword, (string) auth()->user()?->password)) {
+			$this->addError('confirmPassword', 'Неверный пароль.');
+			return;
+		}
+
+		Account::query()->delete();
+
+		$this->confirmPassword = '';
+		$this->successMessage = 'Все аккаунты удалены.';
+		session()->flash('status', 'Все аккаунты удалены.');
 	}
 
 	public function render()
