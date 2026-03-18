@@ -261,6 +261,52 @@
 			cursor: pointer;
 		}
 
+		/* Скрываем нативный select немедленно, до инициализации JS */
+		.searchable-select-wrapper select.searchable-select {
+			display: none !important;
+		}
+
+		.searchable-select-trigger {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+			width: 100%;
+			padding: 6px 12px;
+			border-radius: 8px;
+			border: 1px solid var(--ah-border);
+			background: var(--ah-input);
+			color: var(--ah-text);
+			cursor: pointer;
+			font-size: 14px;
+			min-height: 38px;
+			user-select: none;
+			overflow: hidden;
+		}
+
+		.searchable-select-trigger .trigger-text {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			min-width: 0;
+		}
+
+		.searchable-select-trigger:focus {
+			outline: none;
+			border-color: rgba(36,129,201,.55);
+			box-shadow: 0 0 0 2px var(--ah-accent-weak);
+		}
+
+		.searchable-select-trigger .trigger-placeholder {
+			color: var(--ah-placeholder);
+		}
+
+		.searchable-select-trigger .trigger-arrow {
+			opacity: 0.5;
+			font-size: 10px;
+			flex-shrink: 0;
+		}
+
 		.btn {
 			border-radius: 8px !important;
 		}

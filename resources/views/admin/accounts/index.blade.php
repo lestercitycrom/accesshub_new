@@ -59,21 +59,21 @@
 		</div>
 
 		<div class="lg:col-span-2">
-			<x-admin.filter-input
-				label="Игра"
-				placeholder="cs2 / minecraft"
-				icon="database"
-				wire:model.live="gameFilter"
-			/>
+			<x-admin.filter-select label="Игра" icon="list" wire:model.live="gameFilter">
+				<option value="">Любая</option>
+				@foreach($gameOptions as $g)
+					<option value="{{ $g }}">{{ $g }}</option>
+				@endforeach
+			</x-admin.filter-select>
 		</div>
 
 		<div class="lg:col-span-2">
-			<x-admin.filter-input
-				label="Платформа"
-				placeholder="steam / xbox"
-				icon="database"
-				wire:model.live="platformFilter"
-			/>
+			<x-admin.filter-select label="Платформа" icon="list" wire:model.live="platformFilter">
+				<option value="">Любая</option>
+				@foreach($platformOptions as $p)
+					<option value="{{ $p }}">{{ $p }}</option>
+				@endforeach
+			</x-admin.filter-select>
 		</div>
 
 		<div class="lg:col-span-2">

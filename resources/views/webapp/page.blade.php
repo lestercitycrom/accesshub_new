@@ -704,28 +704,38 @@
 			});
 		}
 
-		function initSearchableSelect(selectId) {
+		function initSearchableSelect(selectId, showSearch = true) {
 			const select = document.getElementById(selectId);
 			if (!select) return;
 
 			const wrapper = select.closest('.searchable-select-wrapper');
 			if (!wrapper) return;
 
-			// Create dropdown
+			// Создаём видимый триггер вместо нативного select
+			const trigger = document.createElement('div');
+			trigger.className = 'searchable-select-trigger';
+			trigger.tabIndex = 0;
+			trigger.innerHTML = `<span class="trigger-text trigger-placeholder">${select.options[0]?.text || 'Выберите...'}</span><span class="trigger-arrow">▼</span>`;
+			wrapper.insertBefore(trigger, select);
+
+			// Создаём dropdown
 			const dropdown = document.createElement('div');
 			dropdown.className = 'searchable-select-dropdown';
-			
-			const searchContainer = document.createElement('div');
-			searchContainer.className = 'searchable-select-search';
-			const searchInput = document.createElement('input');
-			searchInput.type = 'text';
-			searchInput.placeholder = 'Поиск...';
-			searchContainer.appendChild(searchInput);
-			
+
+			let searchInput = null;
+			if (showSearch) {
+				const searchContainer = document.createElement('div');
+				searchContainer.className = 'searchable-select-search';
+				searchInput = document.createElement('input');
+				searchInput.type = 'text';
+				searchInput.placeholder = 'Поиск...';
+				searchContainer.appendChild(searchInput);
+				dropdown.appendChild(searchContainer);
+			}
+
 			const optionsContainer = document.createElement('div');
 			optionsContainer.className = 'searchable-select-options';
-			
-			dropdown.appendChild(searchContainer);
+
 			dropdown.appendChild(optionsContainer);
 			wrapper.appendChild(dropdown);
 
@@ -792,32 +802,31 @@
 			function selectOption(optionEl) {
 				const value = optionEl.dataset.value;
 				const text = optionEl.textContent;
-				
-				// Find and select the matching option in the original select
+
 				const matchingOption = Array.from(select.options).find(opt => opt.value === value);
 				if (matchingOption) {
 					select.selectedIndex = Array.from(select.options).indexOf(matchingOption);
 					select.value = value;
 				} else {
-					// Fallback: set value directly
 					select.value = value;
 				}
-				
-				// Mark selected option visually in dropdown
-				options.forEach(opt => {
-					if (opt.element) {
-						opt.element.classList.remove('selected');
-					}
-				});
-				if (optionEl) {
-					optionEl.classList.add('selected');
+
+				// Обновляем текст триггера
+				const triggerText = trigger.querySelector('.trigger-text');
+				if (triggerText) {
+					triggerText.textContent = text;
+					triggerText.classList.remove('trigger-placeholder');
 				}
-				
+
+				options.forEach(opt => {
+					if (opt.element) opt.element.classList.remove('selected');
+				});
+				if (optionEl) optionEl.classList.add('selected');
+
 				select.dispatchEvent(new Event('change', { bubbles: true }));
 				dropdown.classList.remove('active');
-				searchInput.value = '';
+				if (searchInput) { searchInput.value = ''; }
 				filterOptions('');
-				console.log(`Selected ${selectId}:`, {value, text, selectValue: select.value, selectedIndex: select.selectedIndex});
 			}
 
 			function highlightNext() {
@@ -854,70 +863,47 @@
 				visible[nextIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 			}
 
-			// Sync visual selection when select value changes externally
-			select.addEventListener('change', () => {
-				const currentValue = select.value;
-				options.forEach(opt => {
-					if (opt.element) {
-						if (opt.value === currentValue) {
-							opt.element.classList.add('selected');
-						} else {
-							opt.element.classList.remove('selected');
-						}
+			// Открытие по клику/Enter на триггер
+			function openDropdown() {
+				dropdown.classList.add('active');
+				updateOptions();
+				if (searchInput) searchInput.focus();
+				else optionsContainer.focus();
+			}
+
+			trigger.addEventListener('click', openDropdown);
+			trigger.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDropdown(); }
+				else if (e.key === 'Escape') { dropdown.classList.remove('active'); }
+			});
+
+			if (searchInput) {
+				searchInput.addEventListener('input', (e) => filterOptions(e.target.value));
+				searchInput.addEventListener('keydown', (e) => {
+					if (e.key === 'ArrowDown') { e.preventDefault(); highlightNext(); }
+					else if (e.key === 'ArrowUp') { e.preventDefault(); highlightPrev(); }
+					else if (e.key === 'Enter') {
+						e.preventDefault();
+						const highlighted = optionsContainer.querySelector('.highlighted');
+						if (highlighted) selectOption(highlighted);
+					} else if (e.key === 'Escape') {
+						dropdown.classList.remove('active');
+						trigger.focus();
 					}
 				});
-			});
-
-			// Events
-			select.addEventListener('focus', () => {
-				dropdown.classList.add('active');
-				searchInput.focus();
-				updateOptions();
-			});
-
-			select.addEventListener('click', (e) => {
-				e.preventDefault();
-				select.focus();
-			});
-
-			searchInput.addEventListener('input', (e) => {
-				filterOptions(e.target.value);
-			});
-
-			searchInput.addEventListener('keydown', (e) => {
-				if (e.key === 'ArrowDown') {
-					e.preventDefault();
-					highlightNext();
-				} else if (e.key === 'ArrowUp') {
-					e.preventDefault();
-					highlightPrev();
-				} else if (e.key === 'Enter') {
-					e.preventDefault();
-					const highlighted = optionsContainer.querySelector('.highlighted');
-					if (highlighted) {
-						selectOption(highlighted);
-					}
-				} else if (e.key === 'Escape') {
-					dropdown.classList.remove('active');
-					select.blur();
-				}
-			});
+			}
 
 			optionsContainer.addEventListener('click', (e) => {
 				const optionEl = e.target.closest('.searchable-select-option');
-				if (optionEl && !optionEl.classList.contains('hidden')) {
-					selectOption(optionEl);
-				}
+				if (optionEl && !optionEl.classList.contains('hidden')) selectOption(optionEl);
 			});
 
-			// Close on outside click
+			// Закрытие по клику вне
 			document.addEventListener('click', (e) => {
-				if (!wrapper.contains(e.target) && !select.contains(e.target)) {
-					dropdown.classList.remove('active');
-				}
+				if (!wrapper.contains(e.target)) dropdown.classList.remove('active');
 			});
 
-			// Update when select options change
+			// Обновление при изменении опций
 			const observer = new MutationObserver(updateOptions);
 			observer.observe(select, { childList: true });
 
@@ -971,7 +957,7 @@
 						});
 						const existingDropdown = platformSelect.parentElement.querySelector('.searchable-select-dropdown');
 						if (existingDropdown) existingDropdown.remove();
-						initSearchableSelect('platform');
+						initSearchableSelect('platform', false);
 
 						// Фильтруем игры при смене платформы
 						platformSelect.addEventListener('change', () => {
