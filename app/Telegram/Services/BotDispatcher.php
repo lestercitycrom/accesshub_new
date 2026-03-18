@@ -12,6 +12,7 @@ use App\Telegram\DTO\IncomingUpdate;
 use App\Telegram\Services\Parsers\TextIssueParser;
 use App\Telegram\Services\IssueMessageFormatter;
 use App\Domain\Telegram\Models\TelegramUser;
+use App\Domain\Telegram\Enums\TelegramRole;
 use App\WebApp\Services\WebAppTokenService;
 
 final class BotDispatcher
@@ -77,6 +78,8 @@ final class BotDispatcher
 		if (!$result->ok()) {
 			return 'Ошибка выдачи: ' . ($result->message() ?? 'Неизвестная ошибка');
 		}
+
+		$this->notifyAdmins($request, $telegramId);
 
 		return $this->messageFormatter->format($result);
 	}
@@ -192,6 +195,34 @@ final class BotDispatcher
 		}
 
 		return null;
+	}
+
+	private function notifyAdmins(IncomingIssueRequest $request, int $operatorTelegramId): void
+	{
+		$admins = TelegramUser::query()
+			->where('role', TelegramRole::ADMIN)
+			->where('is_active', true)
+			->get();
+
+		$operator = TelegramUser::query()
+			->where('telegram_id', $operatorTelegramId)
+			->first();
+
+		$operatorName = $operator?->username
+			? '@' . $operator->username
+			: ($operator?->first_name ?? (string) $operatorTelegramId);
+
+		$message = "{$request->game} ({$request->platform})\n"
+			. "{$request->orderId}\n"
+			. "The Buyer has paid for the order\n"
+			. "👤 {$operatorName}";
+
+		foreach ($admins as $admin) {
+			if ($admin->telegram_id === $operatorTelegramId) {
+				continue;
+			}
+			$this->telegramClient->sendMessage((string) $admin->telegram_id, $message);
+		}
 	}
 
 	private function parseIncomingRequest(IncomingUpdate $incoming): ?IncomingIssueRequest
