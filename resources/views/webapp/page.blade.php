@@ -467,9 +467,7 @@
 				wrap.appendChild(b);
 			};
 
-			btn('Неверный пароль', '/webapp/api/problem', { account_id: item.account_id, reason: 'wrong_password' });
 			btn('Нет доступа к почте', '/webapp/api/problem', { account_id: item.account_id, reason: 'no_email' });
-			btn('Аккаунт заблокирован / Не пускает', '/webapp/api/problem', { account_id: item.account_id, reason: 'blocked' });
 			btn('Украден', '/webapp/api/problem', { account_id: item.account_id, reason: 'stolen' });
 			if (isAdmin) {
 				btn('Мёртвый', '/webapp/api/problem', { account_id: item.account_id, reason: 'dead' });
