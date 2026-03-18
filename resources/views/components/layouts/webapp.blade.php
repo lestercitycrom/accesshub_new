@@ -428,6 +428,21 @@
 			color: var(--ah-hint);
 			font-size: 11px;
 		}
+
+		@media (min-width: 540px) {
+			body {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				min-height: 100vh;
+				padding: 24px 16px;
+			}
+
+			body > * {
+				width: 100%;
+				max-width: 440px;
+			}
+		}
 	</style>
 
 	<title>{{ $title ?? 'AccessHub WebApp v2026-01-25-01' }}</title>

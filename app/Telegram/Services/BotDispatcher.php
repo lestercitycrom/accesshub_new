@@ -12,6 +12,7 @@ use App\Telegram\DTO\IncomingUpdate;
 use App\Telegram\Services\Parsers\TextIssueParser;
 use App\Telegram\Services\IssueMessageFormatter;
 use App\Domain\Telegram\Models\TelegramUser;
+use App\WebApp\Services\WebAppTokenService;
 
 final class BotDispatcher
 {
@@ -21,6 +22,7 @@ final class BotDispatcher
 		private readonly AccountStatusService $accountStatusService,
 		private readonly TelegramClient $telegramClient,
 		private readonly IssueMessageFormatter $messageFormatter,
+		private readonly WebAppTokenService $tokenService,
 	) {}
 
 	public function dispatch(IncomingUpdate $incoming): ?string
@@ -43,6 +45,17 @@ final class BotDispatcher
 			$text = trim($incoming->text);
 			if ($text !== '' && str_starts_with($text, '/start')) {
 				return "Бот готов к работе.\n\nФормат выдачи:\n<code>order_id</code>\n<code>игровая_платформа</code>\n\nЕсли нужно 2 аккаунта, укажи <code>x2</code> в конце второй строки.";
+			}
+
+			if ($text === '/link') {
+				$token = $this->tokenService->generate($telegramId);
+				$url = rtrim(config('app.url'), '/') . '/webapp/auth/' . $token;
+				$this->telegramClient->sendMessage(
+					$incoming->chatId,
+					"Ссылка для входа в браузере (действует 15 минут):\n{$url}",
+					disableLinkPreview: true,
+				);
+				return null;
 			}
 		}
 

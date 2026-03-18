@@ -21,6 +21,8 @@ Route::withoutMiddleware(['auth', 'admin'])->group(function () {
     Route::get('/webapp', App\WebApp\Http\Controllers\WebAppPageController::class)
         ->middleware('no-cache')
         ->name('webapp');
+    Route::get('/webapp/auth/{token}', App\WebApp\Http\Controllers\WebAppTokenAuthController::class)
+        ->name('webapp.token-auth');
     Route::post('/webapp/bootstrap', BootstrapController::class)
         ->middleware('throttle:30,1')
         ->name('webapp.bootstrap');

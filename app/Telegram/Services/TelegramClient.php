@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 
 final class TelegramClient
 {
-	public function sendMessage(string $chatId, string $text): bool
+	public function sendMessage(string $chatId, string $text, bool $disableLinkPreview = false): bool
 	{
 		$botToken = config('services.telegram.bot_token');
 
@@ -18,11 +18,17 @@ final class TelegramClient
 
 		$url = "https://api.telegram.org/bot{$botToken}/sendMessage";
 
-		$response = Http::post($url, [
+		$payload = [
 			'chat_id' => $chatId,
 			'text' => $text,
 			'parse_mode' => 'HTML',
-		]);
+		];
+
+		if ($disableLinkPreview) {
+			$payload['link_preview_options'] = ['is_disabled' => true];
+		}
+
+		$response = Http::post($url, $payload);
 
 		return $response->successful();
 	}
