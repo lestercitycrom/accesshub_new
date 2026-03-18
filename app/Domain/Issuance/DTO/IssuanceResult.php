@@ -13,6 +13,7 @@ final class IssuanceResult
 		private readonly bool $ok,
 		private readonly ?string $message,
 		public readonly array $items = [],
+		public readonly ?string $orderId = null,
 	) {
 	}
 
@@ -21,9 +22,9 @@ final class IssuanceResult
 	 *
 	 * @param array<int, array{account_id:int, login:string, password:string}> $items
 	 */
-	public static function success(array $items): self
+	public static function success(array $items, ?string $orderId = null): self
 	{
-		return new self(true, null, $items);
+		return new self(true, null, $items, $orderId);
 	}
 
 	/**

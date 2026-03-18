@@ -20,20 +20,23 @@ final class IssueMessageFormatter
 			return '✅ OK';
 		}
 
+		$orderLine = $result->orderId ? "📋 Заказ: <code>{$result->orderId}</code>\n" : '';
+
 		if (count($items) === 1) {
 			$message = "✅ Выдано:\n\n" .
+				$orderLine .
 				"🎮 Логин: <code>{$items[0]['login']}</code>\n" .
 				"🔑 Пароль: <code>{$items[0]['password']}</code>\n";
-			
+
 			if (!empty($items[0]['comment'])) {
 				$message .= "\n💬 Комментарий: {$items[0]['comment']}\n";
 			}
-			
+
 			return $message;
 		}
 
 		$lines = [];
-		$lines[] = '✅ Выдано (x' . count($items) . ')';
+		$lines[] = '✅ Выдано (x' . count($items) . ")\n" . $orderLine;
 
 		foreach ($items as $index => $item) {
 			$itemLines = [
