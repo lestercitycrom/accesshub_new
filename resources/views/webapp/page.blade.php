@@ -115,6 +115,7 @@
 				</div>
 
 			</div>
+		</div>
 		<div id="stolenSection" class="tab-pane" style="display:none;">
 			<div class="card-panel">
 				<div class="tab-header">
@@ -921,8 +922,9 @@
 				gameSelect.appendChild(opt);
 			});
 
-			const existingDropdown = gameSelect.parentElement.querySelector('.searchable-select-dropdown');
-			if (existingDropdown) existingDropdown.remove();
+			const wrapper = gameSelect.parentElement;
+			wrapper.querySelector('.searchable-select-dropdown')?.remove();
+			wrapper.querySelector('.searchable-select-trigger')?.remove();
 			initSearchableSelect('game');
 		}
 
