@@ -74,13 +74,6 @@
 						@endif
 						@endif
 					@endforeach
-					{{-- Ссылка «Сервер» всегда в меню (не зависит от config) --}}
-					@php $serverActive = request()->path() === 'admin/server'; @endphp
-					<a href="{{ url('/admin/server') }}"
-						class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $serverActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
-						<x-admin.icon name="database" class="h-4 w-4" />
-						<span>Сервер</span>
-					</a>
 				</nav>
 
 				<div class="flex items-center gap-3">
@@ -173,13 +166,6 @@
 						@endif
 						@endif
 					@endforeach
-					{{-- Ссылка «Сервер» всегда в меню (не зависит от config) --}}
-					@php $serverActive = request()->path() === 'admin/server'; @endphp
-					<a href="{{ url('/admin/server') }}"
-						class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $serverActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
-						<x-admin.icon name="database" class="h-4 w-4" />
-						<span>Сервер</span>
-					</a>
 				</div>
 
 				{{-- Mobile quick actions --}}
