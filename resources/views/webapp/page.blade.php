@@ -10,6 +10,9 @@
 				<li class="nav-item">
 					<button id="tabHistory" class="nav-link" type="button">История</button>
 				</li>
+				<li class="nav-item">
+					<button id="tabStolen" class="nav-link" type="button">В работе <span id="stolenBadge" class="d-none" style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:999px;background:#e05c5c;color:#fff;font-size:10px;font-weight:700;padding:0 5px;margin-left:4px;vertical-align:middle"></span></button>
+				</li>
 			</ul>
 		</div>
 	</div>
@@ -111,13 +114,21 @@
 					<div id="orderSearchResult" class="list-stack"></div>
 				</div>
 
+			</div>
+		<div id="stolenSection" class="tab-pane" style="display:none;">
+			<div class="card-panel">
+				<div class="tab-header">
+					<div class="tab-icon-wrap">🔒</div>
+					<h2 class="tab-title">В работе</h2>
+					<div class="tab-subtitle">STOLEN аккаунты, закреплённые за вами</div>
+				</div>
 				<div class="card-section">
-					<div class="fw-semibold mb-2">STOLEN аккаунты, закреплённые за вами</div>
 					<div id="stolenList" class="list-stack">
 						<div class="list-empty">Нет данных</div>
 					</div>
 				</div>
 			</div>
+		</div>
 		</div>
 	</div>
 </div>
@@ -133,8 +144,11 @@
 		const moderationNotice = document.getElementById('moderationNotice');
 		const tabIssue = document.getElementById('tabIssue');
 		const tabHistory = document.getElementById('tabHistory');
+		const tabStolen = document.getElementById('tabStolen');
+		const stolenBadge = document.getElementById('stolenBadge');
 		const issueSection = document.getElementById('issueSection');
 		const historySection = document.getElementById('historySection');
+		const stolenSection = document.getElementById('stolenSection');
 		const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
 		const historyStatus = document.getElementById('historyStatus');
 		const historyList = document.getElementById('historyList');
@@ -158,15 +172,21 @@
 		}
 
 		function switchTab(tab) {
+			issueSection.style.display = 'none';
+			historySection.style.display = 'none';
+			stolenSection.style.display = 'none';
+			tabIssue.classList.remove('active');
+			tabHistory.classList.remove('active');
+			tabStolen.classList.remove('active');
+
 			if (tab === 'history') {
-				issueSection.style.display = 'none';
 				historySection.style.display = 'block';
-				tabIssue.classList.remove('active');
 				tabHistory.classList.add('active');
+			} else if (tab === 'stolen') {
+				stolenSection.style.display = 'block';
+				tabStolen.classList.add('active');
 			} else {
-				historySection.style.display = 'none';
 				issueSection.style.display = 'block';
-				tabHistory.classList.remove('active');
 				tabIssue.classList.add('active');
 			}
 		}
@@ -175,6 +195,9 @@
 		tabHistory.addEventListener('click', () => {
 			switchTab('history');
 			loadHistory();
+		});
+		tabStolen.addEventListener('click', () => {
+			switchTab('stolen');
 			loadStolen();
 		});
 
@@ -555,6 +578,19 @@
 
 		function renderStolen(items) {
 			stolenList.innerHTML = '';
+
+			// Обновляем бейдж
+			if (stolenBadge) {
+				if (items && items.length > 0) {
+					stolenBadge.textContent = items.length;
+					stolenBadge.classList.remove('d-none');
+					stolenBadge.style.display = 'inline-flex';
+				} else {
+					stolenBadge.classList.add('d-none');
+					stolenBadge.style.display = 'none';
+				}
+			}
+
 			if (!items || items.length === 0) {
 				const empty = document.createElement('div');
 				empty.className = 'list-empty';
@@ -639,7 +675,6 @@
 
 		refreshHistoryBtn.addEventListener('click', () => {
 			loadHistory();
-			loadStolen();
 		});
 
 		if (historyLimit) {
@@ -1033,6 +1068,11 @@
 				}
 			}
 			isBootstrapped = ok;
+
+			if (isBootstrapped) {
+				// Загружаем stolen сразу для показа бейджа
+				loadStolen();
+			}
 
 			if (!isBootstrapped) {
 				const notice = document.getElementById('browserNotice');
