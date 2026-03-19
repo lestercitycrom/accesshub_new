@@ -482,7 +482,6 @@
 				wrap.appendChild(b);
 			};
 
-			btn('Нет доступа к почте', '/webapp/api/problem', { account_id: item.account_id, reason: 'no_email' });
 			{
 			const stolenBtn = document.createElement('button');
 			stolenBtn.type = 'button';
