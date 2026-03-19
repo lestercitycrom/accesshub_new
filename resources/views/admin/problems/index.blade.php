@@ -26,6 +26,15 @@
 	@endif
 
 	<x-admin.card title="Вкладки">
+		@php
+			$tabLabels = [
+				'STOLEN'    => 'Украден',
+				'RECOVERY'  => 'Восстановление',
+				'TEMP_HOLD' => 'На паузе',
+				'DEAD'      => 'Мёртвый',
+				'ALL'       => 'Все',
+			];
+		@endphp
 		<div class="flex flex-wrap items-center gap-2">
 			@foreach($tabs as $t)
 				@php $active = ($tab ?? '') === $t; @endphp
@@ -35,7 +44,7 @@
 					class="rounded-xl px-4 py-2 text-sm font-semibold transition
 						{{ $active ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50' }}"
 				>
-					{{ $t }}
+					{{ $tabLabels[$t] ?? $t }}
 				</button>
 			@endforeach
 
@@ -88,11 +97,14 @@
 		<div class="lg:col-span-5">
 			<div class="flex items-end gap-2">
 				<div class="flex flex-wrap gap-2">
+					@php
+						$statusLabels = ['ACTIVE'=>'Активен','RECOVERY'=>'Восстановление','STOLEN'=>'Украден','TEMP_HOLD'=>'На паузе','DEAD'=>'Мёртвый'];
+					@endphp
 					@foreach($statuses as $s)
 						<button class="rounded-xl px-3 py-2 text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 							type="button"
 							wire:click="setStatus('{{ $s }}')">
-							Установить {{ $s }}
+							Установить «{{ $statusLabels[$s] ?? $s }}»
 						</button>
 					@endforeach
 				</div>

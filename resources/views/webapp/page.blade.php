@@ -584,6 +584,10 @@
 						<div class="list-label">Выдано</div>
 						<div class="list-value">${issuedAt}</div>
 					</div>
+					<div class="list-row">
+						<div class="list-label">Оператор</div>
+						<div class="list-value">${item.operator || '-'}</div>
+					</div>
 					${item.comment ? `
 					<div class="list-row">
 						<div class="list-label">Комментарий</div>

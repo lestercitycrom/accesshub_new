@@ -80,7 +80,8 @@
 			<x-admin.filter-select label="Статус" icon="list" wire:model.live="statusFilter">
 				<option value="">Любой</option>
 				@foreach($statusOptions as $s)
-					<option value="{{ $s }}">{{ $s }}</option>
+					@php $sLabels=['ACTIVE'=>'Активен','RECOVERY'=>'Восстановление','STOLEN'=>'Украден','TEMP_HOLD'=>'На паузе','DEAD'=>'Мёртвый','COOLDOWN'=>'Кулдаун']; @endphp
+					<option value="{{ $s }}">{{ $sLabels[$s] ?? $s }}</option>
 				@endforeach
 			</x-admin.filter-select>
 		</div>

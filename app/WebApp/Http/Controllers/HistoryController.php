@@ -28,7 +28,7 @@ final class HistoryController
 		$orderId = trim((string) $request->query('order_id', ''));
 
 		$query = Issuance::query()
-			->with(['account'])
+			->with(['account', 'operator'])
 			->where('telegram_id', $telegramId)
 			->orderByDesc('issued_at');
 
@@ -43,23 +43,27 @@ final class HistoryController
 			->limit($limit)
 			->get()
 			->map(static function (Issuance $issuance): array {
-			return [
-				'order_id' => $issuance->order_id,
-				'game' => $issuance->game,
-				'platform' => $issuance->platform,
-				'qty' => $issuance->qty,
-				'issued_at' => $issuance->issued_at?->toDateTimeString(),
-				'account_id' => $issuance->account_id,
-				'login' => $issuance->account?->login,
-				'password' => $issuance->account?->password,
-				'comment' => $issuance->account?->comment,
-			];
-		})->all();
+				$op = $issuance->operator;
+				$operatorName = $op ? ($op->username ? '@' . $op->username : $op->first_name) : '-';
+
+				return [
+					'order_id'   => $issuance->order_id,
+					'game'       => $issuance->game,
+					'platform'   => $issuance->platform,
+					'qty'        => $issuance->qty,
+					'issued_at'  => $issuance->issued_at?->toDateTimeString(),
+					'account_id' => $issuance->account_id,
+					'login'      => $issuance->account?->login,
+					'password'   => $issuance->account?->password,
+					'comment'    => $issuance->account?->comment,
+					'operator'   => $operatorName,
+				];
+			})->all();
 
 		return response()->json([
 			'items' => $items,
 			'total' => $total,
-			'page' => $page,
+			'page'  => $page,
 			'limit' => $limit,
 		]);
 	}
