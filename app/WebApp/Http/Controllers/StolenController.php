@@ -21,15 +21,24 @@ final class StolenController
 
 		$items = Account::query()
 			->where('status', AccountStatus::STOLEN)
-			->where('assigned_to_telegram_id', $telegramId)
+			->with('assignedOperator')
 			->orderBy('status_deadline_at')
-			->limit(50)
+			->limit(100)
 			->get()
-			->map(static fn (Account $account) => [
-				'id' => $account->id,
-				'login' => $account->login,
-				'deadline' => $account->status_deadline_at?->format('Y-m-d H:i') ?? '-',
-			])
+			->map(static function (Account $account) use ($telegramId) {
+				$operator = $account->assignedOperator;
+				$operatorName = $operator
+					? ($operator->username ? '@' . $operator->username : $operator->first_name)
+					: '—';
+
+				return [
+					'id'            => $account->id,
+					'login'         => $account->login,
+					'deadline'      => $account->status_deadline_at?->format('Y-m-d H:i') ?? '-',
+					'operator'      => $operatorName,
+					'is_mine'       => $account->assigned_to_telegram_id === $telegramId,
+				];
+			})
 			->all();
 
 		return response()->json([

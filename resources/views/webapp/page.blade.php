@@ -663,59 +663,65 @@
 						<div class="list-label">Дедлайн</div>
 						<div class="list-value">${item.deadline || '-'}</div>
 					</div>
+					<div class="list-row">
+						<div class="list-label">Оператор</div>
+						<div class="list-value">${item.operator || '—'}</div>
+					</div>
 				`;
 
-				const wrap = document.createElement('div');
-				wrap.className = 'list-actions';
+				if (item.is_mine) {
+					const wrap = document.createElement('div');
+					wrap.className = 'list-actions';
 
-				const recoverBtn = document.createElement('button');
-				recoverBtn.type = 'button';
-				recoverBtn.className = 'btn btn-outline-secondary btn-sm';
-				recoverBtn.textContent = 'Восстановлен';
+					const recoverBtn = document.createElement('button');
+					recoverBtn.type = 'button';
+					recoverBtn.className = 'btn btn-outline-secondary btn-sm';
+					recoverBtn.textContent = 'Восстановлен';
 
-				const passWrap = document.createElement('div');
-				passWrap.style.cssText = 'display:none;margin-top:8px;';
-				const passInput = document.createElement('input');
-				passInput.type = 'password';
-				passInput.className = 'form-control form-control-sm';
-				passInput.placeholder = 'Новый пароль';
-				passInput.style.marginBottom = '6px';
-				const passConfirmBtn = document.createElement('button');
-				passConfirmBtn.type = 'button';
-				passConfirmBtn.className = 'btn btn-success btn-sm w-100';
-				passConfirmBtn.textContent = 'Подтвердить';
-				passWrap.appendChild(passInput);
-				passWrap.appendChild(passConfirmBtn);
+					const passWrap = document.createElement('div');
+					passWrap.style.cssText = 'display:none;margin-top:8px;';
+					const passInput = document.createElement('input');
+					passInput.type = 'password';
+					passInput.className = 'form-control form-control-sm';
+					passInput.placeholder = 'Новый пароль';
+					passInput.style.marginBottom = '6px';
+					const passConfirmBtn = document.createElement('button');
+					passConfirmBtn.type = 'button';
+					passConfirmBtn.className = 'btn btn-success btn-sm w-100';
+					passConfirmBtn.textContent = 'Подтвердить';
+					passWrap.appendChild(passInput);
+					passWrap.appendChild(passConfirmBtn);
 
-				recoverBtn.addEventListener('click', () => {
-					passWrap.style.display = passWrap.style.display === 'none' ? 'block' : 'none';
-					if (passWrap.style.display === 'block') passInput.focus();
-				});
+					recoverBtn.addEventListener('click', () => {
+						passWrap.style.display = passWrap.style.display === 'none' ? 'block' : 'none';
+						if (passWrap.style.display === 'block') passInput.focus();
+					});
 
-				passConfirmBtn.addEventListener('click', async () => {
-					const newPass = passInput.value.trim();
-					if (!newPass) { passInput.focus(); return; }
-					const resp = await apiPostJson('/webapp/api/recover-stolen', { account_id: item.id, password: newPass });
-					const message = resp.data?.message || (resp.status === 200 ? 'Готово' : (resp.data?.error || 'Ошибка'));
-					flashStolenStatus(message);
-					if (resp.status === 200) loadStolen();
-				});
+					passConfirmBtn.addEventListener('click', async () => {
+						const newPass = passInput.value.trim();
+						if (!newPass) { passInput.focus(); return; }
+						const resp = await apiPostJson('/webapp/api/recover-stolen', { account_id: item.id, password: newPass });
+						const message = resp.data?.message || (resp.status === 200 ? 'Готово' : (resp.data?.error || 'Ошибка'));
+						flashStolenStatus(message);
+						if (resp.status === 200) loadStolen();
+					});
 
-				const postponeBtn = document.createElement('button');
-				postponeBtn.type = 'button';
-				postponeBtn.className = 'btn btn-outline-secondary btn-sm';
-				postponeBtn.textContent = 'Перенести на 1 день';
-				postponeBtn.addEventListener('click', async () => {
-					const resp = await apiPostJson('/webapp/api/postpone-stolen', { account_id: item.id });
-					const message = resp.data?.message || (resp.status === 200 ? 'Перенесено' : (resp.data?.error || 'Ошибка'));
-					flashStolenStatus(message);
-					if (resp.status === 200) loadStolen();
-				});
+					const postponeBtn = document.createElement('button');
+					postponeBtn.type = 'button';
+					postponeBtn.className = 'btn btn-outline-secondary btn-sm';
+					postponeBtn.textContent = 'Перенести на 1 день';
+					postponeBtn.addEventListener('click', async () => {
+						const resp = await apiPostJson('/webapp/api/postpone-stolen', { account_id: item.id });
+						const message = resp.data?.message || (resp.status === 200 ? 'Перенесено' : (resp.data?.error || 'Ошибка'));
+						flashStolenStatus(message);
+						if (resp.status === 200) loadStolen();
+					});
 
-				wrap.appendChild(recoverBtn);
-				wrap.appendChild(postponeBtn);
-				card.appendChild(passWrap);
-				card.appendChild(wrap);
+					wrap.appendChild(recoverBtn);
+					wrap.appendChild(postponeBtn);
+					card.appendChild(passWrap);
+					card.appendChild(wrap);
+				}
 				stolenList.appendChild(card);
 			});
 		}
