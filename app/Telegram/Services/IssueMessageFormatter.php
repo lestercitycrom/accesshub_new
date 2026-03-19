@@ -21,10 +21,12 @@ final class IssueMessageFormatter
 		}
 
 		$orderLine = $result->orderId ? "📋 Заказ: <code>{$result->orderId}</code>\n" : '';
+		$gameLine = $result->game ? "🕹 Игра: {$result->game}" . ($result->platform ? " ({$result->platform})" : '') . "\n" : '';
 
 		if (count($items) === 1) {
 			$message = "✅ Выдано:\n\n" .
 				$orderLine .
+				$gameLine .
 				"🎮 Логин: <code>{$items[0]['login']}</code>\n" .
 				"🔑 Пароль: <code>{$items[0]['password']}</code>\n";
 
@@ -36,7 +38,7 @@ final class IssueMessageFormatter
 		}
 
 		$lines = [];
-		$lines[] = '✅ Выдано (x' . count($items) . ")\n" . $orderLine;
+		$lines[] = '✅ Выдано (x' . count($items) . ")\n" . $orderLine . $gameLine;
 
 		foreach ($items as $index => $item) {
 			$itemLines = [

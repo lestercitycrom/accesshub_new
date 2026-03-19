@@ -70,8 +70,8 @@
 					@endif
 				</div>
 				<div class="text-xs text-slate-500">
-					Назначен — Telegram ID оператора, к которому закреплён аккаунт (обычно при статусе STOLEN).
-					Дедлайн — срок статуса STOLEN; продлевается кнопкой «Перенести на 1 день».
+					Назначен — Telegram ID оператора, к которому закреплён аккаунт (обычно при «Украден»).
+					Дедлайн — срок статуса «Укрден»; продлевается кнопкой «Перенести на 1 день».
 				</div>
 
 				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
@@ -170,8 +170,9 @@
 						<label class="text-xs font-semibold text-slate-700">Изменить статус аккаунта</label>
 						<select wire:model="setStatus"
 							class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
-							@foreach($statuses as $s)
-								<option value="{{ $s }}">{{ $s }}</option>
+							@php $sL=['ACTIVE'=>'Активен','RECOVERY'=>'Восстановление','STOLEN'=>'Украден','TEMP_HOLD'=>'На паузе','DEAD'=>'Мёртвый']; @endphp
+				@foreach($statuses as $s)
+								<option value="{{ $s }}">{{ $sL[$s] ?? $s }}</option>
 							@endforeach
 						</select>
 					</div>
@@ -213,7 +214,7 @@
 					</x-admin.button>
 
 					<p class="text-xs text-slate-500">
-						Статусы «Требуется обновление пароля» и «Требуются действия» выставляются при смене пароля и возвращаются в ACTIVE.
+						Статусы «Требуется обновление пароля» и «Требуются действия» выставляются при смене пароля и возвращаются в «Активен».
 					</p>
 				</div>
 			</div>
@@ -224,9 +225,9 @@
 			<div class="space-y-2 text-sm text-slate-600">
 				<p>Проблемные статусы используются для массовых действий и отметок проблемных аккаунтов.</p>
 				<ul class="list-disc pl-5 space-y-1">
-					<li>STOLEN — аккаунт украден + блокировка выдачи</li>
-					<li>RECOVERY — аккаунт в процессе восстановления</li>
-					<li>TEMP_HOLD и DEAD — используйте для ручных пометок и блокировки</li>
+					<li>«Украден» — аккаунт украден + блокировка выдачи</li>
+					<li>«Восстановление» — аккаунт в процессе восстановления</li>
+					<li>«На паузе» и «Мёртвый» — используйте для ручных пометок и блокировки</li>
 				</ul>
 			</div>
 		</x-admin.card>

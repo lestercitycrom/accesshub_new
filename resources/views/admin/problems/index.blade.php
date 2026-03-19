@@ -7,7 +7,7 @@
 <div class="space-y-6">
 <x-admin.page-header
 	title="Проблемные"
-	subtitle="Проблемные аккаунты: STOLEN/RECOVERY/TEMP_HOLD/DEAD + массовые действия."
+	subtitle="Проблемные аккаунты: Украден / Восстановление / На паузе / Мёртвый + массовые действия."
 	:meta="'Выбрано: <span class=&quot;font-semibold text-slate-700&quot;>'.(is_array($selected ?? null) ? count($selected) : 0).'</span>'"
 >
 	<x-admin.page-actions primaryLabel="Поиск" primaryIcon="search" :primaryHref="route('admin.account-lookup')">
@@ -24,6 +24,8 @@
 	@if(session('status'))
 		<x-admin.alert variant="success" :message="session('status')" />
 	@endif
+
+	<x-admin.alert variant="info" message="Для действий (Продлить, Вернуть в пул, Установить статус) сначала отметьте аккаунты галочками в таблице." />
 
 	<x-admin.card title="Вкладки">
 		@php
@@ -54,8 +56,9 @@
 		</div>
 	</x-admin.card>
 
+	{{-- Row 1: Search + Extend deadline + Release to pool --}}
 	<x-admin.filters-bar>
-		<div class="lg:col-span-3">
+		<div class="lg:col-span-4">
 			<x-admin.filter-input
 				label="Поиск по логину"
 				placeholder="логин содержит..."
@@ -64,7 +67,7 @@
 			/>
 		</div>
 
-		<div class="lg:col-span-2">
+		<div class="lg:col-span-3">
 			<div class="flex items-end gap-2">
 				<div class="flex-1">
 					<x-admin.filter-input label="Продлить на дней" type="number" min="1" wire:model="extendDays" />
@@ -76,14 +79,17 @@
 		</div>
 
 		<div class="lg:col-span-2">
-			<x-admin.button variant="secondary" size="sm" wire:click="releaseToPool" class="w-full">
-				Вернуть в пул
-			</x-admin.button>
+			<div class="space-y-1">
+				<label class="text-xs font-semibold text-slate-700 block">&nbsp;</label>
+				<x-admin.button variant="secondary" size="sm" wire:click="releaseToPool" class="w-full">
+					Вернуть в пул
+				</x-admin.button>
+			</div>
 		</div>
 
-		<div class="lg:col-span-2">
+		<div class="lg:col-span-3">
 			<div class="space-y-1">
-				<label class="text-xs font-semibold text-slate-700">Оператор (при установке STOLEN)</label>
+				<label class="text-xs font-semibold text-slate-700 block">Оператор при «Украден»</label>
 				<select wire:model="assignToTelegramId"
 					class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
 					<option value="">— не назначать</option>
@@ -93,33 +99,33 @@
 				</select>
 			</div>
 		</div>
-
-		<div class="lg:col-span-5">
-			<div class="flex items-end gap-2">
-				<div class="flex flex-wrap gap-2">
-					@php
-						$statusLabels = ['ACTIVE'=>'Активен','RECOVERY'=>'Восстановление','STOLEN'=>'Украден','TEMP_HOLD'=>'На паузе','DEAD'=>'Мёртвый'];
-					@endphp
-					@foreach($statuses as $s)
-						<button class="rounded-xl px-3 py-2 text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50"
-							type="button"
-							wire:click="setStatus('{{ $s }}')">
-							Установить «{{ $statusLabels[$s] ?? $s }}»
-						</button>
-					@endforeach
-				</div>
-			</div>
-		</div>
 	</x-admin.filters-bar>
 
+	{{-- Row 2: Set status buttons --}}
 	<x-admin.card>
-		<div class="text-xs text-slate-500 mb-3">
-			Назначен — Telegram ID оператора, к которому закреплён аккаунт (обычно при STOLEN).
-			Дедлайн — срок статуса STOLEN; продлевается кнопкой «Продлить».
+		<div class="flex flex-wrap items-center gap-2">
+			<span class="text-xs font-semibold text-slate-500 mr-1">Установить статус:</span>
+			@php
+				$statusLabels = ['ACTIVE'=>'Активен','RECOVERY'=>'Восстановление','STOLEN'=>'Украден','TEMP_HOLD'=>'На паузе','DEAD'=>'Мёртвый'];
+			@endphp
+			@foreach($statuses as $s)
+				<button class="rounded-xl px-3 py-2 text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 transition"
+					type="button"
+					wire:click="setStatus('{{ $s }}')">
+					{{ $statusLabels[$s] ?? $s }}
+				</button>
+			@endforeach
 		</div>
-		<x-admin.table-toolbar :density="($density ?? 'normal')" :showDensity="true">
-			<x-admin.button variant="secondary" size="sm" wire:click="releaseToPool">Вернуть</x-admin.button>
-		</x-admin.table-toolbar>
+	</x-admin.card>
+
+	<x-admin.card>
+		<div class="flex items-center justify-between mb-3">
+			<div class="text-xs text-slate-500">
+				Назначен — Telegram ID оператора, к которому закреплён аккаунт (обычно при «Украден»).
+				Дедлайн — срок статуса «Украден»; продлевается кнопкой «Продлить».
+			</div>
+			<x-admin.button variant="secondary" size="sm" wire:click="releaseToPool" class="shrink-0 ml-4">Вернуть в пул</x-admin.button>
+		</div>
 
 		<x-admin.table :density="($density ?? 'normal')" :sticky="true">
 			<x-slot:head>

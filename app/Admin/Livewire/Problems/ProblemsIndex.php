@@ -116,11 +116,12 @@ final class ProblemsIndex extends Component
 		Gate::authorize('admin');
 
 		if (empty($this->selected)) {
+			session()->flash('status', 'Выберите аккаунты (галочки в таблице).');
 			return;
 		}
 
 		foreach ($this->selected as $accountId) {
-			$statusService->releaseToPool($accountId, null);
+			$statusService->releaseToPool((int) $accountId, null);
 		}
 
 		$this->selected = [];
@@ -132,11 +133,12 @@ final class ProblemsIndex extends Component
 		Gate::authorize('admin');
 
 		if (empty($this->selected) || $this->extendDays <= 0) {
+			session()->flash('status', 'Выберите аккаунты (галочки в таблице).');
 			return;
 		}
 
 		foreach ($this->selected as $accountId) {
-			$statusService->extendDeadline($accountId, $this->extendDays, null);
+			$statusService->extendDeadline((int) $accountId, $this->extendDays, null);
 		}
 
 		$this->selected = [];
@@ -148,6 +150,7 @@ final class ProblemsIndex extends Component
 		Gate::authorize('admin');
 
 		if (empty($this->selected)) {
+			session()->flash('status', 'Выберите аккаунты (галочки в таблице).');
 			return;
 		}
 
@@ -161,7 +164,7 @@ final class ProblemsIndex extends Component
 		}
 
 		foreach ($this->selected as $accountId) {
-			$statusService->setStatus($accountId, $statusEnum, null, $payload);
+			$statusService->setStatus((int) $accountId, $statusEnum, null, $payload);
 		}
 
 		$this->selected = [];

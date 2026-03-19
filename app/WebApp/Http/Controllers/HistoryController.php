@@ -28,7 +28,7 @@ final class HistoryController
 		$orderId = trim((string) $request->query('order_id', ''));
 
 		$query = Issuance::query()
-			->with(['account', 'operator'])
+			->with(['account', 'telegramUser'])
 			->where('telegram_id', $telegramId)
 			->orderByDesc('issued_at');
 
@@ -43,7 +43,7 @@ final class HistoryController
 			->limit($limit)
 			->get()
 			->map(static function (Issuance $issuance): array {
-				$op = $issuance->operator;
+				$op = $issuance->telegramUser;
 				$operatorName = $op ? ($op->username ? '@' . $op->username : $op->first_name) : '-';
 
 				return [

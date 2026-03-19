@@ -115,7 +115,7 @@
 					<p class="font-semibold text-slate-900">Как использовать</p>
 					<ul class="list-disc pl-5 space-y-1 text-xs text-slate-500">
 						<li>cooldown_days — влияет на повторную выдачу одного и того же аккаунта.</li>
-						<li>stolen_default_deadline_days — дедлайн для статуса STOLEN (если интегрировали SettingsService в сервис статусов).</li>
+						<li>stolen_default_deadline_days — дедлайн для статуса «Украден» (если интегрировали SettingsService в сервис статусов).</li>
 						<li>max_qty — ограничение количества в выдаче (если применяешь).</li>
 					</ul>
 

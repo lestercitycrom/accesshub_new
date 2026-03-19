@@ -14,6 +14,8 @@ final class IssuanceResult
 		private readonly ?string $message,
 		public readonly array $items = [],
 		public readonly ?string $orderId = null,
+		public readonly ?string $game = null,
+		public readonly ?string $platform = null,
 	) {
 	}
 
@@ -22,9 +24,9 @@ final class IssuanceResult
 	 *
 	 * @param array<int, array{account_id:int, login:string, password:string}> $items
 	 */
-	public static function success(array $items, ?string $orderId = null): self
+	public static function success(array $items, ?string $orderId = null, ?string $game = null, ?string $platform = null): self
 	{
-		return new self(true, null, $items, $orderId);
+		return new self(true, null, $items, $orderId, $game, $platform);
 	}
 
 	/**

@@ -213,7 +213,7 @@ final class IssueService
 				];
 			}
 
-			return IssuanceResult::success($items, $orderId);
+			return IssuanceResult::success($items, $orderId, $game, $platform);
 
 			} catch (\Exception $e) {
 				Log::error('IssueService: Exception during issuance', [
