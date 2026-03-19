@@ -124,6 +124,7 @@
 					<div class="tab-subtitle">STOLEN аккаунты, закреплённые за вами</div>
 				</div>
 				<div class="card-section">
+					<span id="stolenStatus" class="small text-muted d-block mb-2"></span>
 					<div id="stolenList" class="list-stack">
 						<div class="list-empty">Нет данных</div>
 					</div>
@@ -154,6 +155,7 @@
 		const historyStatus = document.getElementById('historyStatus');
 		const historyList = document.getElementById('historyList');
 		const stolenList = document.getElementById('stolenList');
+		const stolenStatus = document.getElementById('stolenStatus');
 		const historyLimit = document.getElementById('historyLimit');
 		const historyPrev = document.getElementById('historyPrev');
 		const historyNext = document.getElementById('historyNext');
@@ -302,6 +304,18 @@
 				setTimeout(() => {
 					if (historyStatus.textContent === text) {
 						historyStatus.textContent = '';
+					}
+				}, 3000);
+			}
+		}
+
+		function flashStolenStatus(text) {
+			if (!stolenStatus) return;
+			stolenStatus.textContent = text || '';
+			if (text) {
+				setTimeout(() => {
+					if (stolenStatus.textContent === text) {
+						stolenStatus.textContent = '';
 					}
 				}, 3000);
 			}
@@ -624,22 +638,49 @@
 				recoverBtn.type = 'button';
 				recoverBtn.className = 'btn btn-outline-secondary btn-sm';
 				recoverBtn.textContent = 'Восстановлен';
+
+				const passWrap = document.createElement('div');
+				passWrap.style.cssText = 'display:none;margin-top:8px;';
+				const passInput = document.createElement('input');
+				passInput.type = 'password';
+				passInput.className = 'form-control form-control-sm';
+				passInput.placeholder = 'Новый пароль';
+				passInput.style.marginBottom = '6px';
+				const passConfirmBtn = document.createElement('button');
+				passConfirmBtn.type = 'button';
+				passConfirmBtn.className = 'btn btn-success btn-sm w-100';
+				passConfirmBtn.textContent = 'Подтвердить';
+				passWrap.appendChild(passInput);
+				passWrap.appendChild(passConfirmBtn);
+
 				recoverBtn.addEventListener('click', () => {
-					const newPass = prompt('Введите новый пароль');
-					if (!newPass) return;
-					runAction(recoverBtn, '/webapp/api/recover-stolen', { account_id: item.id, password: newPass });
+					passWrap.style.display = passWrap.style.display === 'none' ? 'block' : 'none';
+					if (passWrap.style.display === 'block') passInput.focus();
+				});
+
+				passConfirmBtn.addEventListener('click', async () => {
+					const newPass = passInput.value.trim();
+					if (!newPass) { passInput.focus(); return; }
+					const resp = await apiPostJson('/webapp/api/recover-stolen', { account_id: item.id, password: newPass });
+					const message = resp.data?.message || (resp.status === 200 ? 'Готово' : (resp.data?.error || 'Ошибка'));
+					flashStolenStatus(message);
+					if (resp.status === 200) loadStolen();
 				});
 
 				const postponeBtn = document.createElement('button');
 				postponeBtn.type = 'button';
 				postponeBtn.className = 'btn btn-outline-secondary btn-sm';
 				postponeBtn.textContent = 'Перенести на 1 день';
-				postponeBtn.addEventListener('click', () => {
-					runAction(postponeBtn, '/webapp/api/postpone-stolen', { account_id: item.id });
+				postponeBtn.addEventListener('click', async () => {
+					const resp = await apiPostJson('/webapp/api/postpone-stolen', { account_id: item.id });
+					const message = resp.data?.message || (resp.status === 200 ? 'Перенесено' : (resp.data?.error || 'Ошибка'));
+					flashStolenStatus(message);
+					if (resp.status === 200) loadStolen();
 				});
 
 				wrap.appendChild(recoverBtn);
 				wrap.appendChild(postponeBtn);
+				card.appendChild(passWrap);
 				card.appendChild(wrap);
 				stolenList.appendChild(card);
 			});
