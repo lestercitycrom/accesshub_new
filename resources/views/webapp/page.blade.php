@@ -124,7 +124,7 @@
 					<div class="tab-subtitle">STOLEN аккаунты, закреплённые за вами</div>
 				</div>
 				<div class="card-section">
-					<span id="stolenStatus" class="small text-muted d-block mb-2"></span>
+					<span id="stolenStatus" class="small d-block mb-2" style="color:#a8d8a8;min-height:1.2em;"></span>
 					<div id="stolenList" class="list-stack">
 						<div class="list-empty">Нет данных</div>
 					</div>
@@ -483,7 +483,19 @@
 			};
 
 			btn('Нет доступа к почте', '/webapp/api/problem', { account_id: item.account_id, reason: 'no_email' });
-			btn('Украден', '/webapp/api/problem', { account_id: item.account_id, reason: 'stolen' });
+			{
+			const stolenBtn = document.createElement('button');
+			stolenBtn.type = 'button';
+			stolenBtn.className = 'btn btn-outline-secondary btn-sm';
+			stolenBtn.textContent = 'Украден';
+			stolenBtn.addEventListener('click', async () => {
+				const resp = await apiPostJson('/webapp/api/problem', { account_id: item.account_id, reason: 'stolen' });
+				const message = resp.data?.message || (resp.status === 200 ? 'Готово' : (resp.data?.error || 'Ошибка'));
+				flashHistoryStatus(message);
+				if (resp.status === 200) loadStolen();
+			});
+			wrap.appendChild(stolenBtn);
+		}
 			if (isAdmin) {
 				btn('Мёртвый', '/webapp/api/problem', { account_id: item.account_id, reason: 'dead' });
 			}
@@ -492,12 +504,34 @@
 			passBtn.type = 'button';
 			passBtn.className = 'btn btn-outline-secondary btn-sm';
 			passBtn.textContent = 'Обновить пароль';
+
+			const passInputWrap = document.createElement('div');
+			passInputWrap.style.cssText = 'display:none;margin-top:8px;width:100%;';
+			const histPassInput = document.createElement('input');
+			histPassInput.type = 'password';
+			histPassInput.className = 'form-control form-control-sm';
+			histPassInput.placeholder = 'Новый пароль';
+			histPassInput.style.marginBottom = '6px';
+			const histPassConfirmBtn = document.createElement('button');
+			histPassConfirmBtn.type = 'button';
+			histPassConfirmBtn.className = 'btn btn-success btn-sm w-100';
+			histPassConfirmBtn.textContent = 'Подтвердить';
+			passInputWrap.appendChild(histPassInput);
+			passInputWrap.appendChild(histPassConfirmBtn);
+
 			passBtn.addEventListener('click', () => {
-				const newPass = prompt('Введите новый пароль');
-				if (!newPass) return;
-				runAction(passBtn, '/webapp/api/update-password', { account_id: item.account_id, password: newPass });
+				passInputWrap.style.display = passInputWrap.style.display === 'none' ? 'block' : 'none';
+				if (passInputWrap.style.display === 'block') histPassInput.focus();
+			});
+			histPassConfirmBtn.addEventListener('click', async () => {
+				const newPass = histPassInput.value.trim();
+				if (!newPass) { histPassInput.focus(); return; }
+				const resp = await apiPostJson('/webapp/api/update-password', { account_id: item.account_id, password: newPass });
+				const message = resp.data?.message || (resp.status === 200 ? 'Готово' : (resp.data?.error || 'Ошибка'));
+				flashHistoryStatus(message);
 			});
 			wrap.appendChild(passBtn);
+			wrap.appendChild(passInputWrap);
 
 			return wrap;
 		}

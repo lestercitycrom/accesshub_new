@@ -249,7 +249,8 @@ final class AccountStatusService
 			}
 
 			$currentDeadline = $account->status_deadline_at ?? now();
-			$account->status_deadline_at = $currentDeadline->addDays($days);
+			$base = $currentDeadline->isPast() ? now() : $currentDeadline;
+			$account->status_deadline_at = $base->addDays($days);
 			$account->save();
 
 			AccountEvent::query()->create([
