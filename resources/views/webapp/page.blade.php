@@ -133,9 +133,8 @@
 		</div>
 		</div>
 	</div>
+	<div id="copyright" class="text-center small my-3">{{ '@accesshub_123_bot' }}</div>
 </div>
-
-<div id="copyright" class="text-center small my-3">@accesshub_123_bot</div>
 
 <script>
 	(function () {

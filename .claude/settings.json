@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -l \"copyright\\\\|accesshub_123_bot\" \"d:/tailwind/accesshub_new/storage/framework/views/\"*.php)"
+    ]
+  }
+}

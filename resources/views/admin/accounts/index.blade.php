@@ -52,7 +52,7 @@
 		<div class="lg:col-span-3">
 			<x-admin.filter-input
 				label="Поиск"
-				placeholder="логин содержит..."
+				placeholder="ID, логин, игра..."
 				icon="search"
 				wire:model.live="q"
 			/>
@@ -133,7 +133,13 @@
 						@endif
 					</x-admin.td>
 
-					<x-admin.td><x-admin.status-badge :status="$row->status->value" /></x-admin.td>
+					<x-admin.td>
+						@php $isOnCooldown = $row->next_release_at && $row->next_release_at->isFuture(); @endphp
+						<x-admin.status-badge :status="$isOnCooldown ? 'COOLDOWN' : $row->status->value" />
+						@if($isOnCooldown)
+							<div class="text-xs text-slate-500 mt-0.5">до {{ $row->next_release_at->format('d.m.Y') }}</div>
+						@endif
+					</x-admin.td>
 
 					<x-admin.td>
 						@if($row->assignedOperator)

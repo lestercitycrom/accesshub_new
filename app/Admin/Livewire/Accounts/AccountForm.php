@@ -21,8 +21,8 @@ final class AccountForm extends Component
 	public string $login = '';
 	public string $password = '';
 	public string $status = 'ACTIVE';
-	public int $maxUses = 1;
-	public int $availableUses = 1;
+	public int $maxUses = 3;
+	public int $availableUses = 3;
 	public ?string $assignedToTelegramId = null;
 	public ?string $statusDeadlineAt = null;
 	public bool $flagActionRequired = false;

@@ -25,9 +25,7 @@
 	</div>
 
 	@if(session('status'))
-		<div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-			{{ session('status') }}
-		</div>
+		<x-admin.alert variant="success" :message="session('status')" />
 	@endif
 
 	@if($errors->any())
@@ -61,7 +59,7 @@
 						<select wire:model="platformSelected" multiple
 							class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[100px]">
 							@foreach($platformOptions ?? [] as $p)
-								<option value="{{ $p }}">{{ $p }}</option>
+								<option value="{{ $p }}" @selected(in_array($p, $platformSelected ?? []))>{{ $p }}</option>
 							@endforeach
 						</select>
 						@error('platformSelected') <div class="text-xs font-medium text-rose-600">{{ $message }}</div> @enderror
@@ -69,7 +67,7 @@
 					</div>
 
 					<x-admin.input
-					label="Макс. выдач (max_uses)"
+					label="Лимит выдач до кулдауна"
 					type="number"
 					placeholder="1"
 					name="maxUses"
@@ -79,7 +77,7 @@
 				/>
 
 				<x-admin.input
-					label="Доступно выдач (available_uses)"
+					label="Доступно выдач"
 					type="number"
 					placeholder="1"
 					name="availableUses"
@@ -174,8 +172,9 @@
 						<label class="text-xs font-semibold text-slate-700">Статус</label>
 						<select wire:model="status"
 							class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
-							@foreach($statuses as $s)
-								<option value="{{ $s }}">{{ $s }}</option>
+							@php $sL=['ACTIVE'=>'Активен','RECOVERY'=>'Восстановление','STOLEN'=>'Украден','TEMP_HOLD'=>'На паузе','DEAD'=>'Мёртвый','COOLDOWN'=>'Кулдаун']; @endphp
+						@foreach($statuses as $s)
+								<option value="{{ $s }}">{{ $sL[$s] ?? $s }}</option>
 							@endforeach
 						</select>
 						@error('status') <div class="text-xs font-medium text-rose-600">{{ $message }}</div> @enderror
@@ -198,7 +197,7 @@
 						<input type="datetime-local" wire:model="statusDeadlineAt"
 							class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
 						@error('statusDeadlineAt') <div class="text-xs font-medium text-rose-600">{{ $message }}</div> @enderror
-						<div class="text-xs text-slate-500">Дедлайн обязателен. Для STOLEN/RECOVERY нужно указывать дедлайн.</div>
+						<div class="text-xs text-slate-500">Дедлайн обязателен для статусов «Украден» и «Восстановление».</div>
 					</div>
 				</div>
 			</x-admin.card>

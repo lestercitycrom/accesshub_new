@@ -78,15 +78,6 @@
 			</div>
 		</div>
 
-		<div class="lg:col-span-2">
-			<div class="space-y-1">
-				<label class="text-xs font-semibold text-slate-700 block">&nbsp;</label>
-				<x-admin.button variant="secondary" size="sm" wire:click="releaseToPool" class="w-full">
-					Вернуть в пул
-				</x-admin.button>
-			</div>
-		</div>
-
 		<div class="lg:col-span-3">
 			<div class="space-y-1">
 				<label class="text-xs font-semibold text-slate-700 block">Оператор при «Украден»</label>
@@ -100,23 +91,6 @@
 			</div>
 		</div>
 	</x-admin.filters-bar>
-
-	{{-- Row 2: Set status buttons --}}
-	<x-admin.card>
-		<div class="flex flex-wrap items-center gap-2">
-			<span class="text-xs font-semibold text-slate-500 mr-1">Установить статус:</span>
-			@php
-				$statusLabels = ['ACTIVE'=>'Активен','RECOVERY'=>'Восстановление','STOLEN'=>'Украден','TEMP_HOLD'=>'На паузе','DEAD'=>'Мёртвый'];
-			@endphp
-			@foreach($statuses as $s)
-				<button class="rounded-xl px-3 py-2 text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 transition"
-					type="button"
-					wire:click="setStatus('{{ $s }}')">
-					{{ $statusLabels[$s] ?? $s }}
-				</button>
-			@endforeach
-		</div>
-	</x-admin.card>
 
 	<x-admin.card>
 		<div class="flex items-center justify-between mb-3">
@@ -164,7 +138,11 @@
 					<x-admin.td class="font-semibold text-slate-900">{{ $row->login }}</x-admin.td>
 
 					<x-admin.td>
-						<x-admin.status-badge :status="$row->status->value" />
+						@php $isOnCooldown = $row->next_release_at && $row->next_release_at->isFuture(); @endphp
+						<x-admin.status-badge :status="$isOnCooldown ? 'COOLDOWN' : $row->status->value" />
+						@if($isOnCooldown)
+							<div class="text-xs text-slate-500 mt-0.5">до {{ $row->next_release_at->format('d.m.Y') }}</div>
+						@endif
 					</x-admin.td>
 
 					<x-admin.td>
@@ -204,5 +182,19 @@
 				{{ $rows->links() }}
 			</div>
 		@endif
+
+		<div class="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+			<span class="text-xs font-semibold text-slate-500">Установить статус выбранным:</span>
+			@php
+				$statusLabels = ['ACTIVE'=>'Активен','RECOVERY'=>'Восстановление','STOLEN'=>'Украден','TEMP_HOLD'=>'На паузе','DEAD'=>'Мёртвый'];
+			@endphp
+			@foreach($statuses as $s)
+				<button class="rounded-xl px-3 py-2 text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 transition"
+					type="button"
+					wire:click="setStatus('{{ $s }}')">
+					{{ $statusLabels[$s] ?? $s }}
+				</button>
+			@endforeach
+		</div>
 	</x-admin.card>
 </div>

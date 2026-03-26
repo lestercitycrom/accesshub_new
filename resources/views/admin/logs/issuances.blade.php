@@ -105,7 +105,7 @@
 					<x-admin.th sortable :sorted="$sortBy === 'game'" :direction="$sortBy === 'game' ? $sortDirection : null" sortField="game">Игра</x-admin.th>
 					<x-admin.th sortable :sorted="$sortBy === 'platform'" :direction="$sortBy === 'platform' ? $sortDirection : null" sortField="platform">Платформа</x-admin.th>
 					<x-admin.th sortable :sorted="$sortBy === 'qty'" :direction="$sortBy === 'qty' ? $sortDirection : null" sortField="qty">Кол-во</x-admin.th>
-					<x-admin.th sortable :sorted="$sortBy === 'cooldown_until'" :direction="$sortBy === 'cooldown_until' ? $sortDirection : null" sortField="cooldown_until">Cooldown</x-admin.th>
+					<x-admin.th sortable :sorted="$sortBy === 'cooldown_until'" :direction="$sortBy === 'cooldown_until' ? $sortDirection : null" sortField="cooldown_until">Кулдаун до</x-admin.th>
 				</tr>
 			</x-slot:head>
 

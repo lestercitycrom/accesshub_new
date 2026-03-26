@@ -140,10 +140,46 @@ final class IssueService
 
 			if (count($accounts) < $qty) {
 				if ($activeCount === 0) {
+					$stolenAccounts = Account::query()
+						->where('game', $game)
+						->where('status', AccountStatus::STOLEN)
+						->whereJsonContains('platform', $platform)
+						->with('assignedOperator')
+						->limit(5)
+						->get();
+
+					if ($stolenAccounts->isNotEmpty()) {
+						$operators = $stolenAccounts
+							->filter(fn($a) => $a->assignedOperator !== null)
+							->map(fn($a) => '@' . ($a->assignedOperator->username ?: $a->assignedOperator->first_name))
+							->unique()
+							->values();
+
+						$msg = "Аккаунты по этой игре имеют статус «Украден» и временно недоступны.";
+						if ($operators->isNotEmpty()) {
+							$msg .= "
+Оператор: " . $operators->join(', ') . " — можете написать напрямую.";
+						}
+						return IssuanceResult::fail($msg);
+					}
+
 					return IssuanceResult::fail('Нет аккаунтов для указанной игры и платформы.');
 				}
 
 				if ($availableCount === 0) {
+					$earliest = Account::query()
+						->where('game', $game)
+						->where('status', AccountStatus::ACTIVE)
+						->whereJsonContains('platform', $platform)
+						->whereNotNull('next_release_at')
+						->orderBy('next_release_at')
+						->value('next_release_at');
+
+					if ($earliest) {
+						$date = \Carbon\Carbon::parse($earliest)->format('d.m.Y в H:i');
+						return IssuanceResult::fail("Нет доступных аккаунтов. Ближайший освободится {$date}.");
+					}
+
 					return IssuanceResult::fail('Нет доступных аккаунтов сейчас. Попробуйте позже.');
 				}
 

@@ -9,6 +9,7 @@ use App\Domain\Accounts\Models\Account;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
+use Illuminate\Support\Facades\DB;
 use Livewire\WithPagination;
 
 final class AccountsIndex extends Component
@@ -118,12 +119,20 @@ final class AccountsIndex extends Component
 			->with('assignedOperator')
 			->when($this->q !== '', function ($query): void {
 				$q = '%' . $this->q . '%';
+				$rawQ = $this->q;
 
-				$query->where(function ($subQuery) use ($q): void {
+				$query->where(function ($subQuery) use ($q, $rawQ): void {
 					$subQuery->where('login', 'like', $q)
 						->orWhere('game', 'like', $q)
-						// Search in platform JSON array
-						->orWhereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$this->q]);
+						->orWhere('platform', 'like', $q);
+
+				if (DB::connection()->getDriverName() === 'mysql') {
+					$subQuery->orWhereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$rawQ]);
+				}
+
+					if (is_numeric($rawQ)) {
+						$subQuery->orWhere('id', (int) $rawQ);
+					}
 				});
 			})
 			->when($this->statusFilter !== '', function ($query): void {

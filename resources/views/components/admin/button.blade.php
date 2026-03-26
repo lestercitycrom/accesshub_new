@@ -2,6 +2,7 @@
 	'variant' => 'primary', // primary|secondary|danger|ghost
 	'size' => 'md', // sm|md
 	'type' => 'button',
+	'href' => null,
 ])
 
 @php
@@ -18,6 +19,12 @@
 	};
 @endphp
 
-<button type="{{ $type }}" {{ $attributes->merge(['class' => $base.' '.$sizeClass.' '.$variantClass]) }}>
-	{{ $slot }}
-</button>
+@if($href)
+	<a href="{{ $href }}" {{ $attributes->merge(['class' => $base.' '.$sizeClass.' '.$variantClass]) }}>
+		{{ $slot }}
+	</a>
+@else
+	<button type="{{ $type }}" {{ $attributes->merge(['class' => $base.' '.$sizeClass.' '.$variantClass]) }}>
+		{{ $slot }}
+	</button>
+@endif

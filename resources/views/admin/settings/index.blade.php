@@ -13,9 +13,7 @@
 	</div>
 
 	@if(session('status') || $successMessage)
-		<div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-			{{ $successMessage ?? session('status') }}
-		</div>
+		<x-admin.alert variant="success" :message="$successMessage ?? session('status')" />
 	@endif
 
 	<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -23,31 +21,31 @@
 			<x-admin.card title="Общее">
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<x-admin.input
-						label="cooldown_days"
+						label="Дней кулдауна"
 						type="number"
 						min="0"
 						wire:model="cooldownDays"
 						:error="$errors->first('cooldownDays')"
-						hint="Сколько дней нельзя повторно выдавать аккаунт после выдачи."
+						hint="Сколько дней аккаунт недоступен после исчерпания лимита выдач."
 					/>
 
 					<x-admin.input
-						label="max_qty"
+						label="Макс. аккаунтов за запрос"
 						type="number"
 						min="1"
 						wire:model="maxQty"
 						:error="$errors->first('maxQty')"
-						hint="Максимальный qty в выдаче (если используется)."
+						hint="Максимальное количество аккаунтов, выдаваемых за один запрос."
 					/>
 
 					<div class="sm:col-span-2">
 						<x-admin.input
-							label="stolen_default_deadline_days"
+							label="Дедлайн «Украден» (дней)"
 							type="number"
 							min="1"
 							wire:model="stolenDefaultDeadlineDays"
 							:error="$errors->first('stolenDefaultDeadlineDays')"
-							hint="Сколько дней даём на работу со STOLEN до возврата в пул."
+							hint="Сколько дней даётся оператору на работу с украденным аккаунтом."
 						/>
 					</div>
 				</div>
@@ -114,13 +112,13 @@
 				<div class="space-y-2 text-sm text-slate-600">
 					<p class="font-semibold text-slate-900">Как использовать</p>
 					<ul class="list-disc pl-5 space-y-1 text-xs text-slate-500">
-						<li>cooldown_days — влияет на повторную выдачу одного и того же аккаунта.</li>
-						<li>stolen_default_deadline_days — дедлайн для статуса «Украден» (если интегрировали SettingsService в сервис статусов).</li>
-						<li>max_qty — ограничение количества в выдаче (если применяешь).</li>
+						<li>«Дней кулдауна» — сколько дней аккаунт недоступен после исчерпания лимита выдач.</li>
+						<li>«Дедлайн Украден» — срок, за который оператор должен отработать украденный аккаунт.</li>
+						<li>«Макс. аккаунтов за запрос» — ограничение количества аккаунтов в одной выдаче.</li>
 					</ul>
 
 					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-						<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Подсказка</div>
+						<div class="text-xs font-medium text-slate-400">Подсказка</div>
 						<div class="mt-1 text-xs text-slate-500">
 							Если настройки ещё не подключены в бизнес-логику — они всё равно сохраняются и готовы к использованию.
 						</div>
