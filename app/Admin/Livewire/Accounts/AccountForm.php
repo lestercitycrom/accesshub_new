@@ -42,10 +42,9 @@ final class AccountForm extends Component
 		if ($account !== null) {
 			$this->game = $account->game;
 			$raw = is_array($account->platform) ? $account->platform : (array) $account->platform;
-			$allowed = $this->getPlatformList();
 			$this->platformSelected = array_values(array_filter(
 				array_map(fn($p) => trim((string) $p), $raw),
-				fn($p) => $p !== '' && in_array($p, $allowed, true)
+				fn($p) => $p !== ''
 			));
 			$this->login = $account->login;
 			$this->password = (string) ($account->password ?? '');
@@ -76,7 +75,7 @@ final class AccountForm extends Component
 		$statusDeadlineAt = trim((string) $this->statusDeadlineAt) !== '' ? $this->statusDeadlineAt : null;
 		$twoFaMailAccountDate = trim((string) $this->twoFaMailAccountDate) !== '' ? $this->twoFaMailAccountDate : null;
 
-		$platformList = $this->getPlatformList();
+		$platformList = $this->getEffectivePlatformList();
 		$this->normalizePlatformSelected($platformList);
 
 		$this->validate([
@@ -173,6 +172,22 @@ final class AccountForm extends Component
 	}
 
 	/**
+	 * Config platforms merged with any existing account platforms not in config.
+	 * Ensures editing accounts with legacy/custom platform names never loses them.
+	 * @return list<string>
+	 */
+	private function getEffectivePlatformList(): array
+	{
+		$base = $this->getPlatformList();
+
+		if (empty($this->platformSelected)) {
+			return $base;
+		}
+
+		return array_values(array_unique(array_merge($base, $this->platformSelected)));
+	}
+
+	/**
 	 * Нормализует platformSelected: обрезка пробелов, приведение индексов к названиям платформ.
 	 * @param list<string> $platformList
 	 */
@@ -195,7 +210,7 @@ final class AccountForm extends Component
 
 	public function getPlatformOptionsProperty(): array
 	{
-		return $this->getPlatformList();
+		return $this->getEffectivePlatformList();
 	}
 
 	public function render()

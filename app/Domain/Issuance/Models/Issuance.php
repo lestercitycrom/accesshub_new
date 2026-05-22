@@ -25,6 +25,7 @@ final class Issuance extends Model
 		'qty',
 		'issued_at',
 		'cooldown_until',
+		'payload',
 	];
 
 	protected $casts = [
@@ -33,6 +34,7 @@ final class Issuance extends Model
 		'qty' => 'integer',
 		'issued_at' => 'datetime',
 		'cooldown_until' => 'datetime',
+		'payload' => 'array',
 	];
 
 	public function account(): BelongsTo

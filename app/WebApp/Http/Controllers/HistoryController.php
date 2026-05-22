@@ -29,7 +29,6 @@ final class HistoryController
 
 		$query = Issuance::query()
 			->with(['account', 'telegramUser'])
-			->where('telegram_id', $telegramId)
 			->orderByDesc('issued_at');
 
 		if ($orderId !== '') {
@@ -46,17 +45,23 @@ final class HistoryController
 				$op = $issuance->telegramUser;
 				$operatorName = $op ? ($op->username ? '@' . $op->username : $op->first_name) : '-';
 
+				$payload = $issuance->payload ?? [];
+
 				return [
-					'order_id'   => $issuance->order_id,
-					'game'       => $issuance->game,
-					'platform'   => $issuance->platform,
-					'qty'        => $issuance->qty,
-					'issued_at'  => $issuance->issued_at?->toDateTimeString(),
-					'account_id' => $issuance->account_id,
-					'login'      => $issuance->account?->login,
-					'password'   => $issuance->account?->password,
-					'comment'    => $issuance->account?->comment,
-					'operator'   => $operatorName,
+					'issuance_id'        => $issuance->id,
+					'order_id'           => $issuance->order_id,
+					'game'               => $issuance->game,
+					'platform'           => $issuance->platform,
+					'qty'                => $issuance->qty,
+					'issued_at'          => $issuance->issued_at?->toDateTimeString(),
+					'account_id'         => $issuance->account_id,
+					'login'              => $issuance->account?->login,
+					'password'           => $issuance->account?->password,
+					'comment'            => $issuance->account?->comment,
+					'operator'           => $operatorName,
+					'is_replaced'        => !empty($payload['replaced']),
+					'is_replacement'     => !empty($payload['is_replacement']),
+					'replacement_reason' => $payload['replacement_reason'] ?? null,
 				];
 			})->all();
 

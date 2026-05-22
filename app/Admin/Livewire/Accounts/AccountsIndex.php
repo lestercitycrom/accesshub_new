@@ -9,7 +9,6 @@ use App\Domain\Accounts\Models\Account;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
-use Illuminate\Support\Facades\DB;
 use Livewire\WithPagination;
 
 final class AccountsIndex extends Component
@@ -117,23 +116,8 @@ final class AccountsIndex extends Component
 	{
 		return Account::query()
 			->with('assignedOperator')
-			->when($this->q !== '', function ($query): void {
-				$q = '%' . $this->q . '%';
-				$rawQ = $this->q;
-
-				$query->where(function ($subQuery) use ($q, $rawQ): void {
-					$subQuery->where('login', 'like', $q)
-						->orWhere('game', 'like', $q)
-						->orWhere('platform', 'like', $q);
-
-				if (DB::connection()->getDriverName() === 'mysql') {
-					$subQuery->orWhereRaw('JSON_SEARCH(platform, "one", ?, NULL, "$[*]") IS NOT NULL', [$rawQ]);
-				}
-
-					if (is_numeric($rawQ)) {
-						$subQuery->orWhere('id', (int) $rawQ);
-					}
-				});
+			->when($this->q !== '' && is_numeric(trim($this->q)), function ($query): void {
+				$query->where('id', (int) trim($this->q));
 			})
 			->when($this->statusFilter !== '', function ($query): void {
 				$query->where('status', $this->statusFilter);
@@ -197,6 +181,20 @@ final class AccountsIndex extends Component
 		return $platforms;
 	}
 
+	/**
+	 * @return \Illuminate\Support\Collection<int, Account>
+	 */
+	public function getCooldownAccountsProperty(): \Illuminate\Support\Collection
+	{
+		return Account::query()
+			->where('status', AccountStatus::ACTIVE)
+			->where('available_uses', 0)
+			->whereNotNull('next_release_at')
+			->where('next_release_at', '>', now())
+			->orderBy('next_release_at')
+			->get(['id', 'game', 'platform', 'login', 'next_release_at', 'max_uses']);
+	}
+
 	public function render()
 	{
 		$exportParams = array_filter([
@@ -212,6 +210,7 @@ final class AccountsIndex extends Component
 			'gameOptions' => $this->gameOptions,
 			'platformOptions' => $this->platformOptions,
 			'exportUrl' => route('admin.export.accounts.csv', $exportParams),
+			'cooldownAccounts' => $this->cooldownAccounts,
 		])->layout('layouts.admin');
 	}
 }

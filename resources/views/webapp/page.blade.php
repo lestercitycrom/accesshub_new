@@ -80,6 +80,15 @@
 				</div>
 
 				<div class="card-section">
+					<div class="fw-semibold mb-2">Поиск заказа</div>
+					<div class="d-flex gap-2 mb-2">
+						<input id="orderSearchInput" class="form-control" type="text" placeholder="Введите номер заказа...">
+						<button id="orderSearchBtn" class="btn btn-primary btn-sm" type="button" style="white-space:nowrap">Найти</button>
+					</div>
+					<div id="orderSearchResult" class="list-stack"></div>
+				</div>
+
+				<div class="card-section">
 					<div class="d-flex align-items-center gap-2 mb-2 history-controls">
 						<button id="refreshHistoryBtn" class="btn btn-outline-secondary btn-sm" type="button">Обновить</button>
 						<span id="historyStatus" class="small text-muted"></span>
@@ -103,15 +112,6 @@
 							<button id="historyNext" class="btn btn-outline-secondary btn-sm" type="button">Вперед</button>
 						</div>
 					</div>
-				</div>
-
-				<div class="card-section">
-					<div class="fw-semibold mb-2">Поиск заказа</div>
-					<div class="d-flex gap-2 mb-2">
-						<input id="orderSearchInput" class="form-control" type="text" placeholder="Введите номер заказа...">
-						<button id="orderSearchBtn" class="btn btn-primary btn-sm" type="button" style="white-space:nowrap">Найти</button>
-					</div>
-					<div id="orderSearchResult" class="list-stack"></div>
 				</div>
 
 			</div>
@@ -534,6 +534,93 @@
 			return wrap;
 		}
 
+		const replacementReasonLabels = {
+			kick: 'Выбрасывало из игры',
+			wrong_platform: 'Не та платформа',
+			no_access: 'Нет доступа к аккаунту',
+			dead: 'Аккаунт сломан',
+			other: 'Другое',
+		};
+
+		function buildReplaceButton(item) {
+			const wrap = document.createElement('div');
+			wrap.style.cssText = 'width:100%;';
+
+			const btn = document.createElement('button');
+			btn.type = 'button';
+			btn.className = 'btn btn-outline-secondary btn-sm';
+			btn.textContent = 'Замена';
+			wrap.appendChild(btn);
+
+			const panel = document.createElement('div');
+			panel.style.cssText = 'display:none;margin-top:8px;';
+
+			const select = document.createElement('select');
+			select.className = 'form-select form-select-sm mb-2';
+			Object.entries(replacementReasonLabels).forEach(([val, label]) => {
+				const opt = document.createElement('option');
+				opt.value = val;
+				opt.textContent = label;
+				select.appendChild(opt);
+			});
+
+			const otherInput = document.createElement('input');
+			otherInput.type = 'text';
+			otherInput.className = 'form-control form-control-sm mb-2';
+			otherInput.placeholder = 'Опишите причину...';
+			otherInput.style.display = 'none';
+
+			select.addEventListener('change', () => {
+				otherInput.style.display = select.value === 'other' ? 'block' : 'none';
+			});
+
+			const resultBox = document.createElement('div');
+			resultBox.style.cssText = 'display:none;margin-top:8px;';
+			resultBox.className = 'codebox';
+
+			const confirmBtn = document.createElement('button');
+			confirmBtn.type = 'button';
+			confirmBtn.className = 'btn btn-primary btn-sm w-100';
+			confirmBtn.textContent = 'Подтвердить замену';
+
+			confirmBtn.addEventListener('click', async () => {
+				const reason = select.value === 'other'
+					? (otherInput.value.trim() || 'other')
+					: select.value;
+
+				setButtonLoading(confirmBtn, true);
+				const resp = await apiPostJson('/webapp/api/replace', {
+					issuance_id: item.issuance_id,
+					reason,
+				});
+				setButtonLoading(confirmBtn, false);
+
+				if (resp.status === 200 && resp.data?.ok) {
+					resultBox.style.display = 'block';
+					resultBox.style.cssText = 'display:block;margin-top:8px;padding:10px;border-radius:8px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.1);font-size:13px;white-space:pre-wrap;word-break:break-word;';
+					resultBox.textContent = `Замена выполнена.\nАккаунт: #${resp.data.account_id}\nЛогин: ${resp.data.login}\nПароль: ${resp.data.password}`;
+					confirmBtn.disabled = true;
+					select.disabled = true;
+					otherInput.disabled = true;
+					loadHistory();
+				} else {
+					flashHistoryStatus(resp.data?.error || 'Ошибка замены.');
+				}
+			});
+
+			panel.appendChild(select);
+			panel.appendChild(otherInput);
+			panel.appendChild(confirmBtn);
+			panel.appendChild(resultBox);
+			wrap.appendChild(panel);
+
+			btn.addEventListener('click', () => {
+				panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+			});
+
+			return wrap;
+		}
+
 		function renderHistory(items) {
 			historyList.innerHTML = '';
 			if (!items || items.length === 0) {
@@ -552,6 +639,15 @@
 				const login = item.login || '-';
 				const issuedAt = formatIssuedAt(item.issued_at);
 				const qtyValue = item.qty ? `x${item.qty}` : '-';
+
+				let statusBadge = '';
+				if (item.is_replaced) {
+					const reasonLabel = item.replacement_reason ? (replacementReasonLabels[item.replacement_reason] || item.replacement_reason) : '';
+					statusBadge = `<div class="list-row"><div class="list-label">Статус</div><div class="list-value"><span style="display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(220,53,69,.18);border:1px solid rgba(220,53,69,.4);color:#e05c5c;font-size:11px;font-weight:600;">Заменён${reasonLabel ? ' · ' + reasonLabel : ''}</span></div></div>`;
+				} else if (item.is_replacement) {
+					const reasonLabel = item.replacement_reason ? (replacementReasonLabels[item.replacement_reason] || item.replacement_reason) : '';
+					statusBadge = `<div class="list-row"><div class="list-label">Статус</div><div class="list-value"><span style="display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(36,129,201,.18);border:1px solid rgba(36,129,201,.4);color:#2481C9;font-size:11px;font-weight:600;">Замена${reasonLabel ? ' · ' + reasonLabel : ''}</span></div></div>`;
+				}
 
 				card.innerHTML = `
 					<div class="list-row">
@@ -592,11 +688,15 @@
 						<div class="list-value">${item.comment}</div>
 					</div>
 					` : ''}
+					${statusBadge}
 				`;
 
 				const actions = document.createElement('div');
 				actions.className = 'list-actions';
 				actions.appendChild(buildProblemButtons(item));
+				if (!item.is_replaced && !item.is_replacement) {
+					actions.appendChild(buildReplaceButton(item));
+				}
 				card.appendChild(actions);
 				historyList.appendChild(card);
 			});
@@ -1107,6 +1207,10 @@
 					<div class="list-row">
 						<div class="list-label">Платформа</div>
 						<div class="list-value">${item.platform || '-'}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Аккаунт</div>
+						<div class="list-value">${item.account_id ? '#' + item.account_id : '-'}</div>
 					</div>
 					<div class="list-row">
 						<div class="list-label">Логин</div>

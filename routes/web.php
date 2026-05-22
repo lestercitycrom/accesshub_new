@@ -39,6 +39,7 @@ Route::withoutMiddleware(['auth', 'admin'])->group(function () {
         Route::post('/webapp/api/update-password', App\WebApp\Http\Controllers\UpdatePasswordController::class)->name('webapp.update-password');
         Route::post('/webapp/api/recover-stolen', App\WebApp\Http\Controllers\RecoverStolenController::class)->name('webapp.recover-stolen');
         Route::post('/webapp/api/postpone-stolen', App\WebApp\Http\Controllers\PostponeStolenController::class)->name('webapp.postpone-stolen');
+        Route::post('/webapp/api/replace', App\WebApp\Http\Controllers\ReplaceController::class)->name('webapp.replace');
     });
 });
 

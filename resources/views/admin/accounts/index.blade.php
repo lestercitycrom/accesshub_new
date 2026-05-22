@@ -48,11 +48,68 @@
 		<x-admin.alert variant="success" :message="$alertMessage" />
 	@endif
 
+	{{-- Cooldown widget --}}
+	@php $cooldownCount = $cooldownAccounts->count(); @endphp
+	<x-admin.card>
+		<x-slot:actions>
+			@if($cooldownCount > 0)
+				<span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+					{{ $cooldownCount }} шт.
+				</span>
+			@endif
+		</x-slot:actions>
+		<x-slot:title>Аккаунты на кулдауне</x-slot:title>
+
+		@if($cooldownCount === 0)
+			<p class="text-sm text-slate-500">Нет аккаунтов на кулдауне — все доступны для выдачи.</p>
+		@else
+			<x-admin.table density="compact" :zebra="true">
+				<x-slot:head>
+					<tr>
+						<x-admin.th>ID</x-admin.th>
+						<x-admin.th>Игра</x-admin.th>
+						<x-admin.th>Платформа</x-admin.th>
+						<x-admin.th>Логин</x-admin.th>
+						<x-admin.th>Вернётся в пул</x-admin.th>
+						<x-admin.th>Осталось</x-admin.th>
+					</tr>
+				</x-slot:head>
+				@foreach($cooldownAccounts as $ca)
+					@php $daysLeft = (int) now()->diffInDays($ca->next_release_at, false); @endphp
+					<tr class="hover:bg-slate-50/70">
+						<x-admin.td>
+							<a href="{{ route('admin.accounts.show', $ca) }}" class="font-semibold text-blue-600 hover:underline">#{{ $ca->id }}</a>
+						</x-admin.td>
+						<x-admin.td>{{ $ca->game }}</x-admin.td>
+						<x-admin.td>
+							@if(is_array($ca->platform))
+								<div class="flex flex-wrap gap-1">
+									@foreach($ca->platform as $p)
+										<x-admin.badge variant="blue" class="text-xs">{{ $p }}</x-admin.badge>
+									@endforeach
+								</div>
+							@else
+								{{ $ca->platform }}
+							@endif
+						</x-admin.td>
+						<x-admin.td class="text-slate-700">{{ $ca->login }}</x-admin.td>
+						<x-admin.td>
+							<x-admin.badge variant="amber">{{ $ca->next_release_at->format('d.m.Y H:i') }}</x-admin.badge>
+						</x-admin.td>
+						<x-admin.td class="text-slate-500 text-xs">
+							{{ $daysLeft > 0 ? $daysLeft.' дн.' : 'менее дня' }}
+						</x-admin.td>
+					</tr>
+				@endforeach
+			</x-admin.table>
+		@endif
+	</x-admin.card>
+
 	<x-admin.filters-bar>
 		<div class="lg:col-span-3">
 			<x-admin.filter-input
-				label="Поиск"
-				placeholder="ID, логин, игра..."
+				label="Поиск по ID"
+				placeholder="Введите ID аккаунта..."
 				icon="search"
 				wire:model.live="q"
 			/>
