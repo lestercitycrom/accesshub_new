@@ -17,12 +17,8 @@ final class StoreConnectionCodeController
 
 	public function __invoke(Request $request, string $token): JsonResponse
 	{
-		$data = $request->validate([
-			'connection_code' => ['required', 'string', 'regex:/^[A-Za-z0-9]{6,8}$/'],
-		]);
-
 		$order = DeliveryOrder::query()->where('token', $token)->firstOrFail();
-		$result = $this->orders->submitConnectionCode($order, (string) $data['connection_code']);
+		$result = $this->orders->submitConnectionCode($order, (string) $request->input('connection_code', ''));
 
 		return response()->json([
 			'ok' => $result->successful(),
@@ -31,4 +27,3 @@ final class StoreConnectionCodeController
 		], $result->successful() ? 200 : 422);
 	}
 }
-
