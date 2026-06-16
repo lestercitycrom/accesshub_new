@@ -3,6 +3,8 @@
 use App\WebApp\Http\Controllers\BootstrapController;
 use Illuminate\Support\Facades\Route;
 
+require __DIR__.'/delivery.php';
+
 /**
  * Public entrypoint:
  * - Guest: redirect to login

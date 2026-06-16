@@ -1,0 +1,369 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Delivery\Services;
+
+use App\Delivery\DTO\DeliveryActionResult;
+use App\Delivery\Enums\DeliveryOrderStatus;
+use App\Delivery\Enums\DeliveryPasswordType;
+use App\Delivery\Models\DeliveryEvent;
+use App\Delivery\Models\DeliveryOrder;
+use App\Delivery\Models\DeliveryPlatformInstruction;
+use App\Domain\Issuance\Models\Issuance;
+use App\Domain\Issuance\Services\IssueService;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+final class DeliveryOrderService
+{
+	public function __construct(
+		private readonly IssueService $issueService,
+		private readonly FakePasswordFactory $fakePasswordFactory,
+	) {}
+
+	public function createFromCustomerInput(string $orderNumber, string $customerEmail, string $platform): DeliveryOrder
+	{
+		$orderNumber = trim($orderNumber);
+		$customerEmail = strtolower(trim($customerEmail));
+		$platform = $this->normalizePlatform($platform);
+
+		return DB::transaction(function () use ($orderNumber, $customerEmail, $platform): DeliveryOrder {
+			$order = DeliveryOrder::query()->create([
+				'token' => $this->makeUniqueToken(),
+				'order_number' => $orderNumber,
+				'customer_email' => $customerEmail,
+				'platform' => $platform,
+				'status' => DeliveryOrderStatus::WAITING_FOR_OPERATOR,
+				'token_expires_at' => now()->addHours((int) config('delivery.link_ttl_hours', 72)),
+				'connection_attempts_limit' => (int) config('delivery.connection_attempts_limit', 3),
+			]);
+
+			$this->recordEvent($order, 'order_created', payload: [
+				'order_number' => $orderNumber,
+				'customer_email' => $customerEmail,
+				'platform' => $platform,
+			]);
+
+			return $order;
+		});
+	}
+
+	public function assignAccount(DeliveryOrder $order, int $operatorTelegramId, string $game, ?string $issuePlatform = null): DeliveryActionResult
+	{
+		$order->refresh();
+
+		if ($order->isExpired()) {
+			$this->markExpired($order);
+			return DeliveryActionResult::fail('Delivery link is expired.');
+		}
+
+		$game = trim($game);
+		$issuePlatform = $this->normalizePlatform($issuePlatform ?: (string) $order->platform);
+
+		if ($game === '' || $issuePlatform === '') {
+			return DeliveryActionResult::fail('Game and platform are required.');
+		}
+
+		$result = $this->issueService->issue(
+			telegramId: $operatorTelegramId,
+			orderId: (string) $order->order_number,
+			game: $game,
+			platform: $issuePlatform,
+			qty: 1,
+		);
+
+		if (!$result->ok()) {
+			$this->recordEvent($order, 'account_assignment_failed', 'telegram', (string) $operatorTelegramId, [
+				'game' => $game,
+				'issue_platform' => $issuePlatform,
+				'message' => $result->message(),
+			]);
+
+			return DeliveryActionResult::fail($result->message() ?? 'Account assignment failed.');
+		}
+
+		$item = $result->items[0] ?? null;
+		if (!is_array($item)) {
+			return DeliveryActionResult::fail('Issue service returned no account.');
+		}
+
+		$accountId = (int) $item['account_id'];
+		$issuance = Issuance::query()
+			->where('order_id', $order->order_number)
+			->where('account_id', $accountId)
+			->latest('issued_at')
+			->first();
+
+		$requiresConnection = $this->requiresConnectionCode((string) $order->platform);
+		$passwordType = $requiresConnection ? DeliveryPasswordType::FAKE : DeliveryPasswordType::REAL;
+		$displayPassword = $requiresConnection
+			? $this->fakePasswordFactory->make()
+			: (string) $item['password'];
+
+		$order->forceFill([
+			'game' => $game,
+			'issue_platform' => $issuePlatform,
+			'status' => $requiresConnection
+				? DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE
+				: DeliveryOrderStatus::ACCOUNT_ASSIGNED,
+			'account_id' => $accountId,
+			'issuance_id' => $issuance?->id,
+			'operator_telegram_id' => $operatorTelegramId,
+			'display_login' => (string) $item['login'],
+			'display_password' => $displayPassword,
+			'display_password_type' => $passwordType,
+		])->save();
+
+		$this->recordEvent($order, 'account_assigned', 'telegram', (string) $operatorTelegramId, [
+			'game' => $game,
+			'platform' => $order->platform,
+			'issue_platform' => $issuePlatform,
+			'account_id' => $accountId,
+			'issuance_id' => $issuance?->id,
+			'password_type' => $passwordType->value,
+		]);
+
+		return DeliveryActionResult::ok('Account assigned.');
+	}
+
+	public function submitConnectionCode(DeliveryOrder $order, string $code): DeliveryActionResult
+	{
+		$order->refresh();
+
+		if ($order->isExpired()) {
+			$this->markExpired($order);
+			return DeliveryActionResult::fail('Delivery link is expired.');
+		}
+
+		if (!$this->requiresConnectionCode((string) $order->platform)) {
+			return DeliveryActionResult::fail('Connection code is not required for this platform.');
+		}
+
+		if ($order->account_id === null) {
+			return DeliveryActionResult::fail('Account is not assigned yet.');
+		}
+
+		if ($order->connection_locked_until !== null && now()->lessThan($order->connection_locked_until)) {
+			$order->forceFill(['status' => DeliveryOrderStatus::LOCKED_24H])->save();
+			return DeliveryActionResult::fail('Connection attempts are locked.');
+		}
+
+		if ($order->connection_locked_until !== null && now()->greaterThanOrEqualTo($order->connection_locked_until)) {
+			$order->forceFill([
+				'status' => DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE,
+				'connection_attempts_used' => 0,
+				'connection_locked_until' => null,
+			])->save();
+
+			$this->recordEvent($order, 'connection_unlocked_after_timeout');
+		}
+
+		if ((int) $order->connection_attempts_used >= (int) $order->connection_attempts_limit) {
+			$this->lockForRetry($order);
+			return DeliveryActionResult::fail('Connection attempts limit reached.');
+		}
+
+		$code = strtoupper(trim($code));
+		if (!preg_match('/^[A-Z0-9]{6,8}$/', $code)) {
+			return DeliveryActionResult::fail('Connection code must contain 6-8 letters or digits.');
+		}
+
+		$order->forceFill([
+			'status' => DeliveryOrderStatus::CONNECTION_CODE_SUBMITTED,
+			'connection_attempts_used' => (int) $order->connection_attempts_used + 1,
+			'last_connection_code' => $code,
+			'last_connection_code_submitted_at' => now(),
+		])->save();
+
+		$this->recordEvent($order, 'connection_code_submitted', payload: [
+			'code' => $code,
+			'attempts_used' => $order->connection_attempts_used,
+			'attempts_limit' => $order->connection_attempts_limit,
+		]);
+
+		return DeliveryActionResult::ok('Connection code submitted.');
+	}
+
+	public function markOperatorConnecting(DeliveryOrder $order, int $operatorTelegramId): void
+	{
+		$order->forceFill([
+			'status' => DeliveryOrderStatus::OPERATOR_CONNECTING,
+			'operator_telegram_id' => $operatorTelegramId,
+		])->save();
+
+		$this->recordEvent($order, 'operator_connecting', 'telegram', (string) $operatorTelegramId);
+	}
+
+	public function markConnected(DeliveryOrder $order, int $operatorTelegramId): void
+	{
+		$order->forceFill([
+			'status' => DeliveryOrderStatus::CONNECTED,
+			'operator_telegram_id' => $operatorTelegramId,
+			'connected_at' => now(),
+		])->save();
+
+		$this->recordEvent($order, 'connected', 'telegram', (string) $operatorTelegramId);
+	}
+
+	public function markConnectionFailed(DeliveryOrder $order, int $operatorTelegramId, ?string $reason = null): void
+	{
+		$order->forceFill([
+			'status' => DeliveryOrderStatus::CONNECTION_FAILED,
+			'operator_telegram_id' => $operatorTelegramId,
+		])->save();
+
+		$this->recordEvent($order, 'connection_failed', 'telegram', (string) $operatorTelegramId, [
+			'reason' => $reason,
+		]);
+	}
+
+	public function grantExtraAttempts(DeliveryOrder $order, int $operatorTelegramId, int $amount): void
+	{
+		$amount = max(1, $amount);
+
+		$order->forceFill([
+			'connection_attempts_limit' => (int) $order->connection_attempts_limit + $amount,
+			'connection_locked_until' => null,
+			'status' => $order->account_id === null
+				? DeliveryOrderStatus::WAITING_FOR_OPERATOR
+				: DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE,
+			'operator_telegram_id' => $operatorTelegramId,
+		])->save();
+
+		$this->recordEvent($order, 'extra_attempts_granted', 'telegram', (string) $operatorTelegramId, [
+			'amount' => $amount,
+			'attempts_limit' => $order->connection_attempts_limit,
+		]);
+	}
+
+	public function publicPayload(DeliveryOrder $order): array
+	{
+		$order->refresh();
+
+		if ($order->isExpired()) {
+			$this->markExpired($order);
+			$order->refresh();
+		}
+
+		$instruction = DeliveryPlatformInstruction::query()
+			->where('platform', $order->platform)
+			->where('is_active', true)
+			->first();
+
+		return [
+			'id' => $order->id,
+			'status' => $order->status->value,
+			'order_number' => $order->order_number,
+			'customer_email' => $this->maskEmail((string) $order->customer_email),
+			'platform' => $order->platform,
+			'game' => $order->game,
+			'expires_at' => $order->token_expires_at?->toIso8601String(),
+			'account' => $order->display_login !== null ? [
+				'login' => $order->display_login,
+				'password' => $order->display_password,
+				'password_type' => $order->display_password_type?->value,
+			] : null,
+			'connection' => [
+				'required' => $this->requiresConnectionCode((string) $order->platform),
+				'attempts_used' => (int) $order->connection_attempts_used,
+				'attempts_limit' => (int) $order->connection_attempts_limit,
+				'locked_until' => $order->connection_locked_until?->toIso8601String(),
+				'last_submitted_at' => $order->last_connection_code_submitted_at?->toIso8601String(),
+			],
+			'instruction' => $instruction !== null ? [
+				'title' => $instruction->title,
+				'body' => $instruction->body,
+			] : null,
+			'polling_interval_seconds' => (int) config('delivery.polling_interval_seconds', 8),
+		];
+	}
+
+	public function requiresConnectionCode(string $platform): bool
+	{
+		$platform = $this->normalizePlatform($platform);
+
+		return in_array($platform, array_map(
+			fn ($item) => $this->normalizePlatform((string) $item),
+			(array) config('delivery.connection_platforms', [])
+		), true);
+	}
+
+	private function lockForRetry(DeliveryOrder $order): void
+	{
+		$order->forceFill([
+			'status' => DeliveryOrderStatus::LOCKED_24H,
+			'connection_locked_until' => now()->addHours((int) config('delivery.connection_lock_hours', 24)),
+		])->save();
+
+		$this->recordEvent($order, 'connection_locked', payload: [
+			'locked_until' => $order->connection_locked_until?->toIso8601String(),
+		]);
+	}
+
+	private function markExpired(DeliveryOrder $order): void
+	{
+		if ($order->status === DeliveryOrderStatus::EXPIRED) {
+			return;
+		}
+
+		$order->forceFill(['status' => DeliveryOrderStatus::EXPIRED])->save();
+		$this->recordEvent($order, 'expired');
+	}
+
+	private function recordEvent(
+		DeliveryOrder $order,
+		string $type,
+		?string $actorType = null,
+		?string $actorId = null,
+		array $payload = [],
+	): void {
+		DeliveryEvent::query()->create([
+			'delivery_order_id' => $order->id,
+			'type' => $type,
+			'actor_type' => $actorType,
+			'actor_id' => $actorId,
+			'payload' => $payload !== [] ? $payload : null,
+			'created_at' => now(),
+		]);
+	}
+
+	private function makeUniqueToken(): string
+	{
+		do {
+			$token = Str::random(64);
+		} while (DeliveryOrder::query()->where('token', $token)->exists());
+
+		return $token;
+	}
+
+	private function normalizePlatform(string $platform): string
+	{
+		$platform = trim($platform);
+		$lower = strtolower(str_replace([' ', '_', '-'], '', $platform));
+
+		return match ($lower) {
+			'ps', 'playstation' => 'PlayStation',
+			'ps4' => 'PS4',
+			'ps5' => 'PS5',
+			'xb', 'xbox' => 'Xbox',
+			'nintendo', 'switch', 'nintendoswitch' => 'Nintendo',
+			'steam' => 'Steam',
+			'epic', 'epicgames' => 'Epic Games',
+			default => $platform,
+		};
+	}
+
+	private function maskEmail(string $email): string
+	{
+		if (!str_contains($email, '@')) {
+			return $email;
+		}
+
+		[$name, $domain] = explode('@', $email, 2);
+		$visible = mb_substr($name, 0, 2);
+
+		return $visible . str_repeat('*', max(3, mb_strlen($name) - 2)) . '@' . $domain;
+	}
+}
