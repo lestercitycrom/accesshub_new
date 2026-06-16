@@ -4,7 +4,10 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "delivery:qa": "npm run delivery:qa:seed && npm run delivery:qa:screenshots",
+        "delivery:qa:seed": "php artisan tinker scripts/delivery-qa/seed.php",
+        "delivery:qa:screenshots": "node scripts/delivery-qa/screenshots.mjs"
     },
     "dependencies": {
         "@tailwindcss/vite": "^4.1.11",
@@ -19,5 +22,8 @@
         "@rollup/rollup-linux-x64-gnu": "4.9.5",
         "@tailwindcss/oxide-linux-x64-gnu": "^4.0.1",
         "lightningcss-linux-x64-gnu": "^1.29.1"
+    },
+    "devDependencies": {
+        "playwright": "^1.61.0"
     }
 }
