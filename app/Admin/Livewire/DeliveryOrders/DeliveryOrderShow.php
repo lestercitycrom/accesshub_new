@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Admin\Livewire\DeliveryOrders;
 
+use App\Delivery\Concerns\NormalizesDeliveryPlatforms;
 use App\Delivery\Models\DeliveryEvent;
 use App\Delivery\Models\DeliveryOrder;
 use App\Delivery\Services\DeliveryOrderService;
@@ -17,6 +18,8 @@ use Livewire\Component;
 
 final class DeliveryOrderShow extends Component
 {
+	use NormalizesDeliveryPlatforms;
+
 	public DeliveryOrder $deliveryOrder;
 	public string $operatorTelegramId = '';
 	public string $game = '';
@@ -336,22 +339,6 @@ final class DeliveryOrderShow extends Component
 		};
 	}
 
-	/**
-	 * @return array<int, string>
-	 */
-	private function issuePlatformCandidates(string $platform): array
-	{
-		return match ($this->normalizePlatform($platform)) {
-			'PlayStation' => ['PlayStation', 'PS5', 'PS4'],
-			'Xbox' => ['Xbox', 'XBox', 'Xbox X', 'Xbox One'],
-			'Nintendo' => ['Nintendo', 'Nintendo Switch 2', '2', 'Nintendo Switch 1'],
-			'Nintendo Switch 1' => ['Nintendo Switch 1', 'Nintendo'],
-			'Nintendo Switch 2' => ['Nintendo Switch 2', '2', 'Nintendo'],
-			'Epic Games' => ['Epic Games', 'EpicGames', 'Epic'],
-			default => [$this->normalizePlatform($platform)],
-		};
-	}
-
 	private function hasAvailableAccountsForPlatform(string $platform): bool
 	{
 		return Account::query()
@@ -377,27 +364,6 @@ final class DeliveryOrderShow extends Component
 		return match ($this->normalizePlatform($platform)) {
 			'2' => 'Nintendo Switch 2',
 			default => $this->normalizePlatform($platform),
-		};
-	}
-
-	private function normalizePlatform(string $platform): string
-	{
-		$platform = trim($platform);
-		$lower = strtolower(str_replace([' ', '_', '-'], '', $platform));
-
-		return match ($lower) {
-			'ps', 'playstation' => 'PlayStation',
-			'ps4' => 'PS4',
-			'ps5' => 'PS5',
-			'xb', 'xbox' => 'Xbox',
-			'xboxx', 'xboxseriesx' => 'Xbox X',
-			'xboxone' => 'Xbox One',
-			'nintendo', 'switch', 'nintendoswitch' => 'Nintendo',
-			'nintendo1', 'switch1', 'nintendoswitch1' => 'Nintendo Switch 1',
-			'nintendo2', 'switch2', 'nintendoswitch2' => 'Nintendo Switch 2',
-			'steam' => 'Steam',
-			'epic', 'epicgames' => 'Epic Games',
-			default => $platform,
 		};
 	}
 

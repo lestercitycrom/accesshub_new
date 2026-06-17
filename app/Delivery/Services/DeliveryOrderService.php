@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Delivery\Services;
 
+use App\Delivery\Concerns\NormalizesDeliveryPlatforms;
 use App\Delivery\DTO\DeliveryActionResult;
 use App\Delivery\Enums\DeliveryOrderStatus;
 use App\Delivery\Enums\DeliveryPasswordType;
@@ -22,6 +23,8 @@ use Illuminate\Support\Str;
 
 final class DeliveryOrderService
 {
+	use NormalizesDeliveryPlatforms;
+
 	public function __construct(
 		private readonly IssueService $issueService,
 		private readonly FakePasswordFactory $fakePasswordFactory,
@@ -528,24 +531,6 @@ final class DeliveryOrderService
 	}
 
 	/**
-	 * @return array<int, string>
-	 */
-	private function issuePlatformCandidates(string $platform): array
-	{
-		$platform = $this->normalizePlatform($platform);
-
-		return match ($platform) {
-			'PlayStation' => ['PlayStation', 'PS5', 'PS4'],
-			'Xbox' => ['Xbox', 'XBox', 'Xbox X', 'Xbox One'],
-			'Nintendo' => ['Nintendo', 'Nintendo Switch 2', '2', 'Nintendo Switch 1'],
-			'Nintendo Switch 1' => ['Nintendo Switch 1', 'Nintendo'],
-			'Nintendo Switch 2' => ['Nintendo Switch 2', '2', 'Nintendo'],
-			'Epic Games' => ['Epic Games', 'EpicGames', 'Epic'],
-			default => [$platform],
-		};
-	}
-
-	/**
 	 * @param array<string, string|null> $attemptMessages
 	 */
 	private function formatAssignmentFailureMessage(string $game, string $issuePlatform, array $attemptMessages): string
@@ -658,27 +643,6 @@ final class DeliveryOrderService
 		} while (DeliveryOrder::query()->where('token', $token)->exists());
 
 		return $token;
-	}
-
-	private function normalizePlatform(string $platform): string
-	{
-		$platform = trim($platform);
-		$lower = strtolower(str_replace([' ', '_', '-'], '', $platform));
-
-		return match ($lower) {
-			'ps', 'playstation' => 'PlayStation',
-			'ps4' => 'PS4',
-			'ps5' => 'PS5',
-			'xb', 'xbox' => 'Xbox',
-			'xboxx', 'xboxseriesx' => 'Xbox X',
-			'xboxone' => 'Xbox One',
-			'nintendo', 'switch', 'nintendoswitch' => 'Nintendo',
-			'nintendo1', 'switch1', 'nintendoswitch1' => 'Nintendo Switch 1',
-			'nintendo2', 'switch2', 'nintendoswitch2' => 'Nintendo Switch 2',
-			'steam' => 'Steam',
-			'epic', 'epicgames' => 'Epic Games',
-			default => $platform,
-		};
 	}
 
 	private function maskEmail(string $email): string
