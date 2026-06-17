@@ -244,6 +244,17 @@
 					p.textContent = 'Instructions will appear here when delivery starts.';
 					instructionBlock.append(p);
 				}
+
+				if (data.tutorial_url) {
+					const a = document.createElement('a');
+					a.href = data.tutorial_url;
+					a.target = '_blank';
+					a.rel = 'noopener noreferrer';
+					a.className = 'btn secondary';
+					a.style.cssText = 'margin-top:14px;text-decoration:none;';
+					a.textContent = 'Open installation tutorial';
+					instructionBlock.append(a);
+				}
 			}
 
 			function renderConnection(data) {

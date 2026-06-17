@@ -25,6 +25,11 @@
 				</div>
 			@endif
 
+			<div id="offlineNotice" class="alert alert--warn hidden" style="margin-bottom:16px;">
+				<span class="ic"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span>
+				<span id="offlineNoticeText"></span>
+			</div>
+
 			<form method="post" action="{{ route('delivery.take-order.store') }}" id="takeOrderForm" novalidate>
 				@csrf
 
@@ -71,9 +76,31 @@
 			const form = document.getElementById('takeOrderForm');
 			const btn = document.getElementById('submitBtn');
 			const label = btn.querySelector('.btn-label');
-			form.addEventListener('submit', () => {
+			const notice = document.getElementById('offlineNotice');
+			const noticeText = document.getElementById('offlineNoticeText');
+
+			const cfg = window.__deliveryHours || {};
+			const pad = (n) => String(n).padStart(2, '0');
+			const rangeText = `${pad(cfg.start ?? 9)}:00 to ${(cfg.end ?? 23) >= 24 ? '00' : pad(cfg.end ?? 23)}:00 ${cfg.label || 'EET'}`;
+
+			let closed = false; // night block currently active
+
+			function applyHours() {
+				const enforce = typeof window.deliveryHoursEnforced === 'function' ? window.deliveryHoursEnforced() : !!cfg.enforce;
+				const open = typeof window.deliveryHoursIsOpen === 'function' ? window.deliveryHoursIsOpen() : true;
+				closed = enforce && !open;
+				if (notice) notice.classList.toggle('hidden', !closed);
+				if (closed && noticeText) noticeText.textContent = `Orders are accepted during support hours (${rangeText}). Please come back later.`;
+				if (!btn.dataset.loading) btn.disabled = closed;
+			}
+			document.addEventListener('delivery-hours-tick', applyHours);
+			applyHours();
+
+			form.addEventListener('submit', (e) => {
+				if (closed) { e.preventDefault(); applyHours(); return; }
 				// Let native validation block empty submits before showing the loading state.
 				if (!form.checkValidity()) return;
+				btn.dataset.loading = '1';
 				btn.disabled = true;
 				label.textContent = 'Checking order…';
 				btn.insertAdjacentHTML('afterbegin', '<span class="spinner"></span>');

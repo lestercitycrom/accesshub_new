@@ -56,6 +56,12 @@
 		}
 		.brand .logo svg { width: 20px; height: 20px; display: block; }
 		.topbar .tag { color: var(--muted); font-size: 13px; }
+		.hours { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 12px; line-height: 1.3; text-align: right; }
+		.hours .hours-now { font-weight: 700; color: var(--text); font-size: 13px; white-space: nowrap; }
+		.hours .hours-status { font-weight: 700; }
+		.hours .hours-status.is-online { color: var(--ok); }
+		.hours .hours-status.is-offline { color: var(--danger); }
+		.hours .hours-support b { color: var(--text); white-space: nowrap; }
 		.icon { width: 18px; height: 18px; display: block; flex: none; }
 		.alert .ic { display: inline-flex; }
 		.alert .ic svg { width: 18px; height: 18px; display: block; }
@@ -210,6 +216,7 @@
 		}
 		@media (max-width: 420px) {
 			.topbar .tag { display: none; }
+			.hours .hours-support { display: none; }
 			.cred { flex-direction: column; align-items: stretch; }
 			.copy-btn { width: 100%; }
 		}
@@ -226,12 +233,56 @@
 						<circle cx="15.5" cy="13" r=".6" fill="currentColor"/><circle cx="18" cy="11" r=".6" fill="currentColor"/>
 					</svg>
 				</span> Game Delivery</span>
-			<span class="tag">Secure order access</span>
+			<div class="hours" id="hoursWidget">
+				<div class="hours-now"><span id="hoursTime">—</span> <span id="hoursStatus" class="hours-status"></span></div>
+				<div class="hours-support">Support Hours <b id="hoursRange"></b></div>
+			</div>
 		</div>
 
 		{{ $slot }}
 
 		<p class="foot">Need help? <a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600;text-decoration:none;">Contact the seller.</a></p>
 	</main>
+
+	<script>
+		window.__deliveryHours = @json(config('delivery.working_hours', []));
+		(() => {
+			const cfg = window.__deliveryHours || {};
+			const tz = cfg.timezone || 'Europe/Kiev';
+			const start = Number.isFinite(cfg.start) ? cfg.start : 9;
+			const end = Number.isFinite(cfg.end) ? cfg.end : 23;
+			const label = cfg.label || 'EET';
+			const pad = (n) => String(n).padStart(2, '0');
+
+			function nowInTz() {
+				return new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+			}
+			function isOpen() {
+				const h = nowInTz().getHours();
+				return end >= 24 ? h >= start : (h >= start && h < end);
+			}
+			window.deliveryHoursIsOpen = isOpen;
+			window.deliveryHoursEnforced = () => !!cfg.enforce;
+
+			const timeEl = document.getElementById('hoursTime');
+			const statusEl = document.getElementById('hoursStatus');
+			const rangeEl = document.getElementById('hoursRange');
+			if (rangeEl) rangeEl.textContent = `${pad(start)}:00–${end >= 24 ? '00' : pad(end)}:00 ${label}`;
+
+			function tick() {
+				const t = nowInTz();
+				if (timeEl) timeEl.textContent = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())} ${label}`;
+				if (statusEl) {
+					const open = isOpen();
+					statusEl.textContent = open ? '· Online' : '· Offline';
+					statusEl.classList.toggle('is-online', open);
+					statusEl.classList.toggle('is-offline', !open);
+				}
+				document.dispatchEvent(new CustomEvent('delivery-hours-tick', { detail: { open: isOpen() } }));
+			}
+			tick();
+			setInterval(tick, 1000);
+		})();
+	</script>
 </body>
 </html>

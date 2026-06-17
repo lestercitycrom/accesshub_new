@@ -517,8 +517,18 @@ final class DeliveryOrderService
 				'title' => $instruction->title,
 				'body' => $instruction->body,
 			] : null,
+			'tutorial_url' => $this->tutorialUrl((string) $order->platform),
 			'polling_interval_seconds' => (int) config('delivery.polling_interval_seconds', 8),
 		];
+	}
+
+	private function tutorialUrl(string $platform): ?string
+	{
+		$map = (array) config('delivery.tutorial_urls', []);
+		$platform = $this->normalizePlatform($platform);
+		$url = $map[$platform] ?? null;
+
+		return is_string($url) && $url !== '' ? $url : null;
 	}
 
 	public function requiresConnectionCode(string $platform): bool
