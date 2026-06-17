@@ -31,17 +31,27 @@ Route::withoutMiddleware(['auth', 'admin'])->group(function () {
     Route::middleware('capture-server-errors')->group(function () {
         Route::get('/webapp/api/schema', App\WebApp\Http\Controllers\SchemaController::class)->name('webapp.schema');
         Route::get('/webapp/api/me', App\WebApp\Http\Controllers\MeController::class)->name('webapp.me');
-        Route::get('/webapp/api/history', App\WebApp\Http\Controllers\HistoryController::class)->name('webapp.history');
-        Route::get('/webapp/api/stolen', App\WebApp\Http\Controllers\StolenController::class)->name('webapp.stolen');
-        Route::get('/webapp/api/order-search', App\WebApp\Http\Controllers\OrderSearchController::class)->name('webapp.order-search');
-        Route::post('/webapp/api/issue', App\WebApp\Http\Controllers\IssueController::class)
-            ->middleware('log-webapp')
-            ->name('webapp.issue');
-        Route::post('/webapp/api/problem', App\WebApp\Http\Controllers\ProblemController::class)->name('webapp.problem');
-        Route::post('/webapp/api/update-password', App\WebApp\Http\Controllers\UpdatePasswordController::class)->name('webapp.update-password');
-        Route::post('/webapp/api/recover-stolen', App\WebApp\Http\Controllers\RecoverStolenController::class)->name('webapp.recover-stolen');
-        Route::post('/webapp/api/postpone-stolen', App\WebApp\Http\Controllers\PostponeStolenController::class)->name('webapp.postpone-stolen');
-        Route::post('/webapp/api/replace', App\WebApp\Http\Controllers\ReplaceController::class)->name('webapp.replace');
+        Route::get('/webapp/api/delivery-orders', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'index'])->name('webapp.delivery-orders.index');
+        Route::get('/webapp/api/delivery-orders/{deliveryOrder}/options', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'options'])->name('webapp.delivery-orders.options');
+        Route::post('/webapp/api/delivery-orders/{deliveryOrder}/assign', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'assign'])->name('webapp.delivery-orders.assign');
+        Route::post('/webapp/api/delivery-orders/{deliveryOrder}/connecting', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'connecting'])->name('webapp.delivery-orders.connecting');
+        Route::post('/webapp/api/delivery-orders/{deliveryOrder}/connected', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'connected'])->name('webapp.delivery-orders.connected');
+        Route::post('/webapp/api/delivery-orders/{deliveryOrder}/failed', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'failed'])->name('webapp.delivery-orders.failed');
+        Route::post('/webapp/api/delivery-orders/{deliveryOrder}/extra-attempts', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'extraAttempts'])->name('webapp.delivery-orders.extra-attempts');
+        Route::post('/webapp/api/delivery-orders/{deliveryOrder}/replace', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'replace'])->name('webapp.delivery-orders.replace');
+        Route::middleware('legacy-webapp')->group(function (): void {
+            Route::get('/webapp/api/history', App\WebApp\Http\Controllers\HistoryController::class)->name('webapp.history');
+            Route::get('/webapp/api/stolen', App\WebApp\Http\Controllers\StolenController::class)->name('webapp.stolen');
+            Route::get('/webapp/api/order-search', App\WebApp\Http\Controllers\OrderSearchController::class)->name('webapp.order-search');
+            Route::post('/webapp/api/issue', App\WebApp\Http\Controllers\IssueController::class)
+                ->middleware('log-webapp')
+                ->name('webapp.issue');
+            Route::post('/webapp/api/problem', App\WebApp\Http\Controllers\ProblemController::class)->name('webapp.problem');
+            Route::post('/webapp/api/update-password', App\WebApp\Http\Controllers\UpdatePasswordController::class)->name('webapp.update-password');
+            Route::post('/webapp/api/recover-stolen', App\WebApp\Http\Controllers\RecoverStolenController::class)->name('webapp.recover-stolen');
+            Route::post('/webapp/api/postpone-stolen', App\WebApp\Http\Controllers\PostponeStolenController::class)->name('webapp.postpone-stolen');
+            Route::post('/webapp/api/replace', App\WebApp\Http\Controllers\ReplaceController::class)->name('webapp.replace');
+        });
     });
 });
 

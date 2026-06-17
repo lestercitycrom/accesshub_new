@@ -10,8 +10,12 @@ use App\Delivery\Enums\DeliveryPasswordType;
 use App\Delivery\Models\DeliveryEvent;
 use App\Delivery\Models\DeliveryOrder;
 use App\Delivery\Models\DeliveryPlatformInstruction;
+use App\Domain\Accounts\Enums\AccountStatus;
+use App\Domain\Accounts\Models\Account;
+use App\Domain\Accounts\Models\AccountEvent;
 use App\Domain\Issuance\Models\Issuance;
 use App\Domain\Issuance\Services\IssueService;
+use App\Domain\Telegram\Enums\TelegramRole;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -77,6 +81,7 @@ final class DeliveryOrderService
 				game: $game,
 				platform: $candidatePlatform,
 				qty: 1,
+				allowedRoles: [TelegramRole::OPERATOR, TelegramRole::DELIVERY_OPERATOR, TelegramRole::ADMIN],
 			);
 
 			if ($result->ok()) {
@@ -146,6 +151,173 @@ final class DeliveryOrderService
 		]);
 
 		return DeliveryActionResult::ok('Account assigned.');
+	}
+
+	public function replaceAccount(DeliveryOrder $order, int $operatorTelegramId, string $reason): DeliveryActionResult
+	{
+		$order->refresh();
+
+		$reason = trim($reason);
+		if ($reason === '') {
+			return DeliveryActionResult::fail('Replacement reason is required.');
+		}
+
+		if ($order->account_id === null || $order->issuance_id === null || $order->game === null || $order->issue_platform === null) {
+			return DeliveryActionResult::fail('Account is not assigned yet.');
+		}
+
+		return DB::transaction(function () use ($order, $operatorTelegramId, $reason): DeliveryActionResult {
+			$order->refresh();
+
+			$original = Issuance::query()
+				->with('account')
+				->lockForUpdate()
+				->find($order->issuance_id);
+
+			if ($original === null) {
+				return DeliveryActionResult::fail('Original issuance was not found.');
+			}
+
+			if (!empty($original->payload['replaced'])) {
+				return DeliveryActionResult::fail('This delivery issuance has already been replaced.');
+			}
+
+			$now = CarbonImmutable::now();
+			$issuedAccountIds = Issuance::query()
+				->where('order_id', $order->order_number)
+				->pluck('account_id')
+				->filter()
+				->map(fn ($accountId): int => (int) $accountId)
+				->all();
+
+			$replacement = Account::query()
+				->where('game', (string) $order->game)
+				->where('status', AccountStatus::ACTIVE)
+				->where(function ($query) use ($order): void {
+					foreach ($this->issuePlatformCandidates((string) $order->issue_platform) as $index => $platform) {
+						$method = $index === 0 ? 'whereJsonContains' : 'orWhereJsonContains';
+						$query->{$method}('platform', $platform);
+					}
+				})
+				->when($issuedAccountIds !== [], static function ($query) use ($issuedAccountIds): void {
+					$query->whereNotIn('id', $issuedAccountIds);
+				})
+				->where(function ($query) use ($now): void {
+					$query->where('available_uses', '>', 0)
+						->orWhere(function ($nested) use ($now): void {
+							$nested->whereNotNull('next_release_at')
+								->where('next_release_at', '<=', $now->toDateTimeString());
+						});
+				})
+				->orderByDesc('available_uses')
+				->orderBy('id')
+				->lockForUpdate()
+				->first();
+
+			if ($replacement === null) {
+				return DeliveryActionResult::fail('No available accounts for replacement.');
+			}
+
+			$this->normalizeReplacementAvailability($replacement, $now);
+
+			if ($replacement->available_uses <= 0) {
+				return DeliveryActionResult::fail('Replacement account is not available.');
+			}
+
+			$replacement->available_uses -= 1;
+			$cooldownDays = (int) config('accesshub.issuance.operator_cooldown_days', (int) config('accesshub.issuance.cooldown_days', 14));
+			if ($replacement->available_uses === 0) {
+				$replacement->next_release_at = $now->addDays($cooldownDays);
+			}
+			$replacement->save();
+
+			$originalAccount = $original->account;
+			if ($reason !== 'dead' && $originalAccount !== null) {
+				$originalAccount->available_uses = min(
+					(int) $originalAccount->available_uses + 1,
+					(int) $originalAccount->max_uses,
+				);
+				if ((int) $originalAccount->available_uses > 0 && $originalAccount->next_release_at !== null) {
+					$originalAccount->next_release_at = null;
+				}
+				$originalAccount->save();
+			}
+
+			$original->payload = array_merge($original->payload ?? [], [
+				'replaced' => true,
+				'replaced_by_telegram_id' => $operatorTelegramId,
+				'replaced_at' => $now->toDateTimeString(),
+				'replacement_reason' => $reason,
+				'replacement_delivery_order_id' => $order->id,
+			]);
+			$original->save();
+
+			$newIssuance = Issuance::query()->create([
+				'order_id' => (string) $order->order_number,
+				'telegram_id' => $operatorTelegramId,
+				'account_id' => $replacement->id,
+				'game' => (string) $order->game,
+				'platform' => (string) $order->issue_platform,
+				'qty' => 1,
+				'issued_at' => $now,
+				'cooldown_until' => $replacement->available_uses === 0 ? $replacement->next_release_at : null,
+				'payload' => [
+					'is_replacement' => true,
+					'original_issuance_id' => $original->id,
+					'replacement_reason' => $reason,
+					'delivery_order_id' => $order->id,
+				],
+			]);
+
+			AccountEvent::query()->create([
+				'account_id' => $replacement->id,
+				'telegram_id' => $operatorTelegramId,
+				'type' => 'ISSUED',
+				'payload' => [
+					'order_id' => (string) $order->order_number,
+					'issuance_id' => $newIssuance->id,
+					'is_replacement' => true,
+					'replacement_reason' => $reason,
+					'game' => (string) $order->game,
+					'platform' => (string) $order->issue_platform,
+					'delivery_order_id' => $order->id,
+				],
+			]);
+
+			$requiresConnection = $this->requiresConnectionCode((string) $order->platform);
+			$passwordType = $requiresConnection ? DeliveryPasswordType::FAKE : DeliveryPasswordType::REAL;
+			$displayPassword = $requiresConnection
+				? $this->fakePasswordFactory->make()
+				: (string) $replacement->password;
+
+			$order->forceFill([
+				'status' => $requiresConnection
+					? DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE
+					: DeliveryOrderStatus::ACCOUNT_ASSIGNED,
+				'account_id' => $replacement->id,
+				'issuance_id' => $newIssuance->id,
+				'operator_telegram_id' => $operatorTelegramId,
+				'display_login' => (string) $replacement->login,
+				'display_password' => $displayPassword,
+				'display_password_type' => $passwordType,
+				'connection_attempts_used' => 0,
+				'connection_locked_until' => null,
+				'last_connection_code' => null,
+				'last_connection_code_submitted_at' => null,
+				'connected_at' => null,
+			])->save();
+
+			$this->recordEvent($order, 'account_replaced', 'telegram', (string) $operatorTelegramId, [
+				'reason' => $reason,
+				'old_account_id' => $original->account_id,
+				'old_issuance_id' => $original->id,
+				'new_account_id' => $replacement->id,
+				'new_issuance_id' => $newIssuance->id,
+				'password_type' => $passwordType->value,
+			]);
+
+			return DeliveryActionResult::ok('Replacement account assigned.');
+		});
 	}
 
 	public function submitConnectionCode(DeliveryOrder $order, string $code): DeliveryActionResult
@@ -370,6 +542,19 @@ final class DeliveryOrderService
 			'2' => 'Nintendo Switch 2',
 			default => $this->normalizePlatform($platform),
 		};
+	}
+
+	private function normalizeReplacementAvailability(Account $account, CarbonImmutable $now): void
+	{
+		if ($account->next_release_at === null) {
+			return;
+		}
+
+		$next = CarbonImmutable::parse($account->next_release_at);
+		if ($now->greaterThanOrEqualTo($next)) {
+			$account->available_uses = 1;
+			$account->next_release_at = null;
+		}
 	}
 
 	private function lockForRetry(DeliveryOrder $order): void

@@ -7,5 +7,6 @@ namespace App\Domain\Telegram\Enums;
 enum TelegramRole: string
 {
 	case OPERATOR = 'operator';
+	case DELIVERY_OPERATOR = 'delivery_operator';
 	case ADMIN = 'admin';
 }

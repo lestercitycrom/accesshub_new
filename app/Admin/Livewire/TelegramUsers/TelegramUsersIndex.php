@@ -51,7 +51,7 @@ final class TelegramUsersIndex extends Component
 
 	public function setRoleFilter(string $role): void
 	{
-		if (!in_array($role, [TelegramRole::OPERATOR->value, TelegramRole::ADMIN->value], true)) {
+		if (!in_array($role, $this->allowedRoleValues(), true)) {
 			return;
 		}
 
@@ -73,7 +73,7 @@ final class TelegramUsersIndex extends Component
 	{
 		Gate::authorize('admin');
 
-		if (!in_array($role, [TelegramRole::OPERATOR->value, TelegramRole::ADMIN->value], true)) {
+		if (!in_array($role, $this->allowedRoleValues(), true)) {
 			return;
 		}
 
@@ -110,5 +110,17 @@ final class TelegramUsersIndex extends Component
 		return view('admin.telegram-users.index', [
 			'rows' => $this->rows,
 		])->layout('layouts.admin');
+	}
+
+	/**
+	 * @return array<int, string>
+	 */
+	private function allowedRoleValues(): array
+	{
+		return [
+			TelegramRole::OPERATOR->value,
+			TelegramRole::DELIVERY_OPERATOR->value,
+			TelegramRole::ADMIN->value,
+		];
 	}
 }

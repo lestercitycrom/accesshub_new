@@ -34,6 +34,13 @@ final class TelegramUserFactory extends Factory
 		]);
 	}
 
+	public function deliveryOperator(): self
+	{
+		return $this->state(fn (): array => [
+			'role' => TelegramRole::DELIVERY_OPERATOR,
+		]);
+	}
+
 	public function inactive(): self
 	{
 		return $this->state(fn (): array => [

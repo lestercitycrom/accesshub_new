@@ -45,7 +45,7 @@ final class TelegramUserForm extends Component
 
 		$this->validate([
 			'telegramId' => ['required', 'integer', 'min:1'],
-			'role' => ['required', 'in:' . TelegramRole::OPERATOR->value . ',' . TelegramRole::ADMIN->value],
+			'role' => ['required', 'in:' . implode(',', $this->allowedRoleValues())],
 			'isActive' => ['boolean'],
 		]);
 
@@ -66,5 +66,17 @@ final class TelegramUserForm extends Component
 	public function render()
 	{
 		return view('admin.telegram-users.form')->layout('layouts.admin');
+	}
+
+	/**
+	 * @return array<int, string>
+	 */
+	private function allowedRoleValues(): array
+	{
+		return [
+			TelegramRole::OPERATOR->value,
+			TelegramRole::DELIVERY_OPERATOR->value,
+			TelegramRole::ADMIN->value,
+		];
 	}
 }

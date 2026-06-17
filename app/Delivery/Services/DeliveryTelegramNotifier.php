@@ -28,7 +28,7 @@ final class DeliveryTelegramNotifier
 			'Customer email: <code>' . $this->escape($order->customer_email) . '</code>',
 			'Created: ' . $this->escape($order->created_at?->timezone(config('app.timezone'))->format('d.m.Y H:i') ?? ''),
 			'',
-			'Open admin page to verify payment, choose game, and issue account.',
+			'Open Mini App to verify payment, choose game, and issue account.',
 		]));
 
 		$this->sendToOperators($message, [
@@ -36,7 +36,9 @@ final class DeliveryTelegramNotifier
 				[
 					[
 						'text' => 'Open order',
-						'url' => route('admin.delivery-orders.show', ['deliveryOrder' => $order], true),
+						'web_app' => [
+							'url' => $this->webAppOrderUrl($order),
+						],
 					],
 				],
 			],
@@ -87,7 +89,9 @@ final class DeliveryTelegramNotifier
 				[
 					[
 						'text' => 'Open order',
-						'url' => route('admin.delivery-orders.show', ['deliveryOrder' => $order], true),
+						'web_app' => [
+							'url' => $this->webAppOrderUrl($order),
+						],
 					],
 				],
 			],
@@ -125,6 +129,7 @@ final class DeliveryTelegramNotifier
 			->where('is_active', true)
 			->whereIn('role', [
 				TelegramRole::OPERATOR->value,
+				TelegramRole::DELIVERY_OPERATOR->value,
 				TelegramRole::ADMIN->value,
 			])
 			->orderBy('id')
@@ -134,5 +139,13 @@ final class DeliveryTelegramNotifier
 	private function escape(mixed $value): string
 	{
 		return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+	}
+
+	private function webAppOrderUrl(DeliveryOrder $order): string
+	{
+		return route('webapp', [
+			'tab' => 'delivery',
+			'delivery_order' => $order->id,
+		], true);
 	}
 }

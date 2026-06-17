@@ -23,6 +23,7 @@ final class DeliveryOrderShow extends Component
 	public string $issuePlatform = '';
 	public string $extraAttempts = '1';
 	public string $failReason = '';
+	public string $replacementReason = 'wrong_password';
 
 	public function mount(DeliveryOrder $deliveryOrder): void
 	{
@@ -113,6 +114,21 @@ final class DeliveryOrderShow extends Component
 			$orders->grantExtraAttempts($this->deliveryOrder, $telegramId, $amount);
 			$this->refreshOrder();
 			session()->flash('message', "Добавлено попыток: {$amount}.");
+		});
+	}
+
+	public function replaceAccount(DeliveryOrderService $orders): void
+	{
+		$this->withOperator(function (int $telegramId) use ($orders): void {
+			$result = $orders->replaceAccount($this->deliveryOrder, $telegramId, $this->replacementReason);
+			$this->refreshOrder();
+
+			if ($result->failed()) {
+				$this->flashError($result->message() ?? 'Не удалось выдать замену.');
+				return;
+			}
+
+			session()->flash('message', $result->message() ?? 'Замена выдана.');
 		});
 	}
 

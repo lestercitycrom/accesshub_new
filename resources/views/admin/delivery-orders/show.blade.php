@@ -146,6 +146,27 @@
 				<p class="text-xs text-slate-500">
 					Если нужной игры нет в списке, значит для выбранной платформы сейчас нет доступного аккаунта.
 				</p>
+
+				@if($order->account_id !== null && $order->issuance_id !== null)
+					<div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+						<div class="text-sm font-semibold text-slate-700">Замена аккаунта</div>
+						<select wire:model="replacementReason"
+							class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+							<option value="wrong_password">Неверный пароль</option>
+							<option value="no_access">Не входит</option>
+							<option value="kicked">Клиента выбило</option>
+							<option value="dead">Аккаунт умер</option>
+							<option value="other">Другое</option>
+						</select>
+						<x-admin.button variant="secondary" wire:click="replaceAccount" wire:loading.attr="disabled" wire:target="replaceAccount" class="w-full">
+							<span wire:loading.remove wire:target="replaceAccount">Выдать замену</span>
+							<span wire:loading wire:target="replaceAccount">Выдача замены...</span>
+						</x-admin.button>
+						<p class="text-xs text-slate-500">
+							Ссылка клиента не меняется. В этом заказе обновятся данные аккаунта и появится событие замены.
+						</p>
+					</div>
+				@endif
 			</div>
 		</x-admin.card>
 

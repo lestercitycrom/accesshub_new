@@ -177,6 +177,55 @@ it('updates connection lifecycle from the admin delivery detail page', function 
 	]);
 });
 
+it('replaces an assigned account from the admin delivery detail page', function (): void {
+	$admin = User::factory()->create(['is_admin' => true]);
+	$this->actingAs($admin);
+
+	$operator = TelegramUser::factory()->create(['telegram_id' => 9105]);
+	$first = Account::factory()->create([
+		'game' => 'GTA',
+		'platform' => ['Xbox'],
+		'login' => 'xbox-first',
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+	$second = Account::factory()->create([
+		'game' => 'GTA',
+		'platform' => ['Xbox'],
+		'login' => 'xbox-second',
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+	$order = DeliveryOrder::factory()->create([
+		'order_number' => 'ORD-ADMIN-REPLACE',
+		'platform' => 'Xbox',
+		'status' => DeliveryOrderStatus::WAITING_FOR_OPERATOR,
+	]);
+
+	app(DeliveryOrderService::class)->assignAccount($order, $operator->telegram_id, 'GTA', 'Xbox');
+	$order->refresh();
+
+	expect($order->account_id)->toBe($first->id);
+
+	Livewire::test(DeliveryOrderShow::class, ['deliveryOrder' => $order])
+		->set('operatorTelegramId', (string) $operator->telegram_id)
+		->set('replacementReason', 'wrong_password')
+		->call('replaceAccount')
+		->assertHasNoErrors();
+
+	$order->refresh();
+
+	expect($order->account_id)->toBe($second->id)
+		->and($order->display_login)->toBe('xbox-second')
+		->and($order->connection_attempts_used)->toBe(0);
+
+	$this->assertDatabaseHas('delivery_events', [
+		'delivery_order_id' => $order->id,
+		'type' => 'account_replaced',
+		'actor_id' => (string) $operator->telegram_id,
+	]);
+});
+
 it('seeds default delivery platform instructions', function (): void {
 	expect(DeliveryPlatformInstruction::query()->where('platform', 'Xbox')->exists())->toBeTrue()
 		->and(DeliveryPlatformInstruction::query()->where('platform', 'PlayStation')->exists())->toBeTrue()

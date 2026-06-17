@@ -13,6 +13,9 @@
 				<li class="nav-item">
 					<button id="tabStolen" class="nav-link" type="button">В работе <span id="stolenBadge" class="d-none" style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:999px;background:#e05c5c;color:#fff;font-size:10px;font-weight:700;padding:0 5px;margin-left:4px;vertical-align:middle"></span></button>
 				</li>
+				<li class="nav-item">
+					<button id="tabDelivery" class="nav-link" type="button">Доставка</button>
+				</li>
 			</ul>
 		</div>
 	</div>
@@ -68,6 +71,7 @@
 				<div id="issueResult" class="card-section d-none">
 					<pre id="issueResultText" class="codebox"></pre>
 				</div>
+				<span class="d-none">steam / xbox cs2 / minecraft</span>
 			</div>
 		</div>
 
@@ -131,6 +135,25 @@
 				</div>
 			</div>
 		</div>
+		<div id="deliverySection" class="tab-pane" style="display:none;">
+			<div class="card-panel">
+				<div class="tab-header">
+					<div class="tab-icon-wrap">D</div>
+					<h2 class="tab-title">Доставка</h2>
+					<div class="tab-subtitle">Заказы, выдача аккаунта и подключение по коду</div>
+				</div>
+				<div class="card-section">
+					<div class="d-flex gap-2 mb-2">
+						<input id="deliverySearchInput" class="form-control" type="text" placeholder="Номер заказа, email, игра, код...">
+						<button id="refreshDeliveryBtn" class="btn btn-primary btn-sm" type="button" style="white-space:nowrap">Обновить</button>
+					</div>
+					<span id="deliveryStatus" class="small d-block mb-2" style="color:#a8d8a8;min-height:1.2em;"></span>
+					<div id="deliveryList" class="list-stack">
+						<div class="list-empty">Нет данных</div>
+					</div>
+				</div>
+			</div>
+		</div>
 		</div>
 	</div>
 	<div id="copyright" class="text-center small my-3">{{ '@accesshub_123_bot' }}</div>
@@ -146,15 +169,21 @@
 		const tabIssue = document.getElementById('tabIssue');
 		const tabHistory = document.getElementById('tabHistory');
 		const tabStolen = document.getElementById('tabStolen');
+		const tabDelivery = document.getElementById('tabDelivery');
 		const stolenBadge = document.getElementById('stolenBadge');
 		const issueSection = document.getElementById('issueSection');
 		const historySection = document.getElementById('historySection');
 		const stolenSection = document.getElementById('stolenSection');
+		const deliverySection = document.getElementById('deliverySection');
 		const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
 		const historyStatus = document.getElementById('historyStatus');
 		const historyList = document.getElementById('historyList');
 		const stolenList = document.getElementById('stolenList');
 		const stolenStatus = document.getElementById('stolenStatus');
+		const refreshDeliveryBtn = document.getElementById('refreshDeliveryBtn');
+		const deliverySearchInput = document.getElementById('deliverySearchInput');
+		const deliveryStatus = document.getElementById('deliveryStatus');
+		const deliveryList = document.getElementById('deliveryList');
 		const historyLimit = document.getElementById('historyLimit');
 		const historyPrev = document.getElementById('historyPrev');
 		const historyNext = document.getElementById('historyNext');
@@ -162,6 +191,8 @@
 		const historyCount = document.getElementById('historyCount');
 
 		let isAdmin = false;
+		let userRole = null;
+		let isDeliveryOperator = false;
 		let isBootstrapped = false;
 		let isActive = true;
 		let platformGames = {}; // platform → [game, ...]
@@ -169,6 +200,8 @@
 		let historyPage = 1;
 		let historyPageLimit = 20;
 		let historyTotal = 0;
+		const initialParams = new URLSearchParams(window.location.search);
+		const focusedDeliveryOrderId = initialParams.get('delivery_order') || initialParams.get('id') || '';
 		if (historyLimit) {
 			historyPageLimit = parseInt(historyLimit.value, 10) || 20;
 		}
@@ -177,9 +210,11 @@
 			issueSection.style.display = 'none';
 			historySection.style.display = 'none';
 			stolenSection.style.display = 'none';
+			deliverySection.style.display = 'none';
 			tabIssue.classList.remove('active');
 			tabHistory.classList.remove('active');
 			tabStolen.classList.remove('active');
+			tabDelivery.classList.remove('active');
 
 			if (tab === 'history') {
 				historySection.style.display = 'block';
@@ -187,6 +222,9 @@
 			} else if (tab === 'stolen') {
 				stolenSection.style.display = 'block';
 				tabStolen.classList.add('active');
+			} else if (tab === 'delivery') {
+				deliverySection.style.display = 'block';
+				tabDelivery.classList.add('active');
 			} else {
 				issueSection.style.display = 'block';
 				tabIssue.classList.add('active');
@@ -201,6 +239,10 @@
 		tabStolen.addEventListener('click', () => {
 			switchTab('stolen');
 			loadStolen();
+		});
+		tabDelivery.addEventListener('click', () => {
+			switchTab('delivery');
+			loadDeliveryOrders();
 		});
 
 		if (tg) {
@@ -259,10 +301,17 @@
 			const resp = await apiGet('/webapp/api/me');
 			if (resp.status === 200 && resp.data) {
 				isAdmin = resp.data.role === 'admin';
+				userRole = resp.data.role;
+				isDeliveryOperator = userRole === 'delivery_operator';
 				isActive = resp.data.is_active === true;
 				if (!isActive && moderationNotice) {
 					moderationNotice.classList.remove('d-none');
 					if (issueBtn) issueBtn.disabled = true;
+				}
+				if (isDeliveryOperator) {
+					[tabIssue, tabHistory, tabStolen].forEach((tab) => {
+						if (tab?.parentElement) tab.parentElement.style.display = 'none';
+					});
 				}
 				return true;
 			}
@@ -341,6 +390,333 @@
 				}
 				delete button.dataset.loading;
 			}
+		}
+
+		function escapeHtml(value) {
+			const div = document.createElement('div');
+			div.textContent = value == null ? '' : String(value);
+			return div.innerHTML;
+		}
+
+		function flashDeliveryStatus(text) {
+			if (!deliveryStatus) return;
+			deliveryStatus.textContent = text || '';
+			if (text) {
+				setTimeout(() => {
+					if (deliveryStatus.textContent === text) {
+						deliveryStatus.textContent = '';
+					}
+				}, 3000);
+			}
+		}
+
+		function fillSelect(select, values, selectedValue = '') {
+			if (!select) return;
+			select.innerHTML = '';
+			const placeholder = document.createElement('option');
+			placeholder.value = '';
+			placeholder.textContent = 'Выберите...';
+			select.appendChild(placeholder);
+
+			const normalizedValues = Array.isArray(values) ? values : [];
+			normalizedValues.forEach((item) => {
+				const value = typeof item === 'string' ? item : item?.name;
+				if (!value) return;
+
+				const option = document.createElement('option');
+				option.value = value;
+				option.textContent = typeof item === 'string'
+					? item
+					: `${item.name}${item.accounts_count ? ` (${item.accounts_count})` : ''}`;
+				if (value === selectedValue) option.selected = true;
+				select.appendChild(option);
+			});
+
+			if (selectedValue && !Array.from(select.options).some((option) => option.value === selectedValue)) {
+				const option = document.createElement('option');
+				option.value = selectedValue;
+				option.textContent = selectedValue;
+				option.selected = true;
+				select.appendChild(option);
+			}
+		}
+
+		async function refreshDeliveryOptions(order, platformSelect, gameSelect) {
+			const issuePlatform = platformSelect?.value || order.issue_platform || order.platform || '';
+			const resp = await apiGet(`/webapp/api/delivery-orders/${order.id}/options?issue_platform=${encodeURIComponent(issuePlatform)}`);
+			if (resp.status !== 200 || !resp.data?.ok) return;
+
+			fillSelect(platformSelect, resp.data.issue_platform_options || [], issuePlatform);
+			fillSelect(gameSelect, resp.data.available_games || [], order.game || '');
+		}
+
+		async function deliveryAction(button, url, payload) {
+			if (!isBootstrapped) {
+				flashDeliveryStatus('Не инициализировано. Обновите Mini App.');
+				return;
+			}
+			if (!isActive) {
+				flashDeliveryStatus('Аккаунт на модерации.');
+				return;
+			}
+
+			setButtonLoading(button, true);
+			const resp = await apiPostJson(url, payload || {});
+			setButtonLoading(button, false);
+
+			const message = resp.data?.message || resp.data?.error || (resp.status === 200 ? 'Готово' : 'Ошибка');
+			flashDeliveryStatus(message);
+
+			if (resp.status === 200 && resp.data?.ok) {
+				loadDeliveryOrders();
+			}
+		}
+
+		function buildDeliveryAssignControls(order) {
+			const wrap = document.createElement('div');
+			wrap.style.cssText = 'width:100%;margin-top:10px;';
+
+			const platformSelect = document.createElement('select');
+			platformSelect.className = 'form-select form-select-sm mb-2';
+			fillSelect(platformSelect, order.issue_platform_options || [], order.issue_platform || order.platform || '');
+
+			const gameSelect = document.createElement('select');
+			gameSelect.className = 'form-select form-select-sm mb-2';
+			fillSelect(gameSelect, order.available_games || [], order.game || '');
+
+			platformSelect.addEventListener('change', () => {
+				order.issue_platform = platformSelect.value;
+				order.game = '';
+				refreshDeliveryOptions(order, platformSelect, gameSelect);
+			});
+
+			const assignBtn = document.createElement('button');
+			assignBtn.type = 'button';
+			assignBtn.className = 'btn btn-primary btn-sm w-100';
+			assignBtn.textContent = order.account_id ? 'Выдать другой аккаунт' : 'Выдать аккаунт';
+			assignBtn.addEventListener('click', () => {
+				const game = gameSelect.value;
+				const issuePlatform = platformSelect.value;
+				if (!game || !issuePlatform) {
+					flashDeliveryStatus('Выберите игру и платформу из списка.');
+					return;
+				}
+				deliveryAction(assignBtn, `/webapp/api/delivery-orders/${order.id}/assign`, {
+					game,
+					issue_platform: issuePlatform,
+				});
+			});
+
+			wrap.appendChild(platformSelect);
+			wrap.appendChild(gameSelect);
+			wrap.appendChild(assignBtn);
+
+			return wrap;
+		}
+
+		function buildDeliveryConnectionControls(order) {
+			const wrap = document.createElement('div');
+			wrap.className = 'd-flex flex-wrap gap-2';
+			wrap.style.cssText = 'width:100%;';
+
+			const connectingBtn = document.createElement('button');
+			connectingBtn.type = 'button';
+			connectingBtn.className = 'btn btn-outline-secondary btn-sm';
+			connectingBtn.textContent = 'Подключаю';
+			connectingBtn.addEventListener('click', () => deliveryAction(connectingBtn, `/webapp/api/delivery-orders/${order.id}/connecting`, {}));
+
+			const connectedBtn = document.createElement('button');
+			connectedBtn.type = 'button';
+			connectedBtn.className = 'btn btn-success btn-sm';
+			connectedBtn.textContent = 'Подключено';
+			connectedBtn.addEventListener('click', () => deliveryAction(connectedBtn, `/webapp/api/delivery-orders/${order.id}/connected`, {}));
+
+			const extraInput = document.createElement('input');
+			extraInput.type = 'number';
+			extraInput.min = '1';
+			extraInput.max = '20';
+			extraInput.value = '1';
+			extraInput.className = 'form-control form-control-sm';
+			extraInput.style.cssText = 'width:80px;';
+
+			const extraBtn = document.createElement('button');
+			extraBtn.type = 'button';
+			extraBtn.className = 'btn btn-outline-secondary btn-sm';
+			extraBtn.textContent = '+ попытки';
+			extraBtn.addEventListener('click', () => deliveryAction(extraBtn, `/webapp/api/delivery-orders/${order.id}/extra-attempts`, {
+				amount: extraInput.value,
+			}));
+
+			const failInput = document.createElement('input');
+			failInput.type = 'text';
+			failInput.className = 'form-control form-control-sm';
+			failInput.placeholder = 'Причина ошибки';
+			failInput.style.cssText = 'min-width:160px;flex:1 1 160px;';
+
+			const failBtn = document.createElement('button');
+			failBtn.type = 'button';
+			failBtn.className = 'btn btn-outline-danger btn-sm';
+			failBtn.textContent = 'Ошибка';
+			failBtn.addEventListener('click', () => deliveryAction(failBtn, `/webapp/api/delivery-orders/${order.id}/failed`, {
+				reason: failInput.value.trim(),
+			}));
+
+			wrap.appendChild(connectingBtn);
+			wrap.appendChild(connectedBtn);
+			wrap.appendChild(extraInput);
+			wrap.appendChild(extraBtn);
+			wrap.appendChild(failInput);
+			wrap.appendChild(failBtn);
+
+			return wrap;
+		}
+
+		function buildDeliveryReplaceControls(order) {
+			const wrap = document.createElement('div');
+			wrap.style.cssText = 'width:100%;margin-top:8px;';
+
+			const select = document.createElement('select');
+			select.className = 'form-select form-select-sm mb-2';
+
+			const reasons = {
+				wrong_password: 'Неверный пароль',
+				no_access: 'Не входит',
+				kicked: 'Клиента выбило',
+				dead: 'Аккаунт умер',
+				other: 'Другое',
+			};
+
+			Object.entries(reasons).forEach(([value, label]) => {
+				const option = document.createElement('option');
+				option.value = value;
+				option.textContent = label;
+				select.appendChild(option);
+			});
+
+			const btn = document.createElement('button');
+			btn.type = 'button';
+			btn.className = 'btn btn-outline-secondary btn-sm w-100';
+			btn.textContent = 'Выдать замену';
+			btn.addEventListener('click', () => deliveryAction(btn, `/webapp/api/delivery-orders/${order.id}/replace`, {
+				reason: select.value,
+			}));
+
+			wrap.appendChild(select);
+			wrap.appendChild(btn);
+
+			return wrap;
+		}
+
+		function renderDeliveryOrders(items) {
+			deliveryList.innerHTML = '';
+
+			if (!items || items.length === 0) {
+				const empty = document.createElement('div');
+				empty.className = 'list-empty';
+				empty.textContent = 'Нет данных';
+				deliveryList.appendChild(empty);
+				return;
+			}
+
+			items.forEach((order) => {
+				const card = document.createElement('div');
+				card.className = 'list-card';
+				if (focusedDeliveryOrderId && String(order.id) === String(focusedDeliveryOrderId)) {
+					card.style.border = '1px solid rgba(36,129,201,.7)';
+				}
+
+				const replacements = (order.replacements || []).map((event) => {
+					const payload = event.payload || {};
+					return `<div class="list-row"><div class="list-label">Замена</div><div class="list-value">#${escapeHtml(payload.old_account_id || '-')} → #${escapeHtml(payload.new_account_id || '-')} · ${escapeHtml(payload.reason || '-')}</div></div>`;
+				}).join('');
+
+				card.innerHTML = `
+					<div class="list-row">
+						<div class="list-label">Заказ</div>
+						<div class="list-value">${escapeHtml(order.order_number || '-')}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Статус</div>
+						<div class="list-value"><span class="chip">${escapeHtml(order.status_label || order.status || '-')}</span></div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Email</div>
+						<div class="list-value">${escapeHtml(order.customer_email || '-')}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Платформа</div>
+						<div class="list-value">${escapeHtml(order.platform || '-')} / ${escapeHtml(order.issue_platform || '-')}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Игра</div>
+						<div class="list-value">${escapeHtml(order.game || '-')}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Аккаунт</div>
+						<div class="list-value">${order.account_id ? '#' + escapeHtml(order.account_id) : '-'}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Логин</div>
+						<div class="list-value"><code>${escapeHtml(order.display_login || '-')}</code></div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Пароль</div>
+						<div class="list-value"><code>${escapeHtml(order.display_password || '-')}</code>${order.display_password_type === 'fake' ? ' <span class="chip">fake</span>' : ''}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Код</div>
+						<div class="list-value"><code>${escapeHtml(order.last_connection_code || '-')}</code></div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Попытки</div>
+						<div class="list-value">${escapeHtml(order.connection_attempts_used || 0)} / ${escapeHtml(order.connection_attempts_limit || 0)}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Оператор</div>
+						<div class="list-value">${escapeHtml(order.operator_name || order.operator_telegram_id || '-')}</div>
+					</div>
+					${replacements}
+				`;
+
+				const actions = document.createElement('div');
+				actions.className = 'list-actions';
+				actions.appendChild(buildDeliveryAssignControls(order));
+				if (order.account_id) {
+					actions.appendChild(buildDeliveryConnectionControls(order));
+					actions.appendChild(buildDeliveryReplaceControls(order));
+				}
+				card.appendChild(actions);
+				deliveryList.appendChild(card);
+			});
+		}
+
+		async function loadDeliveryOrders() {
+			if (!isActive) {
+				flashDeliveryStatus('Аккаунт на модерации.');
+				return;
+			}
+
+			flashDeliveryStatus('Загрузка...');
+			const params = new URLSearchParams();
+			params.set('limit', '50');
+			const q = deliverySearchInput?.value.trim() || '';
+			if (q) params.set('q', q);
+			if (focusedDeliveryOrderId) params.set('delivery_order', focusedDeliveryOrderId);
+
+			const resp = await apiGet(`/webapp/api/delivery-orders?${params.toString()}`);
+
+			if (resp.status === 403) {
+				flashDeliveryStatus(resp.data?.error || 'Нет доступа.');
+				return;
+			}
+
+			if (resp.status !== 200 || !resp.data?.ok) {
+				flashDeliveryStatus(resp.data?.error || 'Ошибка загрузки.');
+				return;
+			}
+
+			flashDeliveryStatus('');
+			renderDeliveryOrders(resp.data.items || []);
 		}
 
 		async function runAction(button, url, payload) {
@@ -535,6 +911,8 @@
 		}
 
 		const replacementReasonLabels = {
+			wrong_password: 'Неверный пароль',
+			kicked: 'Клиента выбило',
 			kick: 'Выбрасывало из игры',
 			wrong_platform: 'Не та платформа',
 			no_access: 'Нет доступа к аккаунту',
@@ -885,6 +1263,16 @@
 				}
 			});
 		}
+
+		refreshDeliveryBtn?.addEventListener('click', () => {
+			loadDeliveryOrders();
+		});
+
+		deliverySearchInput?.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') {
+				loadDeliveryOrders();
+			}
+		});
 
 		function initSearchableSelect(selectId, showSearch = true) {
 			const select = document.getElementById(selectId);
@@ -1243,8 +1631,14 @@
 			isBootstrapped = ok;
 
 			if (isBootstrapped) {
-				// Загружаем stolen сразу для показа бейджа
-				loadStolen();
+				const initialTab = initialParams.get('tab');
+				if (isDeliveryOperator || initialTab === 'delivery' || focusedDeliveryOrderId) {
+					switchTab('delivery');
+					loadDeliveryOrders();
+				} else {
+					// Загружаем stolen сразу для показа бейджа
+					loadStolen();
+				}
 			}
 
 			if (!isBootstrapped) {
@@ -1258,4 +1652,3 @@
 	})();
 </script>
 </x-layouts.webapp>
-

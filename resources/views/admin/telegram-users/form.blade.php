@@ -50,6 +50,7 @@
 				:error="$errors->first('role')"
 			>
 				<option value="operator">operator</option>
+				<option value="delivery_operator">delivery_operator</option>
 				<option value="admin">admin</option>
 			</x-admin.select>
 

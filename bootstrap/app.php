@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'no-cache' => \App\Http\Middleware\NoCache::class,
             'log-webapp' => \App\Http\Middleware\LogWebAppRequests::class,
             'capture-server-errors' => \App\Http\Middleware\CaptureServerErrors::class,
+            'legacy-webapp' => \App\Http\Middleware\EnsureLegacyWebAppAccess::class,
         ]);
         
         // Exclude WebApp API routes from CSRF verification

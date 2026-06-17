@@ -22,7 +22,10 @@ final class IssueService
 		private readonly SettingsService $settings,
 	) {}
 
-	public function issue(int $telegramId, string $orderId, string $game, string $platform, int $qty): IssuanceResult
+	/**
+	 * @param array<int, TelegramRole>|null $allowedRoles
+	 */
+	public function issue(int $telegramId, string $orderId, string $game, string $platform, int $qty, ?array $allowedRoles = null): IssuanceResult
 	{
 		$qty = max(1, $qty);
 
@@ -46,7 +49,9 @@ final class IssueService
 			return IssuanceResult::fail('Доступ запрещен. Аккаунт на модерации или отключен.');
 		}
 
-		if (!in_array($user->role, [TelegramRole::OPERATOR, TelegramRole::ADMIN], true)) {
+		$allowedRoles ??= [TelegramRole::OPERATOR, TelegramRole::ADMIN];
+
+		if (!in_array($user->role, $allowedRoles, true)) {
 			return IssuanceResult::fail('Недостаточно прав. Обратитесь к администратору.');
 		}
 

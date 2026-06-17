@@ -43,6 +43,15 @@
 			<x-admin.button
 				variant="ghost"
 				size="sm"
+				wire:click="setRoleFilter('delivery_operator')"
+				class="{{ ($roleFilter ?? '') === 'delivery_operator' ? 'bg-slate-100' : '' }}"
+			>
+				Delivery
+			</x-admin.button>
+
+			<x-admin.button
+				variant="ghost"
+				size="sm"
 				wire:click="setRoleFilter('admin')"
 				class="{{ ($roleFilter ?? '') === 'admin' ? 'bg-slate-100' : '' }}"
 			>
@@ -91,7 +100,7 @@
 					</x-admin.td>
 
 					<x-admin.td>
-						<x-admin.badge :variant="($row->role->value ?? '') === 'admin' ? 'violet' : 'blue'">
+						<x-admin.badge :variant="($row->role->value ?? '') === 'admin' ? 'violet' : (($row->role->value ?? '') === 'delivery_operator' ? 'amber' : 'blue')">
 							{{ $row->role->value ?? 'operator' }}
 						</x-admin.badge>
 					</x-admin.td>
