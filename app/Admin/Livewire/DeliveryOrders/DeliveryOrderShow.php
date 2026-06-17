@@ -21,6 +21,7 @@ final class DeliveryOrderShow extends Component
 	public string $operatorTelegramId = '';
 	public string $game = '';
 	public string $issuePlatform = '';
+	public string $selectedAccountId = '';
 	public string $extraAttempts = '1';
 	public string $failReason = '';
 	public string $replacementReason = 'wrong_password';
@@ -41,6 +42,16 @@ final class DeliveryOrderShow extends Component
 		);
 	}
 
+	public function updatedGame(): void
+	{
+		$this->selectedAccountId = '';
+	}
+
+	public function updatedIssuePlatform(): void
+	{
+		$this->selectedAccountId = '';
+	}
+
 	public function assignAccount(DeliveryOrderService $orders): void
 	{
 		Gate::authorize('admin');
@@ -56,11 +67,14 @@ final class DeliveryOrderShow extends Component
 			return;
 		}
 
+		$accountId = (int) $this->selectedAccountId;
+
 		$result = $orders->assignAccount(
 			$this->deliveryOrder,
 			$telegramId,
 			trim($this->game),
 			trim($this->issuePlatform) !== '' ? trim($this->issuePlatform) : null,
+			$accountId > 0 ? $accountId : null,
 		);
 
 		$this->refreshOrder();
@@ -158,6 +172,7 @@ final class DeliveryOrderShow extends Component
 			->merge((array) config('delivery.direct_delivery_platforms', []))
 			->merge($accountPlatforms)
 			->filter()
+			->map(fn ($platform) => $this->canonicalIssuePlatformOption((string) $platform))
 			->unique()
 			->values()
 			->all();
@@ -200,6 +215,45 @@ final class DeliveryOrderShow extends Component
 			->all();
 	}
 
+	public function getAvailableAccountsProperty(): array
+	{
+		$platform = trim($this->issuePlatform) !== ''
+			? trim($this->issuePlatform)
+			: (string) $this->deliveryOrder->platform;
+		$game = trim($this->game);
+
+		if ($game === '') {
+			return [];
+		}
+
+		return Account::query()
+			->where('status', AccountStatus::ACTIVE)
+			->where('game', $game)
+			->where(function ($query): void {
+				$query->where('available_uses', '>', 0)
+					->orWhere(function ($nested): void {
+						$nested->whereNotNull('next_release_at')
+							->where('next_release_at', '<=', now());
+					});
+			})
+			->where(function ($query) use ($platform): void {
+				foreach ($this->issuePlatformCandidates($platform) as $index => $candidate) {
+					$method = $index === 0 ? 'whereJsonContains' : 'orWhereJsonContains';
+					$query->{$method}('platform', $candidate);
+				}
+			})
+			->orderByDesc('available_uses')
+			->orderBy('id')
+			->limit(100)
+			->get(['id', 'login', 'available_uses'])
+			->map(fn (Account $account): array => [
+				'id' => (int) $account->id,
+				'login' => (string) $account->login,
+				'available_uses' => (int) $account->available_uses,
+			])
+			->all();
+	}
+
 	public function statusLabel(string $status): string
 	{
 		return match ($status) {
@@ -236,6 +290,7 @@ final class DeliveryOrderShow extends Component
 			'operators' => $this->operators,
 			'issuePlatformOptions' => $this->issuePlatformOptions,
 			'availableGames' => $this->availableGames,
+			'availableAccounts' => $this->availableAccounts,
 			'events' => DeliveryEvent::query()
 				->where('delivery_order_id', $this->deliveryOrder->id)
 				->latest('created_at')

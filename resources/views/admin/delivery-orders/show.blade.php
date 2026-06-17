@@ -138,6 +138,23 @@
 					</select>
 				</div>
 
+				<div class="space-y-1">
+					<label class="text-xs font-medium text-slate-500">Логин аккаунта</label>
+					<select wire:model="selectedAccountId"
+						class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+						@disabled(count($availableAccounts) === 0)>
+						<option value="">Любой логин (авто)</option>
+						@foreach($availableAccounts as $accountOption)
+							<option value="{{ $accountOption['id'] }}">
+								{{ $accountOption['login'] }}@if($accountOption['available_uses']) · {{ $accountOption['available_uses'] }}@endif
+							</option>
+						@endforeach
+					</select>
+					<p class="text-xs text-slate-500">
+						Оставьте «авто» — система выберет аккаунт сама. Или укажите конкретный логин.
+					</p>
+				</div>
+
 				<x-admin.button variant="primary" wire:click="assignAccount" wire:loading.attr="disabled" wire:target="assignAccount" class="w-full">
 					<span wire:loading.remove wire:target="assignAccount">Выдать аккаунт</span>
 					<span wire:loading wire:target="assignAccount">Выдача...</span>

@@ -85,6 +85,80 @@ it('assigns a delivery account from telegram mini app with database options', fu
 		->and($account->available_uses)->toBe(0);
 });
 
+it('does not return duplicate platform aliases in issue platform options', function (): void {
+	$operator = TelegramUser::factory()->deliveryOperator()->create(['telegram_id' => 9305]);
+	Account::factory()->create([
+		'game' => 'Fortnite',
+		'platform' => ['Epic Games'],
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+	$order = DeliveryOrder::factory()->create([
+		'order_number' => 'ORD-MINI-EPIC',
+		'platform' => 'Epic Games',
+	]);
+
+	$this->withSession(['webapp.telegram_id' => $operator->telegram_id]);
+
+	$response = $this->getJson("/webapp/api/delivery-orders/{$order->id}/options?issue_platform=Epic+Games")
+		->assertOk();
+
+	$options = $response->json('issue_platform_options');
+
+	expect($options)->toBe(array_values(array_unique($options)))
+		->and(collect($options)->filter(fn ($p) => in_array($p, ['Epic Games', 'EpicGames', 'Epic'], true))->values()->all())
+		->toBe(['Epic Games']);
+});
+
+it('assigns a specific account chosen by login from the mini app', function (): void {
+	$operator = TelegramUser::factory()->deliveryOperator()->create(['telegram_id' => 9304]);
+
+	// More available_uses so auto-pick would prefer it over the chosen one.
+	$auto = Account::factory()->create([
+		'game' => 'FIFA',
+		'platform' => ['PS5'],
+		'login' => 'ps5-auto-login',
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 5,
+	]);
+	$chosen = Account::factory()->create([
+		'game' => 'FIFA',
+		'platform' => ['PS5'],
+		'login' => 'ps5-chosen-login',
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+
+	$order = DeliveryOrder::factory()->create([
+		'order_number' => 'ORD-MINI-PICK',
+		'platform' => 'PlayStation',
+		'status' => DeliveryOrderStatus::WAITING_FOR_OPERATOR,
+	]);
+
+	$this->withSession(['webapp.telegram_id' => $operator->telegram_id]);
+
+	$this->getJson("/webapp/api/delivery-orders/{$order->id}/options?issue_platform=PS5&game=FIFA")
+		->assertOk()
+		->assertJsonPath('ok', true)
+		->assertJsonCount(2, 'available_accounts');
+
+	$this->postJson("/webapp/api/delivery-orders/{$order->id}/assign", [
+		'game' => 'FIFA',
+		'issue_platform' => 'PS5',
+		'account_id' => $chosen->id,
+	])
+		->assertOk()
+		->assertJsonPath('ok', true)
+		->assertJsonPath('order.account_id', $chosen->id)
+		->assertJsonPath('order.display_login', 'ps5-chosen-login');
+
+	$order->refresh();
+	$auto->refresh();
+
+	expect($order->account_id)->toBe($chosen->id)
+		->and($auto->available_uses)->toBe(5); // untouched
+});
+
 it('replaces a delivery account from mini app and keeps the same client link', function (): void {
 	$operator = TelegramUser::factory()->deliveryOperator()->create(['telegram_id' => 9303]);
 	$first = Account::factory()->create([

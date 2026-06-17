@@ -25,7 +25,7 @@ final class IssueService
 	/**
 	 * @param array<int, TelegramRole>|null $allowedRoles
 	 */
-	public function issue(int $telegramId, string $orderId, string $game, string $platform, int $qty, ?array $allowedRoles = null): IssuanceResult
+	public function issue(int $telegramId, string $orderId, string $game, string $platform, int $qty, ?array $allowedRoles = null, ?int $accountId = null): IssuanceResult
 	{
 		$qty = max(1, $qty);
 
@@ -61,7 +61,7 @@ final class IssueService
 		);
 		$now = CarbonImmutable::now();
 
-		return DB::transaction(function () use ($telegramId, $orderId, $game, $platform, $qty, $cooldownDays, $now): IssuanceResult {
+		return DB::transaction(function () use ($telegramId, $orderId, $game, $platform, $qty, $cooldownDays, $now, $accountId): IssuanceResult {
 			try {
 				$alreadyIssuedAccountIds = Issuance::query()
 					->where('order_id', $orderId)
@@ -73,7 +73,10 @@ final class IssueService
 				$baseQuery = Account::query()
 					->where('game', $game)
 					->where('status', AccountStatus::ACTIVE)
-					->whereJsonContains('platform', $platform);
+					->whereJsonContains('platform', $platform)
+					->when($accountId !== null, static function ($q) use ($accountId): void {
+						$q->where('id', $accountId);
+					});
 
 			$availableQuery = (clone $baseQuery)
 				->where(static function ($q) use ($now): void {
@@ -100,6 +103,9 @@ final class IssueService
 				->where('game', $game)
 				->where('status', AccountStatus::ACTIVE)
 				->whereJsonContains('platform', $platform)
+				->when($accountId !== null, static function ($q) use ($accountId): void {
+					$q->where('id', $accountId);
+				})
 				->when($alreadyIssuedAccountIds !== [], static function ($q) use ($alreadyIssuedAccountIds): void {
 					$q->whereNotIn('id', $alreadyIssuedAccountIds);
 				})

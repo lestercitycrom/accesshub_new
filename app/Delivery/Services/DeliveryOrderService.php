@@ -54,7 +54,7 @@ final class DeliveryOrderService
 		});
 	}
 
-	public function assignAccount(DeliveryOrder $order, int $operatorTelegramId, string $game, ?string $issuePlatform = null): DeliveryActionResult
+	public function assignAccount(DeliveryOrder $order, int $operatorTelegramId, string $game, ?string $issuePlatform = null, ?int $accountId = null): DeliveryActionResult
 	{
 		$order->refresh();
 
@@ -82,6 +82,7 @@ final class DeliveryOrderService
 				platform: $candidatePlatform,
 				qty: 1,
 				allowedRoles: [TelegramRole::OPERATOR, TelegramRole::DELIVERY_OPERATOR, TelegramRole::ADMIN],
+				accountId: $accountId,
 			);
 
 			if ($result->ok()) {

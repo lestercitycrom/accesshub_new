@@ -22,13 +22,14 @@ final class DeliveryTelegramNotifier
 		$order->refresh();
 
 		$message = implode("\n", array_filter([
-			'<b>New delivery order</b>',
-			'Order: <code>' . $this->escape($order->order_number) . '</code>',
-			'Platform: <b>' . $this->escape($order->platform) . '</b>',
-			'Customer email: <code>' . $this->escape($order->customer_email) . '</code>',
-			'Created: ' . $this->escape($order->created_at?->timezone(config('app.timezone'))->format('d.m.Y H:i') ?? ''),
-			'',
-			'Open Mini App to verify payment, choose game, and issue account.',
+			'🆕 <b>Новый заказ доставки</b>',
+			'➖➖➖➖➖➖➖➖➖➖',
+			'📦 Заказ:  <code>' . $this->escape($order->order_number) . '</code>',
+			'🎮 Платформа:  <b>' . $this->escape($order->platform) . '</b>',
+			'✉️ Email:  <code>' . $this->escape($order->customer_email) . '</code>',
+			'🕒 Создан:  ' . $this->escape($order->created_at?->timezone(config('app.timezone'))->format('d.m.Y H:i') ?? ''),
+			'➖➖➖➖➖➖➖➖➖➖',
+			'👉 Откройте Mini App: проверьте оплату, выберите игру и выдайте аккаунт.',
 		]));
 
 		$this->sendToOperators($message, [
@@ -50,18 +51,19 @@ final class DeliveryTelegramNotifier
 		$order->refresh();
 
 		$message = implode("\n", array_filter([
-			'<b>Connection code submitted</b>',
-			'Order: <code>' . $this->escape($order->order_number) . '</code>',
-			'Platform: <b>' . $this->escape($order->platform) . '</b>',
-			$order->game ? 'Game: <b>' . $this->escape($order->game) . '</b>' : null,
-			'Code: <code>' . $this->escape($order->last_connection_code) . '</code>',
+			'🔑 <b>Клиент отправил код подключения</b>',
+			'➖➖➖➖➖➖➖➖➖➖',
+			'📦 Заказ:  <code>' . $this->escape($order->order_number) . '</code>',
+			'🎮 Платформа:  <b>' . $this->escape($order->platform) . '</b>',
+			$order->game ? '🕹 Игра:  <b>' . $this->escape($order->game) . '</b>' : null,
+			'🔢 Код:  <code>' . $this->escape($order->last_connection_code) . '</code>',
 			sprintf(
-				'Attempt: %d / %d',
+				'🔁 Попытка:  %d / %d',
 				(int) $order->connection_attempts_used,
 				(int) $order->connection_attempts_limit,
 			),
-			'',
-			'Open the platform connection page and process this code.',
+			'➖➖➖➖➖➖➖➖➖➖',
+			'👉 Откройте страницу подключения платформы и обработайте этот код.',
 		]));
 
 		$this->sendToOperators($message, [

@@ -74,13 +74,13 @@ final class DeliveryOrdersController
 		$issuePlatform = trim((string) $request->query('issue_platform', ''));
 		$gameSearch = trim((string) $request->query('game', ''));
 
+		$platform = $issuePlatform !== '' ? $issuePlatform : (string) ($deliveryOrder->issue_platform ?? $deliveryOrder->platform);
+
 		return response()->json([
 			'ok' => true,
 			'issue_platform_options' => $this->issuePlatformOptions($deliveryOrder),
-			'available_games' => $this->availableGames(
-				$issuePlatform !== '' ? $issuePlatform : (string) ($deliveryOrder->issue_platform ?? $deliveryOrder->platform),
-				$gameSearch,
-			),
+			'available_games' => $this->availableGames($platform, $gameSearch),
+			'available_accounts' => $this->availableAccounts($platform, $gameSearch),
 		]);
 	}
 
@@ -93,6 +93,7 @@ final class DeliveryOrdersController
 
 		$game = trim((string) $request->input('game', ''));
 		$issuePlatform = trim((string) $request->input('issue_platform', ''));
+		$accountId = (int) $request->input('account_id', 0);
 
 		if ($game === '') {
 			return $this->actionResponse($deliveryOrder, false, 'Укажите игру для выдачи.', 422);
@@ -103,6 +104,7 @@ final class DeliveryOrdersController
 			(int) $user->telegram_id,
 			$game,
 			$issuePlatform !== '' ? $issuePlatform : null,
+			$accountId > 0 ? $accountId : null,
 		);
 
 		return $this->actionResponse(
@@ -262,6 +264,7 @@ final class DeliveryOrdersController
 			'public_url' => route('delivery.order.show', ['token' => $order->token], true),
 			'issue_platform_options' => $this->issuePlatformOptions($order),
 			'available_games' => $this->availableGames((string) ($order->issue_platform ?? $order->platform), ''),
+			'available_accounts' => $this->availableAccounts((string) ($order->issue_platform ?? $order->platform), (string) $order->game),
 			'replacements' => $this->replacementEvents($order),
 		];
 	}
@@ -284,6 +287,7 @@ final class DeliveryOrdersController
 			->merge((array) config('delivery.direct_delivery_platforms', []))
 			->merge($accountPlatforms)
 			->filter()
+			->map(fn ($platform) => $this->canonicalIssuePlatformOption((string) $platform))
 			->unique()
 			->values()
 			->all();
@@ -322,6 +326,46 @@ final class DeliveryOrdersController
 			->map(fn ($row): array => [
 				'name' => (string) $row->game,
 				'accounts_count' => (int) $row->accounts_count,
+			])
+			->all();
+	}
+
+	/**
+	 * @return array<int, array{id: int, login: string, available_uses: int}>
+	 */
+	private function availableAccounts(string $platform, string $game): array
+	{
+		$platform = trim($platform);
+		$game = trim($game);
+
+		if ($game === '') {
+			return [];
+		}
+
+		return Account::query()
+			->where('status', AccountStatus::ACTIVE)
+			->where('game', $game)
+			->where(function ($query): void {
+				$query->where('available_uses', '>', 0)
+					->orWhere(function ($nested): void {
+						$nested->whereNotNull('next_release_at')
+							->where('next_release_at', '<=', now());
+					});
+			})
+			->where(function ($query) use ($platform): void {
+				foreach ($this->issuePlatformCandidates($platform) as $index => $candidate) {
+					$method = $index === 0 ? 'whereJsonContains' : 'orWhereJsonContains';
+					$query->{$method}('platform', $candidate);
+				}
+			})
+			->orderByDesc('available_uses')
+			->orderBy('id')
+			->limit(100)
+			->get(['id', 'login', 'available_uses'])
+			->map(fn (Account $account): array => [
+				'id' => (int) $account->id,
+				'login' => (string) $account->login,
+				'available_uses' => (int) $account->available_uses,
 			])
 			->all();
 	}

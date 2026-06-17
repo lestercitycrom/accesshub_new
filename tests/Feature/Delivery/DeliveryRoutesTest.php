@@ -49,7 +49,7 @@ it('notifies active telegram operators when a public delivery order is created',
 	Http::assertSentCount(3);
 	Http::assertSent(function ($request): bool {
 		return $request['chat_id'] === '1001'
-			&& str_contains($request['text'], 'New delivery order')
+			&& str_contains($request['text'], 'Новый заказ доставки')
 			&& str_contains($request['text'], 'ORD-NOTIFY')
 			&& $request['reply_markup']['inline_keyboard'][0][0]['text'] === 'Open order'
 			&& isset($request['reply_markup']['inline_keyboard'][0][0]['web_app']['url'])
@@ -57,11 +57,11 @@ it('notifies active telegram operators when a public delivery order is created',
 	});
 	Http::assertSent(function ($request): bool {
 		return $request['chat_id'] === '1002'
-			&& str_contains($request['text'], 'New delivery order');
+			&& str_contains($request['text'], 'Новый заказ доставки');
 	});
 	Http::assertSent(function ($request): bool {
 		return $request['chat_id'] === '1004'
-			&& str_contains($request['text'], 'New delivery order')
+			&& str_contains($request['text'], 'Новый заказ доставки')
 			&& isset($request['reply_markup']['inline_keyboard'][0][0]['web_app']['url']);
 	});
 });
@@ -179,7 +179,7 @@ it('notifies active telegram operators when connection code is submitted', funct
 
 	Http::assertSent(function ($request) use ($order): bool {
 		return $request['chat_id'] === '2001'
-			&& str_contains($request['text'], 'Connection code submitted')
+			&& str_contains($request['text'], 'код подключения')
 			&& str_contains($request['text'], 'AB12CD')
 			&& $request['reply_markup']['inline_keyboard'][0][0]['callback_data'] === 'delivery:connecting:' . $order->id
 			&& $request['reply_markup']['inline_keyboard'][0][1]['callback_data'] === 'delivery:connected:' . $order->id
@@ -188,7 +188,7 @@ it('notifies active telegram operators when connection code is submitted', funct
 	});
 	Http::assertSent(function ($request) use ($order): bool {
 		return $request['chat_id'] === '2002'
-			&& str_contains($request['text'], 'Connection code submitted')
+			&& str_contains($request['text'], 'код подключения')
 			&& isset($request['reply_markup']['inline_keyboard'][2][0]['web_app']['url'])
 			&& str_contains($request['reply_markup']['inline_keyboard'][2][0]['web_app']['url'], 'delivery_order=' . $order->id);
 	});

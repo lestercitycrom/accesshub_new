@@ -449,13 +449,34 @@
 			}
 		}
 
-		async function refreshDeliveryOptions(order, platformSelect, gameSelect) {
+		function fillAccountSelect(select, accounts, selectedValue = '') {
+			if (!select) return;
+			select.innerHTML = '';
+			const placeholder = document.createElement('option');
+			placeholder.value = '';
+			placeholder.textContent = 'Любой логин (авто)';
+			select.appendChild(placeholder);
+
+			(Array.isArray(accounts) ? accounts : []).forEach((account) => {
+				if (!account || !account.id) return;
+				const option = document.createElement('option');
+				option.value = String(account.id);
+				const uses = account.available_uses ? ` · ${account.available_uses}` : '';
+				option.textContent = `${account.login || ('#' + account.id)}${uses}`;
+				if (String(account.id) === String(selectedValue)) option.selected = true;
+				select.appendChild(option);
+			});
+		}
+
+		async function refreshDeliveryOptions(order, platformSelect, gameSelect, accountSelect) {
 			const issuePlatform = platformSelect?.value || order.issue_platform || order.platform || '';
-			const resp = await apiGet(`/webapp/api/delivery-orders/${order.id}/options?issue_platform=${encodeURIComponent(issuePlatform)}`);
+			const game = gameSelect?.value || '';
+			const resp = await apiGet(`/webapp/api/delivery-orders/${order.id}/options?issue_platform=${encodeURIComponent(issuePlatform)}&game=${encodeURIComponent(game)}`);
 			if (resp.status !== 200 || !resp.data?.ok) return;
 
 			fillSelect(platformSelect, resp.data.issue_platform_options || [], issuePlatform);
-			fillSelect(gameSelect, resp.data.available_games || [], order.game || '');
+			fillSelect(gameSelect, resp.data.available_games || [], game);
+			fillAccountSelect(accountSelect, resp.data.available_accounts || [], '');
 		}
 
 		async function deliveryAction(button, url, payload) {
@@ -492,10 +513,19 @@
 			gameSelect.className = 'form-select form-select-sm mb-2';
 			fillSelect(gameSelect, order.available_games || [], order.game || '');
 
+			const accountSelect = document.createElement('select');
+			accountSelect.className = 'form-select form-select-sm mb-2';
+			fillAccountSelect(accountSelect, order.available_accounts || [], '');
+
 			platformSelect.addEventListener('change', () => {
 				order.issue_platform = platformSelect.value;
 				order.game = '';
-				refreshDeliveryOptions(order, platformSelect, gameSelect);
+				refreshDeliveryOptions(order, platformSelect, gameSelect, accountSelect);
+			});
+
+			gameSelect.addEventListener('change', () => {
+				order.game = gameSelect.value;
+				refreshDeliveryOptions(order, platformSelect, gameSelect, accountSelect);
 			});
 
 			const assignBtn = document.createElement('button');
@@ -509,14 +539,19 @@
 					flashDeliveryStatus('Выберите игру и платформу из списка.');
 					return;
 				}
-				deliveryAction(assignBtn, `/webapp/api/delivery-orders/${order.id}/assign`, {
+				const payload = {
 					game,
 					issue_platform: issuePlatform,
-				});
+				};
+				if (accountSelect.value) {
+					payload.account_id = accountSelect.value;
+				}
+				deliveryAction(assignBtn, `/webapp/api/delivery-orders/${order.id}/assign`, payload);
 			});
 
 			wrap.appendChild(platformSelect);
 			wrap.appendChild(gameSelect);
+			wrap.appendChild(accountSelect);
 			wrap.appendChild(assignBtn);
 
 			return wrap;
