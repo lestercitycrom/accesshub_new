@@ -90,25 +90,25 @@ final class DeliveryOrderShow extends Component
 	public function markOperatorConnecting(DeliveryOrderService $orders): void
 	{
 		$this->withOperator(function (int $telegramId) use ($orders): void {
-			$orders->markOperatorConnecting($this->deliveryOrder, $telegramId);
+			$result = $orders->markOperatorConnecting($this->deliveryOrder, $telegramId);
 			$this->refreshOrder();
-			session()->flash('message', 'Статус обновлен: оператор подключает.');
+			$this->flashResult($result, 'Статус обновлен: оператор подключает.');
 		});
 	}
 
 	public function markConnected(DeliveryOrderService $orders): void
 	{
 		$this->withOperator(function (int $telegramId) use ($orders): void {
-			$orders->markConnected($this->deliveryOrder, $telegramId);
+			$result = $orders->markConnected($this->deliveryOrder, $telegramId);
 			$this->refreshOrder();
-			session()->flash('message', 'Статус обновлен: подключение выполнено.');
+			$this->flashResult($result, 'Статус обновлен: подключение выполнено.');
 		});
 	}
 
 	public function markConnectionFailed(DeliveryOrderService $orders): void
 	{
 		$this->withOperator(function (int $telegramId) use ($orders): void {
-			$orders->markConnectionFailed(
+			$result = $orders->markConnectionFailed(
 				$this->deliveryOrder,
 				$telegramId,
 				trim($this->failReason) !== '' ? trim($this->failReason) : null,
@@ -116,7 +116,7 @@ final class DeliveryOrderShow extends Component
 
 			$this->failReason = '';
 			$this->refreshOrder();
-			session()->flash('message', 'Статус обновлен: ошибка подключения.');
+			$this->flashResult($result, 'Статус обновлен: ошибка подключения.');
 		});
 	}
 
@@ -125,9 +125,9 @@ final class DeliveryOrderShow extends Component
 		$this->withOperator(function (int $telegramId) use ($orders): void {
 			$amount = max(1, (int) $this->extraAttempts);
 
-			$orders->grantExtraAttempts($this->deliveryOrder, $telegramId, $amount);
+			$result = $orders->grantExtraAttempts($this->deliveryOrder, $telegramId, $amount);
 			$this->refreshOrder();
-			session()->flash('message', "Добавлено попыток: {$amount}.");
+			$this->flashResult($result, "Добавлено попыток: {$amount}.");
 		});
 	}
 
@@ -428,6 +428,16 @@ final class DeliveryOrderShow extends Component
 		}
 
 		$callback($telegramId);
+	}
+
+	private function flashResult(\App\Delivery\DTO\DeliveryActionResult $result, string $defaultMessage): void
+	{
+		if ($result->failed()) {
+			$this->flashError($result->message() ?? 'Не удалось выполнить действие.');
+			return;
+		}
+
+		session()->flash('message', $result->message() ?? $defaultMessage);
 	}
 
 	private function flashError(string $message): void

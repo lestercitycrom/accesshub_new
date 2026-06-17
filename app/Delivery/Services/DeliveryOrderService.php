@@ -58,6 +58,10 @@ final class DeliveryOrderService
 	{
 		$order->refresh();
 
+		if ($this->isCompleted($order)) {
+			return DeliveryActionResult::fail($this->completedMessage());
+		}
+
 		if ($order->isExpired()) {
 			$this->markExpired($order);
 			return DeliveryActionResult::fail('Delivery link is expired.');
@@ -157,6 +161,10 @@ final class DeliveryOrderService
 	public function replaceAccount(DeliveryOrder $order, int $operatorTelegramId, string $reason): DeliveryActionResult
 	{
 		$order->refresh();
+
+		if ($this->isCompleted($order)) {
+			return DeliveryActionResult::fail($this->completedMessage());
+		}
 
 		$reason = trim($reason);
 		if ($reason === '') {
@@ -325,6 +333,10 @@ final class DeliveryOrderService
 	{
 		$order->refresh();
 
+		if ($this->isCompleted($order)) {
+			return DeliveryActionResult::fail('Заказ уже подключен.');
+		}
+
 		if ($order->isExpired()) {
 			$this->markExpired($order);
 			return DeliveryActionResult::fail('Delivery link is expired.');
@@ -379,18 +391,32 @@ final class DeliveryOrderService
 		return DeliveryActionResult::ok('Connection code submitted.');
 	}
 
-	public function markOperatorConnecting(DeliveryOrder $order, int $operatorTelegramId): void
+	public function markOperatorConnecting(DeliveryOrder $order, int $operatorTelegramId): DeliveryActionResult
 	{
+		$order->refresh();
+
+		if ($this->isCompleted($order)) {
+			return DeliveryActionResult::fail($this->completedMessage());
+		}
+
 		$order->forceFill([
 			'status' => DeliveryOrderStatus::OPERATOR_CONNECTING,
 			'operator_telegram_id' => $operatorTelegramId,
 		])->save();
 
 		$this->recordEvent($order, 'operator_connecting', 'telegram', (string) $operatorTelegramId);
+
+		return DeliveryActionResult::ok('Статус обновлен: оператор подключает.');
 	}
 
-	public function markConnected(DeliveryOrder $order, int $operatorTelegramId): void
+	public function markConnected(DeliveryOrder $order, int $operatorTelegramId): DeliveryActionResult
 	{
+		$order->refresh();
+
+		if ($this->isCompleted($order)) {
+			return DeliveryActionResult::ok('Заказ уже подключен.');
+		}
+
 		$order->forceFill([
 			'status' => DeliveryOrderStatus::CONNECTED,
 			'operator_telegram_id' => $operatorTelegramId,
@@ -398,10 +424,18 @@ final class DeliveryOrderService
 		])->save();
 
 		$this->recordEvent($order, 'connected', 'telegram', (string) $operatorTelegramId);
+
+		return DeliveryActionResult::ok('Статус обновлен: подключение выполнено.');
 	}
 
-	public function markConnectionFailed(DeliveryOrder $order, int $operatorTelegramId, ?string $reason = null): void
+	public function markConnectionFailed(DeliveryOrder $order, int $operatorTelegramId, ?string $reason = null): DeliveryActionResult
 	{
+		$order->refresh();
+
+		if ($this->isCompleted($order)) {
+			return DeliveryActionResult::fail($this->completedMessage());
+		}
+
 		$order->forceFill([
 			'status' => DeliveryOrderStatus::CONNECTION_FAILED,
 			'operator_telegram_id' => $operatorTelegramId,
@@ -410,10 +444,18 @@ final class DeliveryOrderService
 		$this->recordEvent($order, 'connection_failed', 'telegram', (string) $operatorTelegramId, [
 			'reason' => $reason,
 		]);
+
+		return DeliveryActionResult::ok('Статус обновлен: ошибка подключения.');
 	}
 
-	public function grantExtraAttempts(DeliveryOrder $order, int $operatorTelegramId, int $amount): void
+	public function grantExtraAttempts(DeliveryOrder $order, int $operatorTelegramId, int $amount): DeliveryActionResult
 	{
+		$order->refresh();
+
+		if ($this->isCompleted($order)) {
+			return DeliveryActionResult::fail($this->completedMessage());
+		}
+
 		$amount = max(1, $amount);
 
 		$order->forceFill([
@@ -429,6 +471,8 @@ final class DeliveryOrderService
 			'amount' => $amount,
 			'attempts_limit' => $order->connection_attempts_limit,
 		]);
+
+		return DeliveryActionResult::ok("Добавлено попыток: {$amount}.");
 	}
 
 	public function publicPayload(DeliveryOrder $order): array
@@ -568,6 +612,16 @@ final class DeliveryOrderService
 		$this->recordEvent($order, 'connection_locked', payload: [
 			'locked_until' => $order->connection_locked_until?->toIso8601String(),
 		]);
+	}
+
+	private function isCompleted(DeliveryOrder $order): bool
+	{
+		return $order->status === DeliveryOrderStatus::CONNECTED;
+	}
+
+	private function completedMessage(): string
+	{
+		return 'Заказ уже подключен и завершен. Действия по нему зафиксированы.';
 	}
 
 	private function markExpired(DeliveryOrder $order): void

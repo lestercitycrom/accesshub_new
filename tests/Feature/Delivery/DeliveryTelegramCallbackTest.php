@@ -159,6 +159,44 @@ it('grants extra delivery attempts from telegram callback', function (): void {
 		->and($order->operator_telegram_id)->toBe(3004);
 });
 
+it('refuses to revert a connected order from telegram callback', function (): void {
+	config(['services.telegram.bot_token' => 'test']);
+
+	TelegramUser::factory()->create(['telegram_id' => 3006, 'is_active' => true]);
+	$order = DeliveryOrder::factory()->create([
+		'platform' => 'Xbox',
+		'status' => DeliveryOrderStatus::CONNECTED,
+		'account_id' => Account::factory()->create(['platform' => ['Xbox']])->id,
+		'connected_at' => now(),
+	]);
+
+	Http::fake([
+		'https://api.telegram.org/bot*/answerCallbackQuery' => Http::response(['ok' => true], 200),
+	]);
+
+	$this->postJson('/api/telegram/webhook', deliveryCallbackPayload(
+		callbackId: 'cb-locked-failed',
+		telegramId: 3006,
+		data: 'delivery:failed:' . $order->id,
+	))->assertOk();
+
+	$order->refresh();
+
+	expect($order->status)->toBe(DeliveryOrderStatus::CONNECTED);
+
+	$this->assertDatabaseMissing('delivery_events', [
+		'delivery_order_id' => $order->id,
+		'type' => 'connection_failed',
+	]);
+
+	Http::assertSent(function ($request): bool {
+		return str_contains($request->url(), 'answerCallbackQuery')
+			&& $request['callback_query_id'] === 'cb-locked-failed'
+			&& str_contains((string) $request['text'], 'завершен')
+			&& $request['show_alert'] === true;
+	});
+});
+
 it('answers callback with alert when delivery order is missing', function (): void {
 	config(['services.telegram.bot_token' => 'test']);
 

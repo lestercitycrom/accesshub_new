@@ -121,16 +121,20 @@ final class BotDispatcher
 
 		$telegramId = (int) $incoming->telegramId;
 
-		match ($action) {
+		if (!in_array($action, ['connecting', 'connected', 'failed', 'extra'], true)) {
+			$this->telegramClient->answerCallbackQuery($incoming->callbackQueryId, 'Unknown delivery action.', true);
+			return null;
+		}
+
+		$result = match ($action) {
 			'connecting' => $this->deliveryOrders->markOperatorConnecting($order, $telegramId),
 			'connected' => $this->deliveryOrders->markConnected($order, $telegramId),
 			'failed' => $this->deliveryOrders->markConnectionFailed($order, $telegramId, 'telegram_callback'),
 			'extra' => $this->deliveryOrders->grantExtraAttempts($order, $telegramId, (int) ($parts[3] ?? 1)),
-			default => null,
 		};
 
-		if (!in_array($action, ['connecting', 'connected', 'failed', 'extra'], true)) {
-			$this->telegramClient->answerCallbackQuery($incoming->callbackQueryId, 'Unknown delivery action.', true);
+		if ($result->failed()) {
+			$this->telegramClient->answerCallbackQuery($incoming->callbackQueryId, $result->message() ?? 'Действие недоступно.', true);
 			return null;
 		}
 

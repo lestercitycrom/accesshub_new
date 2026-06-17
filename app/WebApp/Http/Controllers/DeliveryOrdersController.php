@@ -122,9 +122,14 @@ final class DeliveryOrdersController
 			return $user;
 		}
 
-		$this->deliveryOrderService->markOperatorConnecting($deliveryOrder, (int) $user->telegram_id);
+		$result = $this->deliveryOrderService->markOperatorConnecting($deliveryOrder, (int) $user->telegram_id);
 
-		return $this->actionResponse($deliveryOrder, true, 'Оператор подключает.');
+		return $this->actionResponse(
+			$deliveryOrder,
+			$result->successful(),
+			$result->message() ?? 'Оператор подключает.',
+			$result->successful() ? 200 : 422,
+		);
 	}
 
 	public function connected(Request $request, DeliveryOrder $deliveryOrder): JsonResponse
@@ -134,9 +139,14 @@ final class DeliveryOrdersController
 			return $user;
 		}
 
-		$this->deliveryOrderService->markConnected($deliveryOrder, (int) $user->telegram_id);
+		$result = $this->deliveryOrderService->markConnected($deliveryOrder, (int) $user->telegram_id);
 
-		return $this->actionResponse($deliveryOrder, true, 'Подключено.');
+		return $this->actionResponse(
+			$deliveryOrder,
+			$result->successful(),
+			$result->message() ?? 'Подключено.',
+			$result->successful() ? 200 : 422,
+		);
 	}
 
 	public function failed(Request $request, DeliveryOrder $deliveryOrder): JsonResponse
@@ -146,13 +156,18 @@ final class DeliveryOrdersController
 			return $user;
 		}
 
-		$this->deliveryOrderService->markConnectionFailed(
+		$result = $this->deliveryOrderService->markConnectionFailed(
 			$deliveryOrder,
 			(int) $user->telegram_id,
 			trim((string) $request->input('reason', '')) ?: null,
 		);
 
-		return $this->actionResponse($deliveryOrder, true, 'Отмечена ошибка подключения.');
+		return $this->actionResponse(
+			$deliveryOrder,
+			$result->successful(),
+			$result->message() ?? 'Отмечена ошибка подключения.',
+			$result->successful() ? 200 : 422,
+		);
 	}
 
 	public function extraAttempts(Request $request, DeliveryOrder $deliveryOrder): JsonResponse
@@ -164,9 +179,14 @@ final class DeliveryOrdersController
 
 		$amount = max(1, min(20, (int) $request->input('amount', 1)));
 
-		$this->deliveryOrderService->grantExtraAttempts($deliveryOrder, (int) $user->telegram_id, $amount);
+		$result = $this->deliveryOrderService->grantExtraAttempts($deliveryOrder, (int) $user->telegram_id, $amount);
 
-		return $this->actionResponse($deliveryOrder, true, "Добавлено попыток: {$amount}.");
+		return $this->actionResponse(
+			$deliveryOrder,
+			$result->successful(),
+			$result->message() ?? "Добавлено попыток: {$amount}.",
+			$result->successful() ? 200 : 422,
+		);
 	}
 
 	public function replace(Request $request, DeliveryOrder $deliveryOrder): JsonResponse

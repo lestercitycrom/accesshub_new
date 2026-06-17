@@ -110,6 +110,35 @@ it('does not return duplicate platform aliases in issue platform options', funct
 		->toBe(['Epic Games']);
 });
 
+it('rejects mini app actions on a connected delivery order', function (): void {
+	$operator = TelegramUser::factory()->deliveryOperator()->create(['telegram_id' => 9306]);
+	$order = DeliveryOrder::factory()->create([
+		'order_number' => 'ORD-MINI-LOCKED',
+		'platform' => 'Xbox',
+		'status' => DeliveryOrderStatus::CONNECTED,
+		'account_id' => Account::factory()->create(['game' => 'GTA', 'platform' => ['Xbox'], 'status' => AccountStatus::ACTIVE])->id,
+		'connected_at' => now(),
+	]);
+
+	$this->withSession(['webapp.telegram_id' => $operator->telegram_id]);
+
+	$this->postJson("/webapp/api/delivery-orders/{$order->id}/failed", [])
+		->assertStatus(422)
+		->assertJsonPath('ok', false);
+
+	$this->postJson("/webapp/api/delivery-orders/{$order->id}/extra-attempts", ['amount' => 1])
+		->assertStatus(422)
+		->assertJsonPath('ok', false);
+
+	$this->postJson("/webapp/api/delivery-orders/{$order->id}/assign", [
+		'game' => 'GTA',
+		'issue_platform' => 'Xbox',
+	])->assertStatus(422)->assertJsonPath('ok', false);
+
+	$order->refresh();
+	expect($order->status)->toBe(DeliveryOrderStatus::CONNECTED);
+});
+
 it('assigns a specific account chosen by login from the mini app', function (): void {
 	$operator = TelegramUser::factory()->deliveryOperator()->create(['telegram_id' => 9304]);
 
