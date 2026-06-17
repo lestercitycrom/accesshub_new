@@ -215,20 +215,28 @@
 			tabHistory.classList.remove('active');
 			tabStolen.classList.remove('active');
 			tabDelivery.classList.remove('active');
+			let activeTab = tabIssue;
 
 			if (tab === 'history') {
 				historySection.style.display = 'block';
 				tabHistory.classList.add('active');
+				activeTab = tabHistory;
 			} else if (tab === 'stolen') {
 				stolenSection.style.display = 'block';
 				tabStolen.classList.add('active');
+				activeTab = tabStolen;
 			} else if (tab === 'delivery') {
 				deliverySection.style.display = 'block';
 				tabDelivery.classList.add('active');
+				activeTab = tabDelivery;
 			} else {
 				issueSection.style.display = 'block';
 				tabIssue.classList.add('active');
 			}
+
+			requestAnimationFrame(() => {
+				activeTab?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+			});
 		}
 
 		tabIssue.addEventListener('click', () => switchTab('issue'));

@@ -112,6 +112,31 @@
 			color: #fff;
 		}
 
+		@media (max-width: 420px) {
+			.tabs-rail {
+				padding-left: 4px;
+				padding-right: 4px;
+			}
+
+			.nav-tabs {
+				gap: 4px;
+			}
+
+			.nav-tabs .nav-link {
+				border-radius: 9px;
+				font-size: 13px;
+				padding: 7px 8px;
+			}
+
+			#stolenBadge {
+				height: 16px !important;
+				min-width: 16px !important;
+				font-size: 9px !important;
+				margin-left: 3px !important;
+				padding: 0 4px !important;
+			}
+		}
+
 		.tab-content {
 			background: transparent !important;
 			border: 0 !important;
