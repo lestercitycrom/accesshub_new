@@ -108,6 +108,29 @@ it('assigns a PlayStation delivery from a PS5 account when the issue platform is
 		->and($order->display_password_type)->toBe(DeliveryPasswordType::FAKE);
 });
 
+it('assigns a Nintendo Switch 2 delivery from legacy numeric platform data', function (): void {
+	$operator = TelegramUser::factory()->create(['telegram_id' => 8104]);
+	Account::factory()->create([
+		'game' => 'Zelda',
+		'platform' => ['2'],
+		'login' => 'switch2-login@example.com',
+		'password' => 'RealSwitchPassword',
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+
+	$service = app(DeliveryOrderService::class);
+	$order = $service->createFromCustomerInput('ORD-SWITCH2', 'client@example.com', 'Nintendo');
+
+	$result = $service->assignAccount($order, $operator->telegram_id, 'Zelda', 'Nintendo Switch 2');
+	$order->refresh();
+
+	expect($result->successful())->toBeTrue()
+		->and($order->status)->toBe(DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE)
+		->and($order->issue_platform)->toBe('Nintendo Switch 2')
+		->and($order->display_login)->toBe('switch2-login@example.com');
+});
+
 it('limits connection codes and unlocks after the configured timeout', function (): void {
 	$service = app(DeliveryOrderService::class);
 	$order = DeliveryOrder::factory()->create([

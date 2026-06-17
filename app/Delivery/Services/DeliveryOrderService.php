@@ -80,7 +80,7 @@ final class DeliveryOrderService
 			);
 
 			if ($result->ok()) {
-				$issuedPlatform = $candidatePlatform;
+				$issuedPlatform = $this->canonicalIssuePlatformLabel($candidatePlatform);
 				break;
 			}
 
@@ -319,6 +319,10 @@ final class DeliveryOrderService
 
 		return match ($platform) {
 			'PlayStation' => ['PlayStation', 'PS5', 'PS4'],
+			'Xbox' => ['Xbox', 'XBox', 'Xbox X', 'Xbox One'],
+			'Nintendo' => ['Nintendo', 'Nintendo Switch 2', '2', 'Nintendo Switch 1'],
+			'Nintendo Switch 1' => ['Nintendo Switch 1', 'Nintendo'],
+			'Nintendo Switch 2' => ['Nintendo Switch 2', '2', 'Nintendo'],
 			'Epic Games' => ['Epic Games', 'EpicGames', 'Epic'],
 			default => [$platform],
 		};
@@ -357,6 +361,15 @@ final class DeliveryOrderService
 			|| str_contains($message, 'Недостаточно доступ')
 			|| str_contains($message, 'Украден')
 			|| str_contains($message, 'уже выданы');
+	}
+
+	private function canonicalIssuePlatformLabel(string $platform): string
+	{
+		return match ($this->normalizePlatform($platform)) {
+			'XBox' => 'Xbox',
+			'2' => 'Nintendo Switch 2',
+			default => $this->normalizePlatform($platform),
+		};
 	}
 
 	private function lockForRetry(DeliveryOrder $order): void
@@ -417,7 +430,11 @@ final class DeliveryOrderService
 			'ps4' => 'PS4',
 			'ps5' => 'PS5',
 			'xb', 'xbox' => 'Xbox',
+			'xboxx', 'xboxseriesx' => 'Xbox X',
+			'xboxone' => 'Xbox One',
 			'nintendo', 'switch', 'nintendoswitch' => 'Nintendo',
+			'nintendo1', 'switch1', 'nintendoswitch1' => 'Nintendo Switch 1',
+			'nintendo2', 'switch2', 'nintendoswitch2' => 'Nintendo Switch 2',
 			'steam' => 'Steam',
 			'epic', 'epicgames' => 'Epic Games',
 			default => $platform,

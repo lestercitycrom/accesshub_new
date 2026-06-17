@@ -114,6 +114,29 @@ it('keeps admin account assignment retryable after a wrong game', function (): v
 		->and($order->issue_platform)->toBe('PS5');
 });
 
+it('shows canonical Nintendo platform options for legacy account platform values', function (): void {
+	$admin = User::factory()->create(['is_admin' => true]);
+	$this->actingAs($admin);
+
+	TelegramUser::factory()->create(['telegram_id' => 9104]);
+	Account::factory()->create([
+		'game' => 'Zelda',
+		'platform' => ['2'],
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+	$order = DeliveryOrder::factory()->create([
+		'order_number' => 'ORD-DELIVERY-NINTENDO',
+		'platform' => 'Nintendo',
+		'status' => DeliveryOrderStatus::WAITING_FOR_OPERATOR,
+	]);
+
+	Livewire::test(DeliveryOrderShow::class, ['deliveryOrder' => $order])
+		->assertSet('issuePlatform', 'Nintendo Switch 2')
+		->assertSee('Nintendo Switch 2')
+		->assertSee('Zelda');
+});
+
 it('updates connection lifecycle from the admin delivery detail page', function (): void {
 	$admin = User::factory()->create(['is_admin' => true]);
 	$this->actingAs($admin);

@@ -133,7 +133,8 @@ final class DeliveryOrderShow extends Component
 			->where('status', AccountStatus::ACTIVE)
 			->distinct()
 			->pluck('platform')
-			->flatMap(fn ($platforms) => is_array($platforms) ? $platforms : (array) $platforms);
+			->flatMap(fn ($platforms) => is_array($platforms) ? $platforms : (array) $platforms)
+			->map(fn ($platform) => $this->canonicalIssuePlatformOption((string) $platform));
 
 		return collect($this->preferredIssuePlatformOptions((string) $this->deliveryOrder->platform))
 			->merge([$this->deliveryOrder->platform, $this->deliveryOrder->issue_platform])
@@ -251,6 +252,8 @@ final class DeliveryOrderShow extends Component
 	{
 		return match ($this->normalizePlatform($platform)) {
 			'PlayStation' => ['PS5', 'PS4', 'PlayStation'],
+			'Xbox' => ['Xbox', 'Xbox X', 'Xbox One'],
+			'Nintendo' => ['Nintendo Switch 2', 'Nintendo Switch 1', 'Nintendo'],
 			'Epic Games' => ['Epic Games', 'EpicGames', 'Epic'],
 			default => [$this->normalizePlatform($platform)],
 		};
@@ -263,6 +266,10 @@ final class DeliveryOrderShow extends Component
 	{
 		return match ($this->normalizePlatform($platform)) {
 			'PlayStation' => ['PlayStation', 'PS5', 'PS4'],
+			'Xbox' => ['Xbox', 'XBox', 'Xbox X', 'Xbox One'],
+			'Nintendo' => ['Nintendo', 'Nintendo Switch 2', '2', 'Nintendo Switch 1'],
+			'Nintendo Switch 1' => ['Nintendo Switch 1', 'Nintendo'],
+			'Nintendo Switch 2' => ['Nintendo Switch 2', '2', 'Nintendo'],
 			'Epic Games' => ['Epic Games', 'EpicGames', 'Epic'],
 			default => [$this->normalizePlatform($platform)],
 		};
@@ -272,7 +279,12 @@ final class DeliveryOrderShow extends Component
 	{
 		return Account::query()
 			->where('status', AccountStatus::ACTIVE)
-			->whereJsonContains('platform', $platform)
+			->where(function ($query) use ($platform): void {
+				foreach ($this->issuePlatformCandidates($platform) as $index => $candidate) {
+					$method = $index === 0 ? 'whereJsonContains' : 'orWhereJsonContains';
+					$query->{$method}('platform', $candidate);
+				}
+			})
 			->where(function ($query): void {
 				$query->where('available_uses', '>', 0)
 					->orWhere(function ($nested): void {
@@ -281,6 +293,14 @@ final class DeliveryOrderShow extends Component
 					});
 			})
 			->exists();
+	}
+
+	private function canonicalIssuePlatformOption(string $platform): string
+	{
+		return match ($this->normalizePlatform($platform)) {
+			'2' => 'Nintendo Switch 2',
+			default => $this->normalizePlatform($platform),
+		};
 	}
 
 	private function normalizePlatform(string $platform): string
@@ -293,7 +313,11 @@ final class DeliveryOrderShow extends Component
 			'ps4' => 'PS4',
 			'ps5' => 'PS5',
 			'xb', 'xbox' => 'Xbox',
+			'xboxx', 'xboxseriesx' => 'Xbox X',
+			'xboxone' => 'Xbox One',
 			'nintendo', 'switch', 'nintendoswitch' => 'Nintendo',
+			'nintendo1', 'switch1', 'nintendoswitch1' => 'Nintendo Switch 1',
+			'nintendo2', 'switch2', 'nintendoswitch2' => 'Nintendo Switch 2',
 			'steam' => 'Steam',
 			'epic', 'epicgames' => 'Epic Games',
 			default => $platform,
