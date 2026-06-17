@@ -481,6 +481,17 @@
 			fillAccountSelect(accountSelect, resp.data.available_accounts || [], '');
 		}
 
+		// On game change we only reload the account list, without rebuilding the
+		// platform/game selects (rebuilding them resets the native control on mobile).
+		async function refreshDeliveryAccounts(order, platformSelect, gameSelect, accountSelect) {
+			const issuePlatform = platformSelect?.value || order.issue_platform || order.platform || '';
+			const game = gameSelect?.value || '';
+			const resp = await apiGet(`/webapp/api/delivery-orders/${order.id}/options?issue_platform=${encodeURIComponent(issuePlatform)}&game=${encodeURIComponent(game)}`);
+			if (resp.status !== 200 || !resp.data?.ok) return;
+
+			fillAccountSelect(accountSelect, resp.data.available_accounts || [], '');
+		}
+
 		async function deliveryAction(button, url, payload) {
 			if (!isBootstrapped) {
 				flashDeliveryStatus('Не инициализировано. Обновите Mini App.');
@@ -527,7 +538,7 @@
 
 			gameSelect.addEventListener('change', () => {
 				order.game = gameSelect.value;
-				refreshDeliveryOptions(order, platformSelect, gameSelect, accountSelect);
+				refreshDeliveryAccounts(order, platformSelect, gameSelect, accountSelect);
 			});
 
 			const assignBtn = document.createElement('button');
@@ -729,10 +740,17 @@
 
 				const actions = document.createElement('div');
 				actions.className = 'list-actions';
-				actions.appendChild(buildDeliveryAssignControls(order));
-				if (order.account_id) {
-					actions.appendChild(buildDeliveryConnectionControls(order));
-					actions.appendChild(buildDeliveryReplaceControls(order));
+				if (order.status === 'connected') {
+					const done = document.createElement('div');
+					done.style.cssText = 'width:100%;padding:10px 12px;border-radius:10px;background:rgba(40,167,69,.15);border:1px solid rgba(40,167,69,.4);color:#a8d8a8;font-size:13px;line-height:1.5;';
+					done.textContent = '✅ Заказ подключён и завершён. Поля зафиксированы.';
+					actions.appendChild(done);
+				} else {
+					actions.appendChild(buildDeliveryAssignControls(order));
+					if (order.account_id) {
+						actions.appendChild(buildDeliveryConnectionControls(order));
+						actions.appendChild(buildDeliveryReplaceControls(order));
+					}
 				}
 				card.appendChild(actions);
 				deliveryList.appendChild(card);

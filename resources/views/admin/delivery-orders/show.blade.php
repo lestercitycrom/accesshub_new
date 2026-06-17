@@ -1,3 +1,4 @@
+@php($locked = $order->status->value === 'connected')
 <div class="space-y-6">
 	<x-admin.page-header
 		title="Delivery #{{ $order->order_number }}"
@@ -82,6 +83,11 @@
 
 		<x-admin.card title="Выдача">
 			<div class="space-y-4">
+				@if($locked)
+				<div class="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
+					✅ Заказ подключён и завершён. Поля зафиксированы.
+				</div>
+				@else
 				<div class="space-y-1">
 					<label class="text-xs font-medium text-slate-500">Оператор</label>
 					<select wire:model="operatorTelegramId"
@@ -184,6 +190,7 @@
 						</p>
 					</div>
 				@endif
+				@endif
 			</div>
 		</x-admin.card>
 
@@ -196,6 +203,11 @@
 					<x-admin.field label="Код отправлен">{{ $order->last_connection_code_submitted_at?->format('d.m.Y H:i') ?? '—' }}</x-admin.field>
 				</div>
 
+				@if($locked)
+				<div class="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
+					✅ Заказ завершён. Действия по подключению зафиксированы.
+				</div>
+				@else
 				<div class="grid grid-cols-1 gap-2">
 					<x-admin.button variant="secondary" wire:click="markOperatorConnecting" class="w-full" :disabled="$order->account_id === null">
 						Оператор подключает
@@ -227,6 +239,7 @@
 						Добавить попытки
 					</x-admin.button>
 				</div>
+				@endif
 			</div>
 		</x-admin.card>
 	</div>

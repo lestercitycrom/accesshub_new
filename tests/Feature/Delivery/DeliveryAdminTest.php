@@ -33,6 +33,34 @@ it('renders delivery orders index for admin users', function (): void {
 		->assertSee('Xbox');
 });
 
+it('locks delivery action controls when the order is connected', function (): void {
+	$admin = User::factory()->create(['is_admin' => true]);
+	$this->actingAs($admin);
+
+	$connected = DeliveryOrder::factory()->create([
+		'order_number' => 'ORD-DELIVERY-LOCKED',
+		'platform' => 'Xbox',
+		'status' => DeliveryOrderStatus::CONNECTED,
+		'account_id' => Account::factory()->create(['status' => AccountStatus::ACTIVE])->id,
+	]);
+
+	Livewire::test(DeliveryOrderShow::class, ['deliveryOrder' => $connected])
+		->assertOk()
+		->assertSee('Поля зафиксированы')
+		->assertDontSee('Выдать аккаунт')
+		->assertDontSee('Добавить попытки');
+
+	$pending = DeliveryOrder::factory()->create([
+		'order_number' => 'ORD-DELIVERY-OPEN',
+		'platform' => 'Xbox',
+		'status' => DeliveryOrderStatus::WAITING_FOR_OPERATOR,
+	]);
+
+	Livewire::test(DeliveryOrderShow::class, ['deliveryOrder' => $pending])
+		->assertOk()
+		->assertSee('Выдать аккаунт');
+});
+
 it('assigns an account from the admin delivery detail page', function (): void {
 	$admin = User::factory()->create(['is_admin' => true]);
 	$this->actingAs($admin);
