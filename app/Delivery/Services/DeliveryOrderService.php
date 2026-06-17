@@ -14,6 +14,7 @@ use App\Delivery\Models\DeliveryPlatformInstruction;
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
 use App\Domain\Accounts\Models\AccountEvent;
+use App\Domain\Issuance\DTO\IssuanceResult;
 use App\Domain\Issuance\Models\Issuance;
 use App\Domain\Issuance\Services\IssueService;
 use App\Domain\Telegram\Enums\TelegramRole;
@@ -99,7 +100,7 @@ final class DeliveryOrderService
 
 			$attemptMessages[$candidatePlatform] = $result->message();
 
-			if (!$this->shouldTryNextIssuePlatform($result->message())) {
+			if (!$this->shouldTryNextIssuePlatform($result)) {
 				break;
 			}
 		}
@@ -552,8 +553,24 @@ final class DeliveryOrderService
 		return (string) ($messages->first() ?? 'Account assignment failed.');
 	}
 
-	private function shouldTryNextIssuePlatform(?string $message): bool
+	private function shouldTryNextIssuePlatform(IssuanceResult $result): bool
 	{
+		// Prefer machine-readable reason codes (A5). Fall back to legacy text
+		// matching only when the reason is absent, so behaviour stays safe even
+		// if some IssueService fail path has no reason set yet.
+		$retryableReasons = [
+			IssuanceResult::REASON_NO_ACCOUNTS,
+			IssuanceResult::REASON_NO_AVAILABLE,
+			IssuanceResult::REASON_INSUFFICIENT,
+			IssuanceResult::REASON_STOLEN,
+			IssuanceResult::REASON_ALREADY_ISSUED,
+		];
+
+		if ($result->reason() !== null) {
+			return in_array($result->reason(), $retryableReasons, true);
+		}
+
+		$message = $result->message();
 		if ($message === null) {
 			return false;
 		}

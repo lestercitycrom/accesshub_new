@@ -30,7 +30,12 @@ final class StoreOrderController
 			platform: (string) $data['platform'],
 		);
 
-		$this->telegramNotifier->notifyNewOrder($order);
+		// Notify operators AFTER the response is sent, so the client is not kept
+		// waiting on sequential Telegram API calls (A4). No queue worker needed.
+		$notifier = $this->telegramNotifier;
+		app()->terminating(static function () use ($notifier, $order): void {
+			$notifier->notifyNewOrder($order);
+		});
 
 		return redirect()->route('delivery.order.show', ['token' => $order->token]);
 	}

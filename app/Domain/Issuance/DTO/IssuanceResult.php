@@ -6,6 +6,15 @@ namespace App\Domain\Issuance\DTO;
 
 final class IssuanceResult
 {
+	// Machine-readable failure reasons (optional). Used e.g. by the delivery
+	// platform-fallback so it does not depend on matching error text. Absent
+	// reason (null) means "unspecified" — callers should treat as non-retryable.
+	public const REASON_NO_ACCOUNTS = 'no_accounts';        // нет аккаунтов под игру/платформу
+	public const REASON_NO_AVAILABLE = 'no_available';      // есть, но все на cooldown/заняты
+	public const REASON_INSUFFICIENT = 'insufficient';      // меньше, чем запрошено qty
+	public const REASON_STOLEN = 'stolen';                  // аккаунты в статусе «Украден»
+	public const REASON_ALREADY_ISSUED = 'already_issued';  // по этому заказу уже всё выдано
+
 	/**
 	 * @param array<int, array{account_id:int, login:string, password:string}> $items
 	 */
@@ -16,6 +25,7 @@ final class IssuanceResult
 		public readonly ?string $orderId = null,
 		public readonly ?string $game = null,
 		public readonly ?string $platform = null,
+		private readonly ?string $reason = null,
 	) {
 	}
 
@@ -30,11 +40,11 @@ final class IssuanceResult
 	}
 
 	/**
-	 * Fail result.
+	 * Fail result. Optional machine-readable $reason (see REASON_* constants).
 	 */
-	public static function fail(string $message): self
+	public static function fail(string $message, ?string $reason = null): self
 	{
-		return new self(false, $message, []);
+		return new self(false, $message, [], null, null, null, $reason);
 	}
 
 	/**
@@ -53,5 +63,10 @@ final class IssuanceResult
 	public function message(): ?string
 	{
 		return $this->message;
+	}
+
+	public function reason(): ?string
+	{
+		return $this->reason;
 	}
 }

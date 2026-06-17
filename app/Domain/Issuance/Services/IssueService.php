@@ -171,10 +171,10 @@ final class IssueService
 							$msg .= "
 Оператор: " . $operators->join(', ') . " — можете написать напрямую.";
 						}
-						return IssuanceResult::fail($msg);
+						return IssuanceResult::fail($msg, IssuanceResult::REASON_STOLEN);
 					}
 
-					return IssuanceResult::fail('Нет аккаунтов для указанной игры и платформы.');
+					return IssuanceResult::fail('Нет аккаунтов для указанной игры и платформы.', IssuanceResult::REASON_NO_ACCOUNTS);
 				}
 
 				if ($availableCount === 0) {
@@ -188,19 +188,20 @@ final class IssueService
 
 					if ($earliest) {
 						$date = \Carbon\Carbon::parse($earliest)->format('d.m.Y в H:i');
-						return IssuanceResult::fail("Нет доступных аккаунтов. Ближайший освободится {$date}.");
+						return IssuanceResult::fail("Нет доступных аккаунтов. Ближайший освободится {$date}.", IssuanceResult::REASON_NO_AVAILABLE);
 					}
 
-					return IssuanceResult::fail('Нет доступных аккаунтов сейчас. Попробуйте позже.');
+					return IssuanceResult::fail('Нет доступных аккаунтов сейчас. Попробуйте позже.', IssuanceResult::REASON_NO_AVAILABLE);
 				}
 
 				if ($alreadyIssuedAccountIds !== [] && $availableNotIssuedCount === 0) {
 					return IssuanceResult::fail(
-						'По этому заказу уже выданы все доступные аккаунты. Используйте новый order_id или дождитесь пополнения.'
+						'По этому заказу уже выданы все доступные аккаунты. Используйте новый order_id или дождитесь пополнения.',
+						IssuanceResult::REASON_ALREADY_ISSUED,
 					);
 				}
 
-				return IssuanceResult::fail('Недостаточно доступных аккаунтов. Уменьшите количество или попробуйте позже.');
+				return IssuanceResult::fail('Недостаточно доступных аккаунтов. Уменьшите количество или попробуйте позже.', IssuanceResult::REASON_INSUFFICIENT);
 			}
 
 			$items = [];

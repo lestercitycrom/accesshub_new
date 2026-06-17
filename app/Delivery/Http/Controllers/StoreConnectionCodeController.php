@@ -23,7 +23,12 @@ final class StoreConnectionCodeController
 		$result = $this->orders->submitConnectionCode($order, (string) $request->input('connection_code', ''));
 
 		if ($result->successful()) {
-			$this->telegramNotifier->notifyConnectionCodeSubmitted($order);
+			// Notify operators after the response is sent (A4) — keeps the public
+			// polling endpoint snappy and independent of Telegram latency.
+			$notifier = $this->telegramNotifier;
+			app()->terminating(static function () use ($notifier, $order): void {
+				$notifier->notifyConnectionCodeSubmitted($order);
+			});
 		}
 
 		return response()->json([
