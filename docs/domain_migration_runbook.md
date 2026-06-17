@@ -24,7 +24,7 @@
 | Домен | root | Что это |
 |---|---|---|
 | `download-games.info` (+www) | `/var/www/mailhub/access/public` | AccessHub (новый основной домен) |
-| `old.download-games.info` | `/var/www/download-games.info/public` | Старый сайт (переехал на поддомен) |
+| `old-downloads.mailhub.uno` | `/var/www/download-games.info/public` | Старый сайт (переехал на поддомен mailhub.uno) ✅ ПОДНЯТО |
 | `access.mailhub.uno` | `/var/www/mailhub/access/public` | **Оставляем живым** → 301 на download-games.info (чтобы старые клиентские ссылки `/order/{token}` и текущие сообщения бота не отвалились) |
 
 ## Согласовано (18.06.2026)
@@ -50,10 +50,11 @@
 
 ## Действия, которые НЕ через SSH (за тобой)
 
-- **DNS:** добавить A-запись `old.download-games.info → 178.105.205.48`.
-  Зона на **GoDaddy** (NS: `ns53/ns54.domaincontrol.com`) — доступа с сервера нет,
-  добавить запись нужно в аккаунте GoDaddy. Запись для `download-games.info` уже есть.
-- **BotFather:** проверить/прописать домен Mini App (см. решение №3).
+- **DNS — НЕ требуется.** Старый сайт уехал на `old-downloads.mailhub.uno`, который
+  покрыт wildcard `*.mailhub.uno` (резолвится без правки зоны). `download-games.info`
+  уже указывает на сервер. То есть GoDaddy для cutover не нужен.
+- **BotFather:** проверить/прописать домен Mini App (см. решение №3) — проверяется на
+  smoke-тесте после шага 3; если кнопка `web_app` не открывается, прописать в Telegram.
 
 ## Действия, которые делаю я (по SSH), в одно окно
 
@@ -66,12 +67,12 @@ tar czf storage/deploy-backups/pre-domain-$(date +%Y%m%d%H%M%S).tgz .env
 cp -a /etc/nginx/sites-available /root/nginx-backup-$(date +%Y%m%d%H%M%S)
 ```
 
-### Шаг 1. Старый сайт → old.download-games.info (ПОСЛЕ появления DNS-записи)
-1. Создать vhost `old.download-games.info.conf` (копия текущего download-games.info,
-   root остаётся `/var/www/download-games.info/public`, server_name → `old.download-games.info`).
-2. Выпустить сертификат: `certbot --nginx -d old.download-games.info`.
-3. `nginx -t && systemctl reload nginx`. Проверить `https://old.download-games.info`.
-   *Откат:* удалить vhost-симлинк, reload.
+### Шаг 1. Старый сайт → old-downloads.mailhub.uno — ✅ ВЫПОЛНЕНО (18.06.2026)
+Создан vhost `/etc/nginx/sites-available/old-downloads.mailhub.uno.conf`
+(root `/var/www/download-games.info/public`), выпущен SSL (certbot), HTTP→301→HTTPS.
+Проверено: `https://old-downloads.mailhub.uno` отдаёт старый сайт; `download-games.info`
+не затронут. Это additive-шаг — на текущий прод не влияет.
+*Откат:* `rm /etc/nginx/sites-enabled/old-downloads.mailhub.uno.conf && nginx -t && systemctl reload nginx`.
 
 ### Шаг 2. download-games.info → AccessHub
 1. В `download-games.info.conf` заменить `root` на `/var/www/mailhub/access/public` и заменить
