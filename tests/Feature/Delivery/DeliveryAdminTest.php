@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 use App\Admin\Livewire\DeliveryOrders\DeliveryOrdersIndex;
 use App\Admin\Livewire\DeliveryOrders\DeliveryOrderShow;
+use App\Admin\Livewire\DeliveryInstructions\DeliveryInstructionsIndex;
 use App\Delivery\Enums\DeliveryOrderStatus;
 use App\Delivery\Enums\DeliveryPasswordType;
 use App\Delivery\Models\DeliveryOrder;
+use App\Delivery\Models\DeliveryPlatformInstruction;
+use App\Delivery\Services\DeliveryOrderService;
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
 use App\Domain\Telegram\Models\TelegramUser;
@@ -105,4 +108,59 @@ it('updates connection lifecycle from the admin delivery detail page', function 
 		'delivery_order_id' => $order->id,
 		'type' => 'connected',
 	]);
+});
+
+it('seeds default delivery platform instructions', function (): void {
+	expect(DeliveryPlatformInstruction::query()->where('platform', 'Xbox')->exists())->toBeTrue()
+		->and(DeliveryPlatformInstruction::query()->where('platform', 'PlayStation')->exists())->toBeTrue()
+		->and(DeliveryPlatformInstruction::query()->where('platform', 'Nintendo')->exists())->toBeTrue();
+});
+
+it('updates delivery platform instructions from admin page', function (): void {
+	$admin = User::factory()->create(['is_admin' => true]);
+	$this->actingAs($admin);
+
+	Livewire::test(DeliveryInstructionsIndex::class)
+		->assertOk()
+		->assertSee('Delivery Instructions')
+		->call('selectPlatform', 'Xbox')
+		->set('title', 'Xbox QR code steps')
+		->set('body', 'Open the Xbox QR screen and enter the code on this page.')
+		->set('isActive', true)
+		->call('save')
+		->assertHasNoErrors();
+
+	$this->assertDatabaseHas('delivery_platform_instructions', [
+		'platform' => 'Xbox',
+		'title' => 'Xbox QR code steps',
+		'body' => 'Open the Xbox QR screen and enter the code on this page.',
+		'is_active' => true,
+	]);
+});
+
+it('exposes only active delivery platform instructions in public payload', function (): void {
+	$service = app(DeliveryOrderService::class);
+
+	DeliveryPlatformInstruction::query()->updateOrCreate(
+		['platform' => 'Xbox'],
+		[
+			'title' => 'Visible Xbox instruction',
+			'body' => 'Visible body.',
+			'is_active' => true,
+		],
+	);
+
+	$order = DeliveryOrder::factory()->create(['platform' => 'Xbox']);
+	$payload = $service->publicPayload($order);
+
+	expect($payload['instruction']['title'])->toBe('Visible Xbox instruction')
+		->and($payload['instruction']['body'])->toBe('Visible body.');
+
+	DeliveryPlatformInstruction::query()
+		->where('platform', 'Xbox')
+		->update(['is_active' => false]);
+
+	$payload = $service->publicPayload($order);
+
+	expect($payload['instruction'])->toBeNull();
 });
