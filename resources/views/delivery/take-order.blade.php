@@ -31,7 +31,7 @@
 				<div class="form-row">
 					<label for="order_number">Order Number</label>
 					<input id="order_number" name="order_number" value="{{ old('order_number') }}"
-						inputmode="text" autocomplete="off" required placeholder="e.g. DE-PS5-2024-00001">
+						inputmode="text" autocomplete="off" required placeholder="e.g. 3233159">
 					@error('order_number') <div class="error">{{ $message }}</div> @enderror
 				</div>
 

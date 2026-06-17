@@ -338,7 +338,7 @@ final class DeliveryOrderService
 		$order->refresh();
 
 		if ($this->isCompleted($order)) {
-			return DeliveryActionResult::fail('Заказ уже подключен.');
+			return DeliveryActionResult::fail('This order is already connected.');
 		}
 
 		if ($order->isExpired()) {

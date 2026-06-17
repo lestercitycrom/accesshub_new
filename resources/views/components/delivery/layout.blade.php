@@ -231,7 +231,7 @@
 
 		{{ $slot }}
 
-		<p class="foot">Need help? Contact the seller.</p>
+		<p class="foot">Need help? <a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600;text-decoration:none;">Contact the seller.</a></p>
 	</main>
 </body>
 </html>

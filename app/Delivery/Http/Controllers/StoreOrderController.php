@@ -18,6 +18,10 @@ final class StoreOrderController
 
 	public function __invoke(Request $request): RedirectResponse
 	{
+		// Public client site is English-facing; app locale is 'ru' (operators).
+		// Force English so validation messages shown to the client are in English.
+		app()->setLocale('en');
+
 		$data = $request->validate([
 			'order_number' => ['required', 'string', 'min:2', 'max:100'],
 			'email' => ['required', 'email:rfc', 'max:255'],
