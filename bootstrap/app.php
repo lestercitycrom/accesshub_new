@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // They use session-based auth via Telegram initData, not CSRF tokens
         $middleware->validateCsrfTokens(except: [
             'webapp/api/*',
+            'order/*/connection-code',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

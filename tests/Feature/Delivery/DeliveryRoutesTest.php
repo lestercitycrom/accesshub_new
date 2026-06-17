@@ -116,6 +116,30 @@ it('returns normalized json when connection code format is invalid', function ()
 		->assertJsonPath('order.connection.attempts_used', 0);
 });
 
+it('accepts connection code submission when the public csrf session has expired', function (): void {
+	$this->withMiddleware();
+
+	$account = Account::factory()->create(['platform' => ['Xbox']]);
+	$order = DeliveryOrder::factory()->create([
+		'order_number' => 'ORD-NO-CSRF',
+		'customer_email' => 'client@example.com',
+		'platform' => 'Xbox',
+		'status' => DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE,
+		'account_id' => $account->id,
+		'display_login' => 'xbox-login',
+		'display_password' => 'QR-1234',
+		'display_password_type' => 'fake',
+	]);
+
+	$this->postJson(route('delivery.order.connection-code.store', ['token' => $order->token]), [
+		'connection_code' => 'AB12CD',
+	])
+		->assertOk()
+		->assertJsonPath('ok', true)
+		->assertJsonPath('order.order_number', 'ORD-NO-CSRF')
+		->assertJsonPath('order.connection.attempts_used', 1);
+});
+
 it('notifies active telegram operators when connection code is submitted', function (): void {
 	config(['services.telegram.bot_token' => 'test']);
 
