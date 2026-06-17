@@ -137,12 +137,10 @@ config/delivery.php
 **Что нельзя задеть:** существующий формат апдейтов и авто-регистрацию пользователей;
 не менять логику ролей в `dispatch`.
 
-**Статус (17.06.2026): код готов и задеплоен, но СПИТ.** В `WebhookController::handle`
-добавлена проверка заголовка, в `config/services.php` — `telegram.webhook_secret`,
-в команде `telegram:webhook` — отправка `secret_token`. Пока `TELEGRAM_WEBHOOK_SECRET`
-в `.env` пуст — проверка **отключена** (бот работает как раньше). **Активация:** задать
-секрет в `.env` и **в той же операции** выполнить `php artisan telegram:webhook <url>`
-(перепропишет вебхук с `secret_token`). Это удобно совместить с переносом домена.
+**Статус (18.06.2026): ✅ АКТИВЕН.** `TELEGRAM_WEBHOOK_SECRET` задан в `.env` на проде,
+webhook перерегистрирован с `secret_token` (в рамках переноса на download-games.info).
+Проверено на проде: запрос к `/api/telegram/webhook` без заголовка `X-Telegram-Bot-Api-Secret-Token`
+→ 403; с верным секретом → 200. Подделать апдейт «от оператора» больше нельзя.
 
 ---
 

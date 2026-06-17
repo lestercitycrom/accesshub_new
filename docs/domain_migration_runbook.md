@@ -7,6 +7,26 @@
 > Выполнять в одно окно, когда на связи есть тот, кто может сделать DNS и BotFather.
 > Перед каждым шагом — что делаем, чем грозит, как откатить.
 
+## ✅ ВЫПОЛНЕНО (18.06.2026, ночное окно)
+
+Cutover проведён и протестирован. Текущее состояние прод:
+- `https://download-games.info` — AccessHub (клиент `/take-order`,`/order/{token}` + админка `/admin` + Mini App `/webapp`). Корень `/` → `/take-order`.
+- `https://old-downloads.mailhub.uno` — старый сайт (vhost + SSL).
+- `https://access.mailhub.uno/*` → **301** на download-games.info (с сохранением пути; старые ссылки заказов и кнопки в старых сообщениях бота работают).
+- `APP_URL=https://download-games.info`; webhook на новом URL (getWebhookInfo — без ошибок).
+- **A1 АКТИВЕН:** `TELEGRAM_WEBHOOK_SECRET` задан, webhook зарегистрирован с `secret_token`.
+  Проверено: запрос без секрета → 403, с верным → 200.
+- Соседние сайты (mailhub.uno, bot.mailhub.uno, delivery-access, www) не затронуты.
+- E2E: тестовый заказ на новом домене отдаёт страницу/статус корректно (создан и удалён).
+
+**Остаётся проверить вживую (1 пункт):** оператор открывает Mini App в Telegram (кнопка-меню
+и «Open order» теперь на download-games.info). Кнопка-меню переустановлена через API.
+Если у кого-то Mini App не откроется — прописать домен в @BotFather (Bot Settings → Mit App).
+По опыту menu-button / inline `web_app` работают с любым HTTPS без BotFather, так что скорее
+всего ничего делать не нужно — просто подтвердить у живого оператора.
+
+Бэкапы cutover: `storage/deploy-backups/pre-domain-*.tgz` (.env), `/root/nginx-backup-*`.
+
 ## Текущее состояние (проверено на сервере)
 
 | Домен | nginx root | Что это |
