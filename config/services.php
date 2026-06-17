@@ -37,6 +37,10 @@ return [
 
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN', ''),
+        // Shared secret for Telegram webhook authenticity. When empty the check
+        // is disabled (current behaviour). Set it AND re-run `telegram:webhook`
+        // together to activate — see docs/delivery_audit.md A1.
+        'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET', ''),
     ],
 
 ];

@@ -20,8 +20,9 @@ class TelegramSetWebhook extends Command
         $this->updateEnv('APP_URL', $url);
         $this->info("APP_URL установлен: {$url}");
 
-        // 2. Читаем токен ДО очистки кеша
+        // 2. Читаем токен и webhook-секрет ДО очистки кеша
         $token = env('TELEGRAM_BOT_TOKEN');
+        $secret = (string) env('TELEGRAM_WEBHOOK_SECRET', '');
 
         // 3. Очистить кеш
         $this->call('config:clear');
@@ -35,9 +36,15 @@ class TelegramSetWebhook extends Command
 
         $webhookUrl = "{$url}/api/telegram/webhook";
 
-        $response = Http::post("https://api.telegram.org/bot{$token}/setWebhook", [
-            'url' => $webhookUrl,
-        ]);
+        $payload = ['url' => $webhookUrl];
+        if ($secret !== '') {
+            // Telegram will echo this back in the X-Telegram-Bot-Api-Secret-Token
+            // header on every update; WebhookController validates it.
+            $payload['secret_token'] = $secret;
+            $this->info('Webhook secret_token будет установлен.');
+        }
+
+        $response = Http::post("https://api.telegram.org/bot{$token}/setWebhook", $payload);
 
         $result = $response->json();
 

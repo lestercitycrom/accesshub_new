@@ -23,6 +23,18 @@ final class WebhookController
 
 	public function handle(Request $request): JsonResponse
 	{
+		// Authenticity check: when a webhook secret is configured, every update
+		// must carry Telegram's secret-token header. Empty secret = disabled
+		// (so deploying this code is inert until the secret is set + webhook
+		// re-registered together). See docs/delivery_audit.md A1.
+		$expectedSecret = (string) config('services.telegram.webhook_secret', '');
+		if ($expectedSecret !== '') {
+			$provided = (string) $request->header('X-Telegram-Bot-Api-Secret-Token', '');
+			if (!hash_equals($expectedSecret, $provided)) {
+				return response()->json(['status' => 'forbidden'], 403);
+			}
+		}
+
 		$chatId = null;
 		$telegramId = null;
 
