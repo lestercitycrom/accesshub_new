@@ -245,11 +245,17 @@ final class DeliveryOrderShow extends Component
 			->orderByDesc('available_uses')
 			->orderBy('id')
 			->limit(100)
-			->get(['id', 'login', 'available_uses'])
+			->get(['id', 'login', 'available_uses', 'platform'])
 			->map(fn (Account $account): array => [
 				'id' => (int) $account->id,
 				'login' => (string) $account->login,
 				'available_uses' => (int) $account->available_uses,
+				'platforms' => collect(is_array($account->platform) ? $account->platform : [$account->platform])
+					->filter()
+					->map(fn ($platform) => $this->canonicalIssuePlatformOption((string) $platform))
+					->unique()
+					->values()
+					->all(),
 			])
 			->all();
 	}

@@ -140,7 +140,8 @@ it('assigns a specific account chosen by login from the mini app', function (): 
 	$this->getJson("/webapp/api/delivery-orders/{$order->id}/options?issue_platform=PS5&game=FIFA")
 		->assertOk()
 		->assertJsonPath('ok', true)
-		->assertJsonCount(2, 'available_accounts');
+		->assertJsonCount(2, 'available_accounts')
+		->assertJsonPath('available_accounts.0.platforms', ['PS5']);
 
 	$this->postJson("/webapp/api/delivery-orders/{$order->id}/assign", [
 		'game' => 'FIFA',

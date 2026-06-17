@@ -331,7 +331,7 @@ final class DeliveryOrdersController
 	}
 
 	/**
-	 * @return array<int, array{id: int, login: string, available_uses: int}>
+	 * @return array<int, array{id: int, login: string, available_uses: int, platforms: array<int, string>}>
 	 */
 	private function availableAccounts(string $platform, string $game): array
 	{
@@ -361,12 +361,28 @@ final class DeliveryOrdersController
 			->orderByDesc('available_uses')
 			->orderBy('id')
 			->limit(100)
-			->get(['id', 'login', 'available_uses'])
+			->get(['id', 'login', 'available_uses', 'platform'])
 			->map(fn (Account $account): array => [
 				'id' => (int) $account->id,
 				'login' => (string) $account->login,
 				'available_uses' => (int) $account->available_uses,
+				'platforms' => $this->accountPlatformLabels($account),
 			])
+			->all();
+	}
+
+	/**
+	 * @return array<int, string>
+	 */
+	private function accountPlatformLabels(Account $account): array
+	{
+		$platforms = is_array($account->platform) ? $account->platform : [$account->platform];
+
+		return collect($platforms)
+			->filter()
+			->map(fn ($platform) => $this->canonicalIssuePlatformOption((string) $platform))
+			->unique()
+			->values()
 			->all();
 	}
 

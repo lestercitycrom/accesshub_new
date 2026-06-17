@@ -461,8 +461,10 @@
 				if (!account || !account.id) return;
 				const option = document.createElement('option');
 				option.value = String(account.id);
-				const uses = account.available_uses ? ` · ${account.available_uses}` : '';
-				option.textContent = `${account.login || ('#' + account.id)}${uses}`;
+				const platforms = Array.isArray(account.platforms) && account.platforms.length
+					? ` · ${account.platforms.join(', ')}`
+					: '';
+				option.textContent = `${account.login || ('#' + account.id)}${platforms}`;
 				if (String(account.id) === String(selectedValue)) option.selected = true;
 				select.appendChild(option);
 			});
@@ -687,8 +689,12 @@
 						<div class="list-value">${escapeHtml(order.customer_email || '-')}</div>
 					</div>
 					<div class="list-row">
-						<div class="list-label">Платформа</div>
-						<div class="list-value">${escapeHtml(order.platform || '-')} / ${escapeHtml(order.issue_platform || '-')}</div>
+						<div class="list-label">Запрос клиента</div>
+						<div class="list-value">${escapeHtml(order.platform || '-')}</div>
+					</div>
+					<div class="list-row">
+						<div class="list-label">Выдано</div>
+						<div class="list-value">${escapeHtml(order.issue_platform || '-')}</div>
 					</div>
 					<div class="list-row">
 						<div class="list-label">Игра</div>

@@ -146,7 +146,7 @@
 						<option value="">Любой логин (авто)</option>
 						@foreach($availableAccounts as $accountOption)
 							<option value="{{ $accountOption['id'] }}">
-								{{ $accountOption['login'] }}@if($accountOption['available_uses']) · {{ $accountOption['available_uses'] }}@endif
+								{{ $accountOption['login'] }}@if(!empty($accountOption['platforms'])) · {{ implode(', ', $accountOption['platforms']) }}@endif
 							</option>
 						@endforeach
 					</select>
