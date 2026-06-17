@@ -70,6 +70,50 @@ it('assigns an account from the admin delivery detail page', function (): void {
 		->and($account->available_uses)->toBe(1);
 });
 
+it('keeps admin account assignment retryable after a wrong game', function (): void {
+	$admin = User::factory()->create(['is_admin' => true]);
+	$this->actingAs($admin);
+
+	$operator = TelegramUser::factory()->create(['telegram_id' => 9103]);
+	$account = Account::factory()->create([
+		'game' => 'NBA 2K26',
+		'platform' => ['PS5'],
+		'login' => 'ps5_delivery_login',
+		'password' => 'real-secret',
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+	$order = DeliveryOrder::factory()->create([
+		'order_number' => 'ORD-DELIVERY-RETRY',
+		'platform' => 'PlayStation',
+		'status' => DeliveryOrderStatus::WAITING_FOR_OPERATOR,
+	]);
+
+	$component = Livewire::test(DeliveryOrderShow::class, ['deliveryOrder' => $order])
+		->assertSee('NBA 2K26')
+		->assertSet('issuePlatform', 'PS5')
+		->set('operatorTelegramId', (string) $operator->telegram_id)
+		->set('game', 'Horizon')
+		->call('assignAccount');
+
+	$order->refresh();
+
+	expect($order->status)->toBe(DeliveryOrderStatus::WAITING_FOR_OPERATOR)
+		->and($order->account_id)->toBeNull()
+		->and($account->refresh()->available_uses)->toBe(1);
+
+	$component
+		->set('game', 'NBA 2K26')
+		->call('assignAccount')
+		->assertHasNoErrors();
+
+	$order->refresh();
+
+	expect($order->status)->toBe(DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE)
+		->and($order->account_id)->toBe($account->id)
+		->and($order->issue_platform)->toBe('PS5');
+});
+
 it('updates connection lifecycle from the admin delivery detail page', function (): void {
 	$admin = User::factory()->create(['is_admin' => true]);
 	$this->actingAs($admin);

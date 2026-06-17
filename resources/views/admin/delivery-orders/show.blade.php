@@ -97,28 +97,54 @@
 
 				<div class="space-y-1">
 					<label class="text-xs font-medium text-slate-500">Игра</label>
-					<input type="text" wire:model="game"
+					<input type="text" list="delivery-game-options" wire:model.live.debounce.300ms="game"
 						class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
 						placeholder="GTA">
+					<datalist id="delivery-game-options">
+						@foreach($availableGames as $gameOption)
+							<option value="{{ $gameOption['name'] }}">
+								{{ $gameOption['accounts_count'] }} available
+							</option>
+						@endforeach
+					</datalist>
+
+					@if(count($availableGames) > 0)
+						<div class="max-h-36 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-2">
+							<div class="space-y-1">
+								@foreach(array_slice($availableGames, 0, 12) as $gameOption)
+									<button type="button"
+										wire:click="$set('game', @js($gameOption['name']))"
+										class="flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left text-xs text-slate-700 hover:bg-white">
+										<span class="truncate font-semibold">{{ $gameOption['name'] }}</span>
+										<span class="shrink-0 text-slate-500">{{ $gameOption['accounts_count'] }} шт.</span>
+									</button>
+								@endforeach
+							</div>
+						</div>
+					@else
+						<p class="text-xs text-amber-700">
+							Нет доступных аккаунтов для выбранной платформы выдачи.
+						</p>
+					@endif
 				</div>
 
 				<div class="space-y-1">
 					<label class="text-xs font-medium text-slate-500">Платформа выдачи</label>
-					<input type="text" list="issue-platform-options" wire:model="issuePlatform"
+					<select wire:model.live="issuePlatform"
 						class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
-					<datalist id="issue-platform-options">
 						@foreach($issuePlatformOptions as $platform)
-							<option value="{{ $platform }}"></option>
+							<option value="{{ $platform }}">{{ $platform }}</option>
 						@endforeach
-					</datalist>
+					</select>
 				</div>
 
-				<x-admin.button variant="primary" wire:click="assignAccount" class="w-full">
-					Выдать аккаунт
+				<x-admin.button variant="primary" wire:click="assignAccount" wire:loading.attr="disabled" wire:target="assignAccount" class="w-full">
+					<span wire:loading.remove wire:target="assignAccount">Выдать аккаунт</span>
+					<span wire:loading wire:target="assignAccount">Выдача...</span>
 				</x-admin.button>
 
 				<p class="text-xs text-slate-500">
-					Сервис сам выбирает активный аккаунт по game/platform и списывает выдачу через общий IssueService.
+					Если нужной игры нет в списке, значит для выбранной платформы сейчас нет доступного аккаунта.
 				</p>
 			</div>
 		</x-admin.card>
@@ -133,20 +159,24 @@
 				</div>
 
 				<div class="grid grid-cols-1 gap-2">
-					<x-admin.button variant="secondary" wire:click="markOperatorConnecting" class="w-full">
+					<x-admin.button variant="secondary" wire:click="markOperatorConnecting" class="w-full" :disabled="$order->account_id === null">
 						Оператор подключает
 					</x-admin.button>
-					<x-admin.button variant="primary" wire:click="markConnected" class="w-full">
+					<x-admin.button variant="primary" wire:click="markConnected" class="w-full" :disabled="$order->account_id === null">
 						Подключено
 					</x-admin.button>
 				</div>
+
+				@if($order->account_id === null)
+					<p class="text-xs text-slate-500">Подключение станет доступно после выдачи аккаунта.</p>
+				@endif
 
 				<div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
 					<div class="text-sm font-semibold text-slate-700">Ошибка подключения</div>
 					<input type="text" wire:model="failReason"
 						class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
 						placeholder="причина, если есть">
-					<x-admin.button variant="danger" wire:click="markConnectionFailed" class="w-full">
+					<x-admin.button variant="danger" wire:click="markConnectionFailed" class="w-full" :disabled="$order->account_id === null">
 						Отметить ошибку
 					</x-admin.button>
 				</div>
@@ -155,7 +185,7 @@
 					<div class="text-sm font-semibold text-slate-700">Дополнительные попытки</div>
 					<input type="number" min="1" wire:model="extraAttempts"
 						class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
-					<x-admin.button variant="secondary" wire:click="grantExtraAttempts" class="w-full">
+					<x-admin.button variant="secondary" wire:click="grantExtraAttempts" class="w-full" :disabled="$order->account_id === null">
 						Добавить попытки
 					</x-admin.button>
 				</div>

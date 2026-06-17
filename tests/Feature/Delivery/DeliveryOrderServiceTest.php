@@ -84,6 +84,30 @@ it('assigns the real password for direct delivery platforms', function (): void 
 	expect($payload['connection']['required'])->toBeFalse();
 });
 
+it('assigns a PlayStation delivery from a PS5 account when the issue platform is generic', function (): void {
+	$operator = TelegramUser::factory()->create(['telegram_id' => 8103]);
+	Account::factory()->create([
+		'game' => 'NBA 2K26',
+		'platform' => ['PS5'],
+		'login' => 'ps5-login@example.com',
+		'password' => 'RealPs5Password',
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+
+	$service = app(DeliveryOrderService::class);
+	$order = $service->createFromCustomerInput('ORD-PS5', 'client@example.com', 'PlayStation');
+
+	$result = $service->assignAccount($order, $operator->telegram_id, 'NBA 2K26', 'PlayStation');
+	$order->refresh();
+
+	expect($result->successful())->toBeTrue()
+		->and($order->status)->toBe(DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE)
+		->and($order->issue_platform)->toBe('PS5')
+		->and($order->display_login)->toBe('ps5-login@example.com')
+		->and($order->display_password_type)->toBe(DeliveryPasswordType::FAKE);
+});
+
 it('limits connection codes and unlocks after the configured timeout', function (): void {
 	$service = app(DeliveryOrderService::class);
 	$order = DeliveryOrder::factory()->create([

@@ -7,8 +7,11 @@ namespace App\Admin\Livewire\DeliveryOrders;
 use App\Delivery\Models\DeliveryEvent;
 use App\Delivery\Models\DeliveryOrder;
 use App\Delivery\Services\DeliveryOrderService;
+use App\Domain\Accounts\Enums\AccountStatus;
+use App\Domain\Accounts\Models\Account;
 use App\Domain\Telegram\Models\TelegramUser;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 
@@ -29,7 +32,7 @@ final class DeliveryOrderShow extends Component
 		$this->refreshOrder();
 
 		$this->game = (string) ($this->deliveryOrder->game ?? '');
-		$this->issuePlatform = (string) ($this->deliveryOrder->issue_platform ?? $this->deliveryOrder->platform);
+		$this->issuePlatform = (string) ($this->deliveryOrder->issue_platform ?? $this->defaultIssuePlatform());
 		$this->operatorTelegramId = (string) (
 			$this->deliveryOrder->operator_telegram_id
 			?? TelegramUser::query()->where('is_active', true)->orderBy('username')->value('telegram_id')
@@ -126,12 +129,57 @@ final class DeliveryOrderShow extends Component
 
 	public function getIssuePlatformOptionsProperty(): array
 	{
-		return collect([$this->deliveryOrder->platform, $this->deliveryOrder->issue_platform])
+		$accountPlatforms = Account::query()
+			->where('status', AccountStatus::ACTIVE)
+			->distinct()
+			->pluck('platform')
+			->flatMap(fn ($platforms) => is_array($platforms) ? $platforms : (array) $platforms);
+
+		return collect($this->preferredIssuePlatformOptions((string) $this->deliveryOrder->platform))
+			->merge([$this->deliveryOrder->platform, $this->deliveryOrder->issue_platform])
 			->merge((array) config('delivery.connection_platforms', []))
 			->merge((array) config('delivery.direct_delivery_platforms', []))
+			->merge($accountPlatforms)
 			->filter()
 			->unique()
 			->values()
+			->all();
+	}
+
+	public function getAvailableGamesProperty(): array
+	{
+		$platform = trim($this->issuePlatform) !== ''
+			? trim($this->issuePlatform)
+			: (string) $this->deliveryOrder->platform;
+		$gameSearch = trim($this->game);
+
+		return Account::query()
+			->select('game', DB::raw('COUNT(*) as accounts_count'))
+			->where('status', AccountStatus::ACTIVE)
+			->when($gameSearch !== '', static function ($query) use ($gameSearch): void {
+				$query->where('game', 'like', '%' . str_replace(['%', '_'], ['\\%', '\\_'], $gameSearch) . '%');
+			})
+			->where(function ($query): void {
+				$query->where('available_uses', '>', 0)
+					->orWhere(function ($nested): void {
+						$nested->whereNotNull('next_release_at')
+							->where('next_release_at', '<=', now());
+					});
+			})
+			->where(function ($query) use ($platform): void {
+				foreach ($this->issuePlatformCandidates($platform) as $index => $candidate) {
+					$method = $index === 0 ? 'whereJsonContains' : 'orWhereJsonContains';
+					$query->{$method}('platform', $candidate);
+				}
+			})
+			->groupBy('game')
+			->orderBy('game')
+			->limit(100)
+			->get()
+			->map(fn ($row): array => [
+				'name' => (string) $row->game,
+				'accounts_count' => (int) $row->accounts_count,
+			])
 			->all();
 	}
 
@@ -170,6 +218,7 @@ final class DeliveryOrderShow extends Component
 			'order' => $this->deliveryOrder,
 			'operators' => $this->operators,
 			'issuePlatformOptions' => $this->issuePlatformOptions,
+			'availableGames' => $this->availableGames,
 			'events' => DeliveryEvent::query()
 				->where('delivery_order_id', $this->deliveryOrder->id)
 				->latest('created_at')
@@ -182,6 +231,73 @@ final class DeliveryOrderShow extends Component
 	{
 		$this->deliveryOrder->refresh();
 		$this->deliveryOrder->load(['operator', 'account', 'issuance']);
+	}
+
+	private function defaultIssuePlatform(): string
+	{
+		foreach ($this->preferredIssuePlatformOptions((string) $this->deliveryOrder->platform) as $platform) {
+			if ($this->hasAvailableAccountsForPlatform($platform)) {
+				return $platform;
+			}
+		}
+
+		return (string) $this->deliveryOrder->platform;
+	}
+
+	/**
+	 * @return array<int, string>
+	 */
+	private function preferredIssuePlatformOptions(string $platform): array
+	{
+		return match ($this->normalizePlatform($platform)) {
+			'PlayStation' => ['PS5', 'PS4', 'PlayStation'],
+			'Epic Games' => ['Epic Games', 'EpicGames', 'Epic'],
+			default => [$this->normalizePlatform($platform)],
+		};
+	}
+
+	/**
+	 * @return array<int, string>
+	 */
+	private function issuePlatformCandidates(string $platform): array
+	{
+		return match ($this->normalizePlatform($platform)) {
+			'PlayStation' => ['PlayStation', 'PS5', 'PS4'],
+			'Epic Games' => ['Epic Games', 'EpicGames', 'Epic'],
+			default => [$this->normalizePlatform($platform)],
+		};
+	}
+
+	private function hasAvailableAccountsForPlatform(string $platform): bool
+	{
+		return Account::query()
+			->where('status', AccountStatus::ACTIVE)
+			->whereJsonContains('platform', $platform)
+			->where(function ($query): void {
+				$query->where('available_uses', '>', 0)
+					->orWhere(function ($nested): void {
+						$nested->whereNotNull('next_release_at')
+							->where('next_release_at', '<=', now());
+					});
+			})
+			->exists();
+	}
+
+	private function normalizePlatform(string $platform): string
+	{
+		$platform = trim($platform);
+		$lower = strtolower(str_replace([' ', '_', '-'], '', $platform));
+
+		return match ($lower) {
+			'ps', 'playstation' => 'PlayStation',
+			'ps4' => 'PS4',
+			'ps5' => 'PS5',
+			'xb', 'xbox' => 'Xbox',
+			'nintendo', 'switch', 'nintendoswitch' => 'Nintendo',
+			'steam' => 'Steam',
+			'epic', 'epicgames' => 'Epic Games',
+			default => $platform,
+		};
 	}
 
 	private function selectedOperatorTelegramId(): ?int

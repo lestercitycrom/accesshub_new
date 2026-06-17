@@ -66,22 +66,42 @@ final class DeliveryOrderService
 			return DeliveryActionResult::fail('Game and platform are required.');
 		}
 
-		$result = $this->issueService->issue(
-			telegramId: $operatorTelegramId,
-			orderId: (string) $order->order_number,
-			game: $game,
-			platform: $issuePlatform,
-			qty: 1,
-		);
+		$result = null;
+		$attemptMessages = [];
+		$issuedPlatform = $issuePlatform;
 
-		if (!$result->ok()) {
+		foreach ($this->issuePlatformCandidates($issuePlatform) as $candidatePlatform) {
+			$result = $this->issueService->issue(
+				telegramId: $operatorTelegramId,
+				orderId: (string) $order->order_number,
+				game: $game,
+				platform: $candidatePlatform,
+				qty: 1,
+			);
+
+			if ($result->ok()) {
+				$issuedPlatform = $candidatePlatform;
+				break;
+			}
+
+			$attemptMessages[$candidatePlatform] = $result->message();
+
+			if (!$this->shouldTryNextIssuePlatform($result->message())) {
+				break;
+			}
+		}
+
+		if ($result === null || !$result->ok()) {
 			$this->recordEvent($order, 'account_assignment_failed', 'telegram', (string) $operatorTelegramId, [
 				'game' => $game,
 				'issue_platform' => $issuePlatform,
-				'message' => $result->message(),
+				'attempted_issue_platforms' => array_keys($attemptMessages),
+				'message' => $result?->message(),
 			]);
 
-			return DeliveryActionResult::fail($result->message() ?? 'Account assignment failed.');
+			return DeliveryActionResult::fail(
+				$this->formatAssignmentFailureMessage($game, $issuePlatform, $attemptMessages)
+			);
 		}
 
 		$item = $result->items[0] ?? null;
@@ -104,7 +124,7 @@ final class DeliveryOrderService
 
 		$order->forceFill([
 			'game' => $game,
-			'issue_platform' => $issuePlatform,
+			'issue_platform' => $issuedPlatform,
 			'status' => $requiresConnection
 				? DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE
 				: DeliveryOrderStatus::ACCOUNT_ASSIGNED,
@@ -119,7 +139,7 @@ final class DeliveryOrderService
 		$this->recordEvent($order, 'account_assigned', 'telegram', (string) $operatorTelegramId, [
 			'game' => $game,
 			'platform' => $order->platform,
-			'issue_platform' => $issuePlatform,
+			'issue_platform' => $issuedPlatform,
 			'account_id' => $accountId,
 			'issuance_id' => $issuance?->id,
 			'password_type' => $passwordType->value,
@@ -288,6 +308,55 @@ final class DeliveryOrderService
 			fn ($item) => $this->normalizePlatform((string) $item),
 			(array) config('delivery.connection_platforms', [])
 		), true);
+	}
+
+	/**
+	 * @return array<int, string>
+	 */
+	private function issuePlatformCandidates(string $platform): array
+	{
+		$platform = $this->normalizePlatform($platform);
+
+		return match ($platform) {
+			'PlayStation' => ['PlayStation', 'PS5', 'PS4'],
+			'Epic Games' => ['Epic Games', 'EpicGames', 'Epic'],
+			default => [$platform],
+		};
+	}
+
+	/**
+	 * @param array<string, string|null> $attemptMessages
+	 */
+	private function formatAssignmentFailureMessage(string $game, string $issuePlatform, array $attemptMessages): string
+	{
+		$platforms = array_keys($attemptMessages);
+		$messages = collect($attemptMessages)
+			->filter()
+			->unique()
+			->values();
+
+		if (count($platforms) > 1) {
+			return sprintf(
+				'Не найден доступный аккаунт для игры "%s" на платформах: %s. Проверьте название игры или выберите платформу выдачи из списка доступных вариантов.',
+				$game,
+				implode(', ', $platforms),
+			);
+		}
+
+		return (string) ($messages->first() ?? 'Account assignment failed.');
+	}
+
+	private function shouldTryNextIssuePlatform(?string $message): bool
+	{
+		if ($message === null) {
+			return false;
+		}
+
+		return str_contains($message, 'Нет аккаунт')
+			|| str_contains($message, 'Нет доступ')
+			|| str_contains($message, 'Недостаточно доступ')
+			|| str_contains($message, 'Украден')
+			|| str_contains($message, 'уже выданы');
 	}
 
 	private function lockForRetry(DeliveryOrder $order): void

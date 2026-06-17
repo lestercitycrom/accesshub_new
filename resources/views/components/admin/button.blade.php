@@ -6,7 +6,7 @@
 ])
 
 @php
-	$base = 'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition select-none focus:outline-none focus:ring-2 focus:ring-offset-2';
+	$base = 'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition select-none focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 	$sizeClass = $size === 'sm'
 		? 'px-3 py-2 text-xs'
 		: 'px-4 py-2.5 text-sm';
