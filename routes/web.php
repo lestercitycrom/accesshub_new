@@ -15,7 +15,9 @@ Route::get('/', function () {
 		return redirect()->route('admin.accounts.index');
 	}
 
-	return redirect()->route('login');
+	// Public face of the site is the delivery client form (download-games.info).
+	// Operators/admins reach the panel directly via /login.
+	return redirect()->route('delivery.take-order');
 })->name('home');
 
 // WebApp routes (no auth required)
