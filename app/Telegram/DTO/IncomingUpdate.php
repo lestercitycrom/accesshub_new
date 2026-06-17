@@ -15,5 +15,7 @@ final class IncomingUpdate
 		public readonly ?string $lastName,
 		public readonly ?string $text,
 		public readonly ?string $webAppData,
+		public readonly ?string $callbackQueryId = null,
+		public readonly ?string $callbackData = null,
 	) {}
 }

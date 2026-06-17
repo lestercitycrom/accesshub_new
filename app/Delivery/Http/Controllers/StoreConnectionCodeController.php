@@ -6,6 +6,7 @@ namespace App\Delivery\Http\Controllers;
 
 use App\Delivery\Models\DeliveryOrder;
 use App\Delivery\Services\DeliveryOrderService;
+use App\Delivery\Services\DeliveryTelegramNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,12 +14,17 @@ final class StoreConnectionCodeController
 {
 	public function __construct(
 		private readonly DeliveryOrderService $orders,
+		private readonly DeliveryTelegramNotifier $telegramNotifier,
 	) {}
 
 	public function __invoke(Request $request, string $token): JsonResponse
 	{
 		$order = DeliveryOrder::query()->where('token', $token)->firstOrFail();
 		$result = $this->orders->submitConnectionCode($order, (string) $request->input('connection_code', ''));
+
+		if ($result->successful()) {
+			$this->telegramNotifier->notifyConnectionCodeSubmitted($order);
+		}
 
 		return response()->json([
 			'ok' => $result->successful(),

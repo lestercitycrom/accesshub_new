@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Telegram\Services;
 
+use App\Delivery\Models\DeliveryOrder;
+use App\Delivery\Services\DeliveryOrderService;
 use App\Domain\Issuance\Services\IssueService;
 use App\Domain\Issuance\Models\Issuance;
 use App\Domain\Accounts\Services\AccountStatusService;
@@ -24,6 +26,7 @@ final class BotDispatcher
 		private readonly TelegramClient $telegramClient,
 		private readonly IssueMessageFormatter $messageFormatter,
 		private readonly WebAppTokenService $tokenService,
+		private readonly DeliveryOrderService $deliveryOrders,
 	) {}
 
 	public function dispatch(IncomingUpdate $incoming): ?string
@@ -33,6 +36,10 @@ final class BotDispatcher
 
 		if ($user === null || $user->is_active !== true) {
 			return 'Ваш аккаунт на модерации. Доступ будет открыт после подтверждения админом.';
+		}
+
+		if ($incoming->callbackData !== null) {
+			return $this->handleCallback($incoming);
 		}
 
 		if ($incoming->webAppData) {
@@ -82,6 +89,54 @@ final class BotDispatcher
 		$this->notifyAdmins($request, $telegramId);
 
 		return $this->messageFormatter->format($result);
+	}
+
+	private function handleCallback(IncomingUpdate $incoming): ?string
+	{
+		if ($incoming->callbackQueryId === null) {
+			return null;
+		}
+
+		$data = (string) $incoming->callbackData;
+
+		if (!str_starts_with($data, 'delivery:')) {
+			$this->telegramClient->answerCallbackQuery($incoming->callbackQueryId, 'Unknown action.', true);
+			return null;
+		}
+
+		$parts = explode(':', $data);
+		$action = $parts[1] ?? '';
+		$orderId = (int) ($parts[2] ?? 0);
+
+		if ($orderId <= 0) {
+			$this->telegramClient->answerCallbackQuery($incoming->callbackQueryId, 'Order is not specified.', true);
+			return null;
+		}
+
+		$order = DeliveryOrder::query()->find($orderId);
+		if ($order === null) {
+			$this->telegramClient->answerCallbackQuery($incoming->callbackQueryId, 'Order not found.', true);
+			return null;
+		}
+
+		$telegramId = (int) $incoming->telegramId;
+
+		match ($action) {
+			'connecting' => $this->deliveryOrders->markOperatorConnecting($order, $telegramId),
+			'connected' => $this->deliveryOrders->markConnected($order, $telegramId),
+			'failed' => $this->deliveryOrders->markConnectionFailed($order, $telegramId, 'telegram_callback'),
+			'extra' => $this->deliveryOrders->grantExtraAttempts($order, $telegramId, (int) ($parts[3] ?? 1)),
+			default => null,
+		};
+
+		if (!in_array($action, ['connecting', 'connected', 'failed', 'extra'], true)) {
+			$this->telegramClient->answerCallbackQuery($incoming->callbackQueryId, 'Unknown delivery action.', true);
+			return null;
+		}
+
+		$this->telegramClient->answerCallbackQuery($incoming->callbackQueryId, 'Order updated.');
+
+		return null;
 	}
 
 	private function handleWebAppAction(IncomingUpdate $incoming): ?string

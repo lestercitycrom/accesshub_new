@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Delivery\Http\Controllers;
 
 use App\Delivery\Services\DeliveryOrderService;
+use App\Delivery\Services\DeliveryTelegramNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -12,6 +13,7 @@ final class StoreOrderController
 {
 	public function __construct(
 		private readonly DeliveryOrderService $orders,
+		private readonly DeliveryTelegramNotifier $telegramNotifier,
 	) {}
 
 	public function __invoke(Request $request): RedirectResponse
@@ -27,6 +29,8 @@ final class StoreOrderController
 			customerEmail: (string) $data['email'],
 			platform: (string) $data['platform'],
 		);
+
+		$this->telegramNotifier->notifyNewOrder($order);
 
 		return redirect()->route('delivery.order.show', ['token' => $order->token]);
 	}

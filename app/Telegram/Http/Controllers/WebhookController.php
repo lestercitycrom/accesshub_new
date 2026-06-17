@@ -55,6 +55,7 @@ final class WebhookController
 			$error = ServerError::log('webhook', $e, $telegramId ?? $telegramIdFromRequest, null, [
 				'update_id' => $request->input('update_id'),
 				'has_message' => $request->has('message'),
+				'has_callback_query' => $request->has('callback_query'),
 				'has_web_app_data' => $request->has('message.web_app_data'),
 			]);
 
@@ -76,45 +77,69 @@ final class WebhookController
 
 	private function extractTelegramIdFromRequest(array $data): ?int
 	{
-		$from = $data['message']['from'] ?? null;
+		$from = $data['message']['from'] ?? $data['callback_query']['from'] ?? null;
 
 		return $from ? (int) ($from['id'] ?? null) : null;
 	}
 
 	private function extractChatIdFromRequest(array $data): ?string
 	{
-		$chat = $data['message']['chat'] ?? null;
+		$chat = $data['message']['chat'] ?? $data['callback_query']['message']['chat'] ?? null;
 
 		return $chat ? (string) ($chat['id'] ?? null) : null;
 	}
 
 	private function parseUpdate(array $data): ?IncomingUpdate
 	{
-		$message = $data['message'] ?? null;
+		if (isset($data['message'])) {
+			$message = $data['message'];
+			$chat = $message['chat'] ?? null;
+			$from = $message['from'] ?? null;
+			$text = $message['text'] ?? null;
+			$webAppData = $message['web_app_data']['data'] ?? null;
 
-		if (!$message) {
-			return null;
+			if (!$chat || !$from) {
+				return null;
+			}
+
+			return new IncomingUpdate(
+				updateId: (string) ($data['update_id'] ?? ''),
+				chatId: (string) $chat['id'],
+				telegramId: (string) $from['id'],
+				username: $from['username'] ?? null,
+				firstName: $from['first_name'] ?? null,
+				lastName: $from['last_name'] ?? null,
+				text: $text,
+				webAppData: $webAppData,
+			);
 		}
 
-		$chat = $message['chat'] ?? null;
-		$from = $message['from'] ?? null;
-		$text = $message['text'] ?? null;
-		$webAppData = $message['web_app_data']['data'] ?? null;
+		if (isset($data['callback_query'])) {
+			$callback = $data['callback_query'];
+			$from = $callback['from'] ?? null;
+			$chat = $callback['message']['chat'] ?? null;
+			$callbackQueryId = $callback['id'] ?? null;
+			$callbackData = $callback['data'] ?? null;
 
-		if (!$chat || !$from) {
-			return null;
+			if (!$from || !$callbackQueryId || !$callbackData) {
+				return null;
+			}
+
+			return new IncomingUpdate(
+				updateId: (string) ($data['update_id'] ?? ''),
+				chatId: $chat ? (string) $chat['id'] : null,
+				telegramId: (string) $from['id'],
+				username: $from['username'] ?? null,
+				firstName: $from['first_name'] ?? null,
+				lastName: $from['last_name'] ?? null,
+				text: null,
+				webAppData: null,
+				callbackQueryId: (string) $callbackQueryId,
+				callbackData: (string) $callbackData,
+			);
 		}
 
-		return new IncomingUpdate(
-			updateId: (string) ($data['update_id'] ?? ''),
-			chatId: (string) $chat['id'],
-			telegramId: (string) $from['id'],
-			username: $from['username'] ?? null,
-			firstName: $from['first_name'] ?? null,
-			lastName: $from['last_name'] ?? null,
-			text: $text,
-			webAppData: $webAppData,
-		);
+		return null;
 	}
 
 	private function upsertTelegramUser(IncomingUpdate $update): void
