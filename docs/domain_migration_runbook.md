@@ -48,8 +48,9 @@ named-location `@laravel` (fastcgi с фиксированным `SCRIPT_FILENAM
 webhook с секретом 200 / без — 403, getWebhookInfo без ошибок, `/log.php` → 404.
 Бэкап vhost: `/root/dg.conf.bak-flip-*`.
 
-> Примечание: `old-downloads.mailhub.uno` теперь дублирует старый сайт (тот же каталог) —
-> можно оставить или убрать позже, на работу не влияет. Маршрут AccessHub `/` (гость→take-order)
+> Примечание: `old-downloads.mailhub.uno` **удалён 18.06.2026** (vhost + SSL-сертификат),
+> т.к. старый сайт снова доступен на корне download-games.info. Каталог
+> `/var/www/download-games.info/public` не тронут. Бэкап vhost: `/root/old-downloads.conf.bak-*`. Маршрут AccessHub `/` (гость→take-order)
 > на этом домене не срабатывает (nginx отдаёт `/` старому сайту) — оставлен как есть, безвреден.
 
 ## Текущее состояние (проверено на сервере)
