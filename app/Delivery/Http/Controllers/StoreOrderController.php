@@ -9,6 +9,7 @@ use App\Delivery\Services\DeliveryTelegramNotifier;
 use App\Delivery\Services\WorkingHours;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 
 final class StoreOrderController
 {
@@ -39,6 +40,14 @@ final class StoreOrderController
 			'email' => ['required', 'email:rfc', 'max:255'],
 			'platform' => ['required', 'string', 'in:PlayStation,Xbox,Nintendo,Steam,Epic Games'],
 		]);
+
+		// P.5: anti-spam — max 2 orders per email per hour (IP ceiling stays on
+		// the route via throttle middleware). Soft limit; tighten later if needed.
+		$rateKey = 'delivery-order:' . sha1(strtolower(trim((string) $data['email'])));
+		if (RateLimiter::tooManyAttempts($rateKey, 2)) {
+			return back()->withInput()->with('error', 'Too many requests. Please try again later.');
+		}
+		RateLimiter::hit($rateKey, 3600);
 
 		$order = $this->orders->createFromCustomerInput(
 			orderNumber: (string) $data['order_number'],

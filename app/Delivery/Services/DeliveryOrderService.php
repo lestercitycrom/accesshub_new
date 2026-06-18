@@ -71,6 +71,10 @@ final class DeliveryOrderService
 			return DeliveryActionResult::fail('Delivery link is expired.');
 		}
 
+		// Re-issue ("Выдать другой аккаунт"): remember the currently assigned
+		// account so its use can be returned once a new one is issued (P.1).
+		$previousAccountId = $order->account_id !== null ? (int) $order->account_id : null;
+
 		$game = trim($game);
 		$issuePlatform = $this->normalizePlatform($issuePlatform ?: (string) $order->platform);
 
@@ -159,7 +163,34 @@ final class DeliveryOrderService
 			'password_type' => $passwordType->value,
 		]);
 
+		// P.1: a re-issue replaced a previously assigned account — return its use
+		// to the pool so accounts are not wasted (mirrors replaceAccount).
+		if ($previousAccountId !== null && $previousAccountId !== $accountId) {
+			$this->restoreAccountUse($previousAccountId);
+			$this->recordEvent($order, 'account_reissued', 'telegram', (string) $operatorTelegramId, [
+				'previous_account_id' => $previousAccountId,
+				'new_account_id' => $accountId,
+			]);
+		}
+
 		return DeliveryActionResult::ok('Account assigned.');
+	}
+
+	private function restoreAccountUse(int $accountId): void
+	{
+		$account = Account::query()->find($accountId);
+		if ($account === null) {
+			return;
+		}
+
+		$account->available_uses = min(
+			(int) $account->available_uses + 1,
+			(int) $account->max_uses,
+		);
+		if ((int) $account->available_uses > 0 && $account->next_release_at !== null) {
+			$account->next_release_at = null;
+		}
+		$account->save();
 	}
 
 	public function replaceAccount(DeliveryOrder $order, int $operatorTelegramId, string $reason): DeliveryActionResult
@@ -501,7 +532,12 @@ final class DeliveryOrderService
 			'platform' => $order->platform,
 			'game' => $order->game,
 			'expires_at' => $order->token_expires_at?->toIso8601String(),
-			'account' => $order->display_login !== null ? [
+			// P.2: hide credentials once the link is expired or the order is
+			// cancelled (client is shown "Link expired" / "Cancelled" instead).
+			'account' => ($order->display_login !== null && !in_array($order->status, [
+				DeliveryOrderStatus::EXPIRED,
+				DeliveryOrderStatus::CANCELLED,
+			], true)) ? [
 				'login' => $order->display_login,
 				'password' => $order->display_password,
 				'password_type' => $order->display_password_type?->value,

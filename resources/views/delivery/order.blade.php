@@ -31,6 +31,16 @@
 			</div>
 		</div>
 
+		{{-- Warning: do not change credentials (shown once an account is assigned) --}}
+		<div class="card hidden" id="credWarningCard">
+			<div class="card-body">
+				<div class="alert alert--warn" style="margin:0;">
+					<span class="ic"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+					<span><strong>Do not change the login or password.</strong><br>Changing the account credentials will break access to the game, and the order cannot be restored.</span>
+				</div>
+			</div>
+		</div>
+
 		{{-- Account + Instruction --}}
 		<div class="card">
 			<div class="card-body">
@@ -315,6 +325,7 @@
 				el('dExpires').textContent = exp || '';
 
 				renderAccount(data);
+				el('credWarningCard')?.classList.toggle('hidden', !data.account);
 				renderInstruction(data);
 				renderConnection(data);
 			}
