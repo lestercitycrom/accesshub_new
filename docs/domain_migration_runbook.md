@@ -27,6 +27,31 @@ Cutover проведён и протестирован. Текущее сост�
 
 Бэкапы cutover: `storage/deploy-backups/pre-domain-*.tgz` (.env), `/root/nginx-backup-*`.
 
+## ⚠️ ПЕРЕСМОТР 18.06.2026: корень download-games.info = СТАРЫЙ сайт
+
+Заказчик уточнил: на `download-games.info/` должен показываться **старый сайт** (как раньше),
+а AccessHub остаётся на своих путях. Итоговая раскладка одного домена `download-games.info`:
+
+| Путь | Что отдаётся | Откуда |
+|---|---|---|
+| `/`, `/index.php`, `/tutorial.php`, `/includes/controllers/*`, `/css /js /img /docs /flags /content /data /json`, `/site.webmanifest` | **СТАРЫЙ сайт** | `/var/www/download-games.info/public` |
+| `/take-order`, `/order/{token}`, `/webapp`, `/admin`, `/login`, `/settings`, `/api/telegram/webhook`, `/build`, `/livewire-*`, и всё прочее | **AccessHub** | `/var/www/mailhub/access/public` |
+
+Реализация (nginx, vhost `download-games.info.conf`): AccessHub остаётся **дефолтом** через
+named-location `@laravel` (fastcgi с фиксированным `SCRIPT_FILENAME=.../access/public/index.php`),
+а старый сайт врезан на свои конкретные пути. Это снимает коллизию по `/index.php`
+(AccessHub не использует `/index.php` как URL) и не требует перечислять все маршруты AccessHub.
+Любой `*.php` вне явных old-site путей → `return 404` (защита от утечки исходников, напр. `/log.php`).
+
+Проверено: `/` = старый сайт (title «How to install a console account…»), `/take-order` 200,
+`/order/.../status` 200, `/webapp` 200, `/admin`→`/login` 200 (Vite + Livewire грузятся),
+webhook с секретом 200 / без — 403, getWebhookInfo без ошибок, `/log.php` → 404.
+Бэкап vhost: `/root/dg.conf.bak-flip-*`.
+
+> Примечание: `old-downloads.mailhub.uno` теперь дублирует старый сайт (тот же каталог) —
+> можно оставить или убрать позже, на работу не влияет. Маршрут AccessHub `/` (гость→take-order)
+> на этом домене не срабатывает (nginx отдаёт `/` старому сайту) — оставлен как есть, безвреден.
+
 ## Текущее состояние (проверено на сервере)
 
 | Домен | nginx root | Что это |
