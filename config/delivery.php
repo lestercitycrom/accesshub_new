@@ -31,7 +31,7 @@ return [
 		'enforce' => filter_var(env('DELIVERY_WORKING_HOURS', false), FILTER_VALIDATE_BOOL),
 		'start' => (int) env('DELIVERY_WORKING_HOURS_START', 9),   // 09:00
 		'end' => (int) env('DELIVERY_WORKING_HOURS_END', 23),      // 23:00 (24 = midnight)
-		'timezone' => env('DELIVERY_WORKING_HOURS_TZ', 'Europe/Kiev'),
+		'timezone' => env('DELIVERY_WORKING_HOURS_TZ', 'Europe/Kyiv'),
 		'label' => env('DELIVERY_WORKING_HOURS_LABEL', 'EET'),
 	],
 

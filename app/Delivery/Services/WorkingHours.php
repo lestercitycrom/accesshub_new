@@ -29,7 +29,7 @@ final class WorkingHours
 
 	public function timezone(): string
 	{
-		return (string) config('delivery.working_hours.timezone', 'Europe/Kiev');
+		return (string) config('delivery.working_hours.timezone', 'Europe/Kyiv');
 	}
 
 	public function label(): string
@@ -39,7 +39,14 @@ final class WorkingHours
 
 	public function isOpen(?CarbonImmutable $now = null): bool
 	{
-		$now = ($now ?? CarbonImmutable::now())->setTimezone($this->timezone());
+		try {
+			$now = ($now ?? CarbonImmutable::now())->setTimezone($this->timezone());
+		} catch (\Throwable) {
+			// A bad timezone config must never break the public order form:
+			// fail open (treat as within hours = no night block).
+			return true;
+		}
+
 		$hour = (int) $now->format('G');
 
 		// end == 24 means "open until midnight".

@@ -14,7 +14,7 @@ it('blocks orders outside support hours when enforced', function (): void {
 		'delivery.working_hours.enforce' => true,
 		'delivery.working_hours.start' => 9,
 		'delivery.working_hours.end' => 23,
-		'delivery.working_hours.timezone' => 'Europe/Kiev',
+		'delivery.working_hours.timezone' => 'Europe/Kyiv',
 	]);
 	CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-06-18 03:00', 'Europe/Kiev'));
 
@@ -35,7 +35,7 @@ it('accepts orders during support hours when enforced', function (): void {
 		'delivery.working_hours.enforce' => true,
 		'delivery.working_hours.start' => 9,
 		'delivery.working_hours.end' => 23,
-		'delivery.working_hours.timezone' => 'Europe/Kiev',
+		'delivery.working_hours.timezone' => 'Europe/Kyiv',
 	]);
 	CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-06-18 12:00', 'Europe/Kiev'));
 
@@ -71,4 +71,20 @@ it('exposes the installation tutorial url for steam and epic only', function ():
 	$this->getJson(route('delivery.order.status', ['token' => $xbox->token]))
 		->assertOk()
 		->assertJsonPath('tutorial_url', null);
+});
+
+it('fails open (does not 500) when the configured timezone is invalid', function (): void {
+	config([
+		'delivery.working_hours.enforce' => true,
+		'delivery.working_hours.timezone' => 'Definitely/Not_A_Timezone',
+	]);
+
+	$this->post(route('delivery.take-order.store'), [
+		'order_number' => 'BAD-TZ-1',
+		'email' => 'client@example.com',
+		'platform' => 'Steam',
+	])->assertRedirect();
+
+	// Fail-open: order is accepted rather than crashing the public form.
+	expect(DeliveryOrder::query()->where('order_number', 'BAD-TZ-1')->exists())->toBeTrue();
 });
