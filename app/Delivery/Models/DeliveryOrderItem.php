@@ -12,25 +12,20 @@ use App\Domain\Telegram\Models\TelegramUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-final class DeliveryOrder extends Model
+final class DeliveryOrderItem extends Model
 {
 	use HasFactory;
 
-	protected $table = 'delivery_orders';
+	protected $table = 'delivery_order_items';
 
 	protected $fillable = [
-		'token',
-		'order_number',
-		'customer_email',
+		'delivery_order_id',
+		'position',
 		'platform',
 		'issue_platform',
 		'game',
 		'status',
-		'token_expires_at',
-		'connected_at',
-		'cancelled_at',
 		'account_id',
 		'issuance_id',
 		'operator_telegram_id',
@@ -42,14 +37,12 @@ final class DeliveryOrder extends Model
 		'connection_locked_until',
 		'last_connection_code',
 		'last_connection_code_submitted_at',
-		'meta',
+		'connected_at',
 	];
 
 	protected $casts = [
+		'position' => 'integer',
 		'status' => DeliveryOrderStatus::class,
-		'token_expires_at' => 'datetime',
-		'connected_at' => 'datetime',
-		'cancelled_at' => 'datetime',
 		'account_id' => 'integer',
 		'issuance_id' => 'integer',
 		'operator_telegram_id' => 'integer',
@@ -58,8 +51,13 @@ final class DeliveryOrder extends Model
 		'connection_attempts_limit' => 'integer',
 		'connection_locked_until' => 'datetime',
 		'last_connection_code_submitted_at' => 'datetime',
-		'meta' => 'array',
+		'connected_at' => 'datetime',
 	];
+
+	public function order(): BelongsTo
+	{
+		return $this->belongsTo(DeliveryOrder::class, 'delivery_order_id');
+	}
 
 	public function account(): BelongsTo
 	{
@@ -75,20 +73,4 @@ final class DeliveryOrder extends Model
 	{
 		return $this->belongsTo(TelegramUser::class, 'operator_telegram_id', 'telegram_id');
 	}
-
-	public function events(): HasMany
-	{
-		return $this->hasMany(DeliveryEvent::class, 'delivery_order_id');
-	}
-
-	public function items(): HasMany
-	{
-		return $this->hasMany(DeliveryOrderItem::class, 'delivery_order_id')->orderBy('position');
-	}
-
-	public function isExpired(): bool
-	{
-		return $this->token_expires_at !== null && now()->greaterThan($this->token_expires_at);
-	}
 }
-
