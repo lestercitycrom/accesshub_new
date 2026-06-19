@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Delivery\Services;
 
 use App\Delivery\Models\DeliveryOrder;
+use App\Delivery\Models\DeliveryOrderItem;
 use App\Domain\Telegram\Enums\TelegramRole;
 use App\Domain\Telegram\Models\TelegramUser;
 use App\Telegram\Services\TelegramClient;
@@ -46,21 +47,25 @@ final class DeliveryTelegramNotifier
 		]);
 	}
 
-	public function notifyConnectionCodeSubmitted(DeliveryOrder $order): void
+	public function notifyConnectionCodeSubmitted(DeliveryOrder|DeliveryOrderItem $holder): void
 	{
-		$order->refresh();
+		$holder->refresh();
+		$order = $holder instanceof DeliveryOrderItem ? $holder->order : $holder;
+
+		// Callback target: order id for the first game, "i<itemId>" for items.
+		$cb = $holder instanceof DeliveryOrderItem ? ('i' . $holder->id) : (string) $order->id;
 
 		$message = implode("\n", array_filter([
 			'🔑 <b>Клиент отправил код подключения</b>',
 			'➖➖➖➖➖➖➖➖➖➖',
 			'📦 Заказ:  <code>' . $this->escape($order->order_number) . '</code>',
-			'🎮 Платформа:  <b>' . $this->escape($order->platform) . '</b>',
-			$order->game ? '🕹 Игра:  <b>' . $this->escape($order->game) . '</b>' : null,
-			'🔢 Код:  <code>' . $this->escape($order->last_connection_code) . '</code>',
+			'🎮 Платформа:  <b>' . $this->escape($holder->platform) . '</b>',
+			$holder->game ? '🕹 Игра:  <b>' . $this->escape($holder->game) . '</b>' : null,
+			'🔢 Код:  <code>' . $this->escape($holder->last_connection_code) . '</code>',
 			sprintf(
 				'🔁 Попытка:  %d / %d',
-				(int) $order->connection_attempts_used,
-				(int) $order->connection_attempts_limit,
+				(int) $holder->connection_attempts_used,
+				(int) $holder->connection_attempts_limit,
 			),
 			'➖➖➖➖➖➖➖➖➖➖',
 			'👉 Откройте страницу подключения платформы и обработайте этот код.',
@@ -71,21 +76,21 @@ final class DeliveryTelegramNotifier
 				[
 					[
 						'text' => 'Connecting',
-						'callback_data' => 'delivery:connecting:' . $order->id,
+						'callback_data' => 'delivery:connecting:' . $cb,
 					],
 					[
 						'text' => 'Connected',
-						'callback_data' => 'delivery:connected:' . $order->id,
+						'callback_data' => 'delivery:connected:' . $cb,
 					],
 				],
 				[
 					[
 						'text' => 'Failed',
-						'callback_data' => 'delivery:failed:' . $order->id,
+						'callback_data' => 'delivery:failed:' . $cb,
 					],
 					[
 						'text' => '+1 attempt',
-						'callback_data' => 'delivery:extra:' . $order->id . ':1',
+						'callback_data' => 'delivery:extra:' . $cb . ':1',
 					],
 				],
 				[

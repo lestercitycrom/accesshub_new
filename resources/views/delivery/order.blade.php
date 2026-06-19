@@ -1,4 +1,15 @@
 <x-dynamic-component component="delivery.layout" title="Order {{ $payload['order_number'] }}">
+	<style>
+		.tabbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+		.tab { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:999px; padding:8px 16px; font:inherit; font-weight:600; font-size:14px; cursor:pointer; box-shadow:var(--shadow-sm); transition:all .15s; }
+		.tab:hover { border-color:var(--accent); }
+		.tab--active { background:linear-gradient(135deg, var(--grad-from) 0%, var(--grad-to) 100%); color:#fff; border-color:transparent; }
+		.tab-dot { width:9px; height:9px; border-radius:50%; background:var(--muted); flex:none; }
+		.tab--active .tab-dot { background:#fff; }
+		.tab-dot.dot-ok { background:var(--ok); } .tab-dot.dot-accent { background:var(--grad-to); }
+		.tab-dot.dot-danger { background:var(--danger); } .tab-dot.dot-info { background:var(--info); }
+	</style>
+
 	<div id="orderApp"
 		data-status-url="{{ route('delivery.order.status', ['token' => $order->token]) }}"
 		data-code-url="{{ route('delivery.order.connection-code.store', ['token' => $order->token]) }}">
@@ -14,13 +25,11 @@
 			</div>
 
 			<div class="card-body">
-				{{-- State banner --}}
 				<div class="alert alert--info hidden" id="stateBanner" style="margin-bottom:16px;">
 					<span class="ic" id="bannerIcon"></span>
 					<span><strong id="bannerTitle"></strong><br><span id="bannerText"></span></span>
 				</div>
 
-				{{-- Order details --}}
 				<div class="details">
 					<div class="detail"><div class="k">Order number</div><div class="v" id="dOrderNumber">{{ $payload['order_number'] }}</div></div>
 					<div class="detail"><div class="k">Platform</div><div class="v" id="dPlatform">{{ $payload['platform'] }}</div></div>
@@ -31,7 +40,10 @@
 			</div>
 		</div>
 
-		{{-- Warning: do not change credentials (shown once an account is assigned) --}}
+		{{-- Tabs (one per game; shown only when there are several) --}}
+		<div class="tabbar hidden" id="tabBar"></div>
+
+		{{-- Warning: do not change credentials --}}
 		<div class="card hidden" id="credWarningCard">
 			<div class="card-body">
 				<div class="alert alert--warn" style="margin:0;">
@@ -41,7 +53,7 @@
 			</div>
 		</div>
 
-		{{-- Account + Instruction --}}
+		{{-- Account + Instruction (active game) --}}
 		<div class="card">
 			<div class="card-body">
 				<h2>Account</h2>
@@ -59,7 +71,7 @@
 			</div>
 		</div>
 
-		{{-- Connection code --}}
+		{{-- Connection code (active game) --}}
 		<section class="card hidden" id="connectionCard">
 			<div class="card-body">
 				<h2>Console connection</h2>
@@ -101,7 +113,6 @@
 			const statusBadge = el('statusBadge');
 			const accountBlock = el('accountBlock');
 			const instructionBlock = el('instructionBlock');
-			const instructionWrap = el('instructionWrap');
 			const connectionCard = el('connectionCard');
 			const connForm = el('connForm');
 			const connInput = el('connection_code');
@@ -145,6 +156,9 @@
 
 			let pollingMs = 8000;
 			let pollTimer = null;
+			let lastPayload = null;
+			let items = [];
+			let activeId = null;
 
 			function fmtDate(iso) {
 				if (!iso) return null;
@@ -163,9 +177,9 @@
 				el('bannerText').textContent = text || '';
 			}
 
-			function bannerFor(data) {
-				const c = data.connection || {};
-				switch (data.status) {
+			function bannerFor(item) {
+				const c = item.connection || {};
+				switch (item.status) {
 					case 'new':
 					case 'waiting_for_operator':
 						return ['alert--info', 'clock', 'Waiting for operator',
@@ -195,7 +209,7 @@
 						return ['alert--muted', 'clock', 'This link has expired',
 							'Please request a new delivery link from the seller.'];
 					case 'cancelled':
-						return ['alert--muted', 'xcircle', 'Order cancelled', 'Contact support.'];
+						return ['alert--muted', 'xcircle', 'Order cancelled', 'Contact the seller.'];
 					default:
 						return ['alert--info', 'info', '', ''];
 				}
@@ -220,34 +234,34 @@
 				return row.firstChild;
 			}
 
-			function renderAccount(data) {
+			function renderAccount(item) {
 				accountBlock.replaceChildren();
-				if (!data.account) {
+				if (!item.account) {
 					const p = document.createElement('p');
 					p.className = 'muted';
-					p.textContent = TERMINAL.includes(data.status) && data.status !== 'connected'
-						? 'No account is attached to this order.'
+					p.textContent = TERMINAL.includes(item.status) && item.status !== 'connected'
+						? 'No account is attached to this game.'
 						: 'Waiting for operator to assign an account…';
 					accountBlock.append(p);
 					return;
 				}
-				accountBlock.append(credRow('Login', data.account.login || '', null));
-				const isFake = data.account.password_type === 'fake';
+				accountBlock.append(credRow('Login', item.account.login || '', null));
+				const isFake = item.account.password_type === 'fake';
 				const hint = isFake
 					? 'Use these details to start the console connection. Final sign-in is completed after you send the code.'
 					: null;
-				accountBlock.append(credRow('Password', data.account.password || '', hint));
+				accountBlock.append(credRow('Password', item.account.password || '', hint));
 			}
 
-			function renderInstruction(data) {
+			function renderInstruction(item) {
 				instructionBlock.replaceChildren();
-				if (data.instruction && (data.instruction.title || data.instruction.body)) {
-					if (data.instruction.title) {
-						const h = document.createElement('h3'); h.textContent = data.instruction.title;
+				if (item.instruction && (item.instruction.title || item.instruction.body)) {
+					if (item.instruction.title) {
+						const h = document.createElement('h3'); h.textContent = item.instruction.title;
 						instructionBlock.append(h);
 					}
 					const body = document.createElement('div');
-					body.textContent = data.instruction.body || '';
+					body.textContent = item.instruction.body || '';
 					instructionBlock.append(body);
 				} else {
 					const p = document.createElement('p'); p.className = 'muted';
@@ -255,9 +269,9 @@
 					instructionBlock.append(p);
 				}
 
-				if (data.tutorial_url) {
+				if (item.tutorial_url) {
 					const a = document.createElement('a');
-					a.href = data.tutorial_url;
+					a.href = item.tutorial_url;
 					a.target = '_blank';
 					a.rel = 'noopener noreferrer';
 					a.className = 'btn secondary';
@@ -267,15 +281,15 @@
 				}
 			}
 
-			function renderConnection(data) {
-				const c = data.connection || {};
-				const show = c.required && CONN_VISIBLE_STATES.includes(data.status);
+			function renderConnection(item) {
+				const c = item.connection || {};
+				const show = c.required && CONN_VISIBLE_STATES.includes(item.status);
 				connectionCard.classList.toggle('hidden', !show);
 				if (!show) return;
 
-				const inForm = CONN_FORM_STATES.includes(data.status);
-				const inProgress = CONN_PROGRESS_STATES.includes(data.status);
-				const locked = data.status === 'locked_24h';
+				const inForm = CONN_FORM_STATES.includes(item.status);
+				const inProgress = CONN_PROGRESS_STATES.includes(item.status);
+				const locked = item.status === 'locked_24h';
 
 				connForm.classList.toggle('hidden', !inForm);
 				connProgress.classList.toggle('hidden', !inProgress);
@@ -288,7 +302,7 @@
 				connSubmit.querySelector('.btn-label').textContent = noAttempts ? 'No attempts left' : 'Send code';
 
 				if (inProgress) {
-					el('connProgressText').textContent = data.status === 'operator_connecting'
+					el('connProgressText').textContent = item.status === 'operator_connecting'
 						? 'Operator is connecting your console. Please keep this page open.'
 						: 'We received your code. Waiting for an operator to connect your console.';
 				}
@@ -299,35 +313,79 @@
 				}
 			}
 
-			function render(data) {
-				if (!data || !data.status) return;
-				pollingMs = Math.max(3000, (data.polling_interval_seconds || 8) * 1000);
+			function tabDotClass(status) {
+				if (status === 'connected' || status === 'account_assigned') return 'dot-ok';
+				if (status === 'waiting_for_connection_code') return 'dot-accent';
+				if (status === 'connection_failed' || status === 'locked_24h') return 'dot-danger';
+				if (['connection_code_submitted', 'operator_connecting', 'waiting_for_operator', 'new'].includes(status)) return 'dot-info';
+				return '';
+			}
 
-				const [badgeText, badgeCls] = BADGE[data.status] || [String(data.status).replaceAll('_', ' '), 'badge--muted'];
+			function renderTabs() {
+				const bar = el('tabBar');
+				bar.replaceChildren();
+				if (items.length <= 1) { bar.classList.add('hidden'); return; }
+				bar.classList.remove('hidden');
+				items.forEach((it, i) => {
+					const b = document.createElement('button');
+					b.type = 'button';
+					b.className = 'tab' + (String(it.id) === String(activeId) ? ' tab--active' : '');
+					const dot = document.createElement('span');
+					dot.className = 'tab-dot ' + tabDotClass(it.status);
+					const label = document.createElement('span');
+					label.textContent = it.game || ('Game ' + (i + 1));
+					b.append(dot, label);
+					b.addEventListener('click', () => { activeId = it.id; if (lastPayload) render(lastPayload); });
+					bar.append(b);
+				});
+			}
+
+			function activeItem() {
+				return items.find((i) => String(i.id) === String(activeId)) || items[0];
+			}
+
+			function legacyItem(p) {
+				return { id: 0, game: p.game, platform: p.platform, status: p.status, account: p.account, connection: p.connection, instruction: p.instruction, tutorial_url: p.tutorial_url };
+			}
+
+			function render(payload) {
+				if (!payload || !payload.status) return;
+				lastPayload = payload;
+				pollingMs = Math.max(3000, (payload.polling_interval_seconds || 8) * 1000);
+
+				items = Array.isArray(payload.items) && payload.items.length ? payload.items : [legacyItem(payload)];
+				if (activeId === null || !items.some((i) => String(i.id) === String(activeId))) {
+					activeId = items[0].id;
+				}
+
+				// order-level header
+				el('orderNumber').textContent = payload.order_number || '';
+				el('dOrderNumber').textContent = payload.order_number || '';
+				el('dEmailWrap').classList.toggle('hidden', !payload.customer_email);
+				el('dEmail').textContent = payload.customer_email || '';
+				const exp = fmtDate(payload.expires_at);
+				el('dExpiresWrap').classList.toggle('hidden', !exp);
+				el('dExpires').textContent = exp || '';
+
+				renderTabs();
+
+				const item = activeItem();
+				const [badgeText, badgeCls] = BADGE[item.status] || [String(item.status).replaceAll('_', ' '), 'badge--muted'];
 				statusBadge.className = 'badge ' + badgeCls;
 				statusBadge.innerHTML = '<span class="dot"></span>';
 				const t = document.createElement('span'); t.className = 'badge-text'; t.textContent = badgeText;
 				statusBadge.append(t);
 
-				setBanner(...bannerFor(data));
+				setBanner(...bannerFor(item));
+				el('platformLine').textContent = [item.platform, item.game].filter(Boolean).join(' · ');
+				el('dPlatform').textContent = item.platform || '';
+				el('dGameWrap').classList.toggle('hidden', !item.game);
+				el('dGame').textContent = item.game || '';
 
-				el('orderNumber').textContent = data.order_number || '';
-				el('platformLine').textContent = [data.platform, data.game].filter(Boolean).join(' · ');
-				el('dOrderNumber').textContent = data.order_number || '';
-				el('dPlatform').textContent = data.platform || '';
-
-				el('dGameWrap').classList.toggle('hidden', !data.game);
-				el('dGame').textContent = data.game || '';
-				el('dEmailWrap').classList.toggle('hidden', !data.customer_email);
-				el('dEmail').textContent = data.customer_email || '';
-				const exp = fmtDate(data.expires_at);
-				el('dExpiresWrap').classList.toggle('hidden', !exp);
-				el('dExpires').textContent = exp || '';
-
-				renderAccount(data);
-				el('credWarningCard')?.classList.toggle('hidden', !data.account);
-				renderInstruction(data);
-				renderConnection(data);
+				renderAccount(item);
+				el('credWarningCard')?.classList.toggle('hidden', !item.account);
+				renderInstruction(item);
+				renderConnection(item);
 			}
 
 			// --- copy buttons (event delegation) ---
@@ -358,13 +416,14 @@
 					if (res.ok) {
 						const data = await res.json();
 						render(data);
-						if (TERMINAL.includes(data.status)) return; // stop polling on terminal states
+						// stop polling only when every game has reached a terminal state
+						if (items.length && items.every((i) => TERMINAL.includes(i.status))) return;
 					}
 				} catch (_) { /* keep polling on transient errors */ }
 				pollTimer = setTimeout(refresh, pollingMs);
 			}
 
-			// --- connection code submit ---
+			// --- connection code submit (for the active game) ---
 			connForm.addEventListener('submit', async (e) => {
 				e.preventDefault();
 				connError.classList.add('hidden');
@@ -383,7 +442,7 @@
 					const res = await fetch(codeUrl, {
 						method: 'POST',
 						headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-						body: JSON.stringify({ connection_code: code }),
+						body: JSON.stringify({ connection_code: code, item: activeId }),
 					});
 					const data = await res.json().catch(() => ({}));
 					if (data.order) {

@@ -106,15 +106,23 @@ final class BotDispatcher
 
 		$parts = explode(':', $data);
 		$action = $parts[1] ?? '';
-		$orderId = (int) ($parts[2] ?? 0);
+		$ref = (string) ($parts[2] ?? '');
 
-		if ($orderId <= 0) {
+		if ($ref === '') {
 			$this->telegramClient->answerCallbackQuery($incoming->callbackQueryId, 'Order is not specified.', true);
 			return null;
 		}
 
-		$order = DeliveryOrder::query()->find($orderId);
-		if ($order === null) {
+		// P.4: target is the order (numeric id) or a game item ("i<itemId>").
+		if (str_starts_with($ref, 'i')) {
+			$itemId = (int) substr($ref, 1);
+			$holder = $itemId > 0 ? \App\Delivery\Models\DeliveryOrderItem::query()->find($itemId) : null;
+		} else {
+			$orderId = (int) $ref;
+			$holder = $orderId > 0 ? DeliveryOrder::query()->find($orderId) : null;
+		}
+
+		if ($holder === null) {
 			$this->telegramClient->answerCallbackQuery($incoming->callbackQueryId, 'Order not found.', true);
 			return null;
 		}
@@ -127,10 +135,10 @@ final class BotDispatcher
 		}
 
 		$result = match ($action) {
-			'connecting' => $this->deliveryOrders->markOperatorConnecting($order, $telegramId),
-			'connected' => $this->deliveryOrders->markConnected($order, $telegramId),
-			'failed' => $this->deliveryOrders->markConnectionFailed($order, $telegramId, 'telegram_callback'),
-			'extra' => $this->deliveryOrders->grantExtraAttempts($order, $telegramId, (int) ($parts[3] ?? 1)),
+			'connecting' => $this->deliveryOrders->markOperatorConnecting($holder, $telegramId),
+			'connected' => $this->deliveryOrders->markConnected($holder, $telegramId),
+			'failed' => $this->deliveryOrders->markConnectionFailed($holder, $telegramId, 'telegram_callback'),
+			'extra' => $this->deliveryOrders->grantExtraAttempts($holder, $telegramId, (int) ($parts[3] ?? 1)),
 		};
 
 		if ($result->failed()) {
