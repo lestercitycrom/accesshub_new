@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * P.4 — multi-game delivery orders.
+ * P.4 — multi-game delivery orders (additive model).
  *
- * A delivery order becomes a "header"; each purchased game is a row here with
- * its own account, credentials and connection lifecycle. Existing assigned
- * orders are backfilled as a single item so nothing is lost.
+ * The first game stays on `delivery_orders` (unchanged flow). This table holds
+ * ADDITIONAL games (2nd, 3rd…) for the same order — each with its own account,
+ * credentials and connection lifecycle. The public payload/UI present the first
+ * game + these items as one uniform list of tabs. No backfill needed.
  */
 return new class () extends Migration
 {
@@ -59,37 +59,6 @@ return new class () extends Migration
 			$table->index(['delivery_order_id', 'position']);
 			$table->index(['status']);
 		});
-
-		// Backfill: every order that already has an assigned account becomes one
-		// item (position 0). Waiting/unassigned orders get items on first issue.
-		$now = now();
-		DB::table('delivery_orders')
-			->whereNotNull('account_id')
-			->orderBy('id')
-			->each(function ($order) use ($now): void {
-				DB::table('delivery_order_items')->insert([
-					'delivery_order_id' => $order->id,
-					'position' => 0,
-					'platform' => $order->platform,
-					'issue_platform' => $order->issue_platform,
-					'game' => $order->game,
-					'status' => $order->status,
-					'account_id' => $order->account_id,
-					'issuance_id' => $order->issuance_id,
-					'operator_telegram_id' => $order->operator_telegram_id,
-					'display_login' => $order->display_login,
-					'display_password' => $order->display_password,
-					'display_password_type' => $order->display_password_type,
-					'connection_attempts_used' => $order->connection_attempts_used,
-					'connection_attempts_limit' => $order->connection_attempts_limit,
-					'connection_locked_until' => $order->connection_locked_until,
-					'last_connection_code' => $order->last_connection_code,
-					'last_connection_code_submitted_at' => $order->last_connection_code_submitted_at,
-					'connected_at' => $order->connected_at,
-					'created_at' => $order->created_at ?? $now,
-					'updated_at' => $now,
-				]);
-			});
 	}
 
 	public function down(): void

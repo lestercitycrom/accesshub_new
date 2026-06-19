@@ -10,6 +10,7 @@ use App\Delivery\Enums\DeliveryOrderStatus;
 use App\Delivery\Enums\DeliveryPasswordType;
 use App\Delivery\Models\DeliveryEvent;
 use App\Delivery\Models\DeliveryOrder;
+use App\Delivery\Models\DeliveryOrderItem;
 use App\Delivery\Models\DeliveryPlatformInstruction;
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
@@ -193,6 +194,110 @@ final class DeliveryOrderService
 		$account->save();
 	}
 
+	/**
+	 * P.4: issue an ADDITIONAL game into the order as a new item (tab).
+	 * The first game stays on the order via assignAccount(); this adds games 2..N.
+	 */
+	public function addGame(DeliveryOrder $order, int $operatorTelegramId, string $game, ?string $issuePlatform = null, ?int $accountId = null): DeliveryActionResult
+	{
+		$order->refresh();
+
+		if (in_array($order->status, [DeliveryOrderStatus::CANCELLED, DeliveryOrderStatus::EXPIRED], true)) {
+			return DeliveryActionResult::fail($this->completedMessage());
+		}
+		if ($order->isExpired()) {
+			$this->markExpired($order);
+			return DeliveryActionResult::fail('Delivery link is expired.');
+		}
+
+		$game = trim($game);
+		$issuePlatform = $this->normalizePlatform($issuePlatform ?: (string) $order->platform);
+		if ($game === '' || $issuePlatform === '') {
+			return DeliveryActionResult::fail('Game and platform are required.');
+		}
+
+		$result = null;
+		$attemptMessages = [];
+		$issuedPlatform = $issuePlatform;
+
+		foreach ($this->issuePlatformCandidates($issuePlatform) as $candidatePlatform) {
+			$result = $this->issueService->issue(
+				telegramId: $operatorTelegramId,
+				orderId: (string) $order->order_number,
+				game: $game,
+				platform: $candidatePlatform,
+				qty: 1,
+				allowedRoles: [TelegramRole::OPERATOR, TelegramRole::DELIVERY_OPERATOR, TelegramRole::ADMIN],
+				accountId: $accountId,
+			);
+
+			if ($result->ok()) {
+				$issuedPlatform = $this->canonicalIssuePlatformLabel($candidatePlatform);
+				break;
+			}
+
+			$attemptMessages[$candidatePlatform] = $result->message();
+			if (!$this->shouldTryNextIssuePlatform($result)) {
+				break;
+			}
+		}
+
+		if ($result === null || !$result->ok()) {
+			return DeliveryActionResult::fail(
+				$this->formatAssignmentFailureMessage($game, $issuePlatform, $attemptMessages)
+			);
+		}
+
+		$item = $result->items[0] ?? null;
+		if (!is_array($item)) {
+			return DeliveryActionResult::fail('Issue service returned no account.');
+		}
+
+		$newAccountId = (int) $item['account_id'];
+		$issuance = Issuance::query()
+			->where('order_id', $order->order_number)
+			->where('account_id', $newAccountId)
+			->latest('issued_at')
+			->first();
+
+		$requiresConnection = $this->requiresConnectionCode($issuePlatform);
+		$passwordType = $requiresConnection ? DeliveryPasswordType::FAKE : DeliveryPasswordType::REAL;
+		$displayPassword = $requiresConnection
+			? $this->fakePasswordFactory->make()
+			: (string) $item['password'];
+
+		$position = (int) ($order->items()->max('position') ?? 0) + 1;
+
+		$newItem = DeliveryOrderItem::query()->create([
+			'delivery_order_id' => $order->id,
+			'position' => $position,
+			'platform' => $issuePlatform,
+			'issue_platform' => $issuedPlatform,
+			'game' => $game,
+			'status' => $requiresConnection
+				? DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE
+				: DeliveryOrderStatus::ACCOUNT_ASSIGNED,
+			'account_id' => $newAccountId,
+			'issuance_id' => $issuance?->id,
+			'operator_telegram_id' => $operatorTelegramId,
+			'display_login' => (string) $item['login'],
+			'display_password' => $displayPassword,
+			'display_password_type' => $passwordType,
+			'connection_attempts_limit' => (int) config('delivery.connection_attempts_limit', 3),
+		]);
+
+		$this->recordEvent($order, 'item_added', 'telegram', (string) $operatorTelegramId, [
+			'item_id' => $newItem->id,
+			'position' => $position,
+			'game' => $game,
+			'issue_platform' => $issuedPlatform,
+			'account_id' => $newAccountId,
+			'password_type' => $passwordType->value,
+		]);
+
+		return DeliveryActionResult::ok('Game added.');
+	}
+
 	public function replaceAccount(DeliveryOrder $order, int $operatorTelegramId, string $reason): DeliveryActionResult
 	{
 		$order->refresh();
@@ -364,44 +469,46 @@ final class DeliveryOrderService
 		});
 	}
 
-	public function submitConnectionCode(DeliveryOrder $order, string $code): DeliveryActionResult
+	public function submitConnectionCode(DeliveryOrder|DeliveryOrderItem $holder, string $code): DeliveryActionResult
 	{
-		$order->refresh();
+		$holder->refresh();
+		$owner = $this->orderOf($holder);
+		$ctx = $this->holderContext($holder);
 
-		if ($this->isCompleted($order)) {
+		if ($this->isCompleted($holder)) {
 			return DeliveryActionResult::fail('This order is already connected.');
 		}
 
-		if ($order->isExpired()) {
-			$this->markExpired($order);
+		if ($owner->isExpired()) {
+			$this->markExpired($owner);
 			return DeliveryActionResult::fail('Delivery link is expired.');
 		}
 
-		if (!$this->requiresConnectionCode((string) $order->platform)) {
+		if (!$this->requiresConnectionCode((string) $holder->platform)) {
 			return DeliveryActionResult::fail('Connection code is not required for this platform.');
 		}
 
-		if ($order->account_id === null) {
+		if ($holder->account_id === null) {
 			return DeliveryActionResult::fail('Account is not assigned yet.');
 		}
 
-		if ($order->connection_locked_until !== null && now()->lessThan($order->connection_locked_until)) {
-			$order->forceFill(['status' => DeliveryOrderStatus::LOCKED_24H])->save();
+		if ($holder->connection_locked_until !== null && now()->lessThan($holder->connection_locked_until)) {
+			$holder->forceFill(['status' => DeliveryOrderStatus::LOCKED_24H])->save();
 			return DeliveryActionResult::fail('Connection attempts are locked.');
 		}
 
-		if ($order->connection_locked_until !== null && now()->greaterThanOrEqualTo($order->connection_locked_until)) {
-			$order->forceFill([
+		if ($holder->connection_locked_until !== null && now()->greaterThanOrEqualTo($holder->connection_locked_until)) {
+			$holder->forceFill([
 				'status' => DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE,
 				'connection_attempts_used' => 0,
 				'connection_locked_until' => null,
 			])->save();
 
-			$this->recordEvent($order, 'connection_unlocked_after_timeout');
+			$this->recordEvent($owner, 'connection_unlocked_after_timeout', payload: $ctx);
 		}
 
-		if ((int) $order->connection_attempts_used >= (int) $order->connection_attempts_limit) {
-			$this->lockForRetry($order);
+		if ((int) $holder->connection_attempts_used >= (int) $holder->connection_attempts_limit) {
+			$this->lockForRetry($holder);
 			return DeliveryActionResult::fail('Connection attempts limit reached.');
 		}
 
@@ -410,101 +517,101 @@ final class DeliveryOrderService
 			return DeliveryActionResult::fail('Connection code must contain 6-8 letters or digits.');
 		}
 
-		$order->forceFill([
+		$holder->forceFill([
 			'status' => DeliveryOrderStatus::CONNECTION_CODE_SUBMITTED,
-			'connection_attempts_used' => (int) $order->connection_attempts_used + 1,
+			'connection_attempts_used' => (int) $holder->connection_attempts_used + 1,
 			'last_connection_code' => $code,
 			'last_connection_code_submitted_at' => now(),
 		])->save();
 
-		$this->recordEvent($order, 'connection_code_submitted', payload: [
+		$this->recordEvent($owner, 'connection_code_submitted', payload: $ctx + [
 			'code' => $code,
-			'attempts_used' => $order->connection_attempts_used,
-			'attempts_limit' => $order->connection_attempts_limit,
+			'attempts_used' => $holder->connection_attempts_used,
+			'attempts_limit' => $holder->connection_attempts_limit,
 		]);
 
 		return DeliveryActionResult::ok('Connection code submitted.');
 	}
 
-	public function markOperatorConnecting(DeliveryOrder $order, int $operatorTelegramId): DeliveryActionResult
+	public function markOperatorConnecting(DeliveryOrder|DeliveryOrderItem $holder, int $operatorTelegramId): DeliveryActionResult
 	{
-		$order->refresh();
+		$holder->refresh();
 
-		if ($this->isCompleted($order)) {
+		if ($this->isCompleted($holder)) {
 			return DeliveryActionResult::fail($this->completedMessage());
 		}
 
-		$order->forceFill([
+		$holder->forceFill([
 			'status' => DeliveryOrderStatus::OPERATOR_CONNECTING,
 			'operator_telegram_id' => $operatorTelegramId,
 		])->save();
 
-		$this->recordEvent($order, 'operator_connecting', 'telegram', (string) $operatorTelegramId);
+		$this->recordEvent($this->orderOf($holder), 'operator_connecting', 'telegram', (string) $operatorTelegramId, $this->holderContext($holder));
 
 		return DeliveryActionResult::ok('Статус обновлен: оператор подключает.');
 	}
 
-	public function markConnected(DeliveryOrder $order, int $operatorTelegramId): DeliveryActionResult
+	public function markConnected(DeliveryOrder|DeliveryOrderItem $holder, int $operatorTelegramId): DeliveryActionResult
 	{
-		$order->refresh();
+		$holder->refresh();
 
-		if ($this->isCompleted($order)) {
+		if ($this->isCompleted($holder)) {
 			return DeliveryActionResult::ok('Заказ уже подключен.');
 		}
 
-		$order->forceFill([
+		$holder->forceFill([
 			'status' => DeliveryOrderStatus::CONNECTED,
 			'operator_telegram_id' => $operatorTelegramId,
 			'connected_at' => now(),
 		])->save();
 
-		$this->recordEvent($order, 'connected', 'telegram', (string) $operatorTelegramId);
+		$this->recordEvent($this->orderOf($holder), 'connected', 'telegram', (string) $operatorTelegramId, $this->holderContext($holder));
 
 		return DeliveryActionResult::ok('Статус обновлен: подключение выполнено.');
 	}
 
-	public function markConnectionFailed(DeliveryOrder $order, int $operatorTelegramId, ?string $reason = null): DeliveryActionResult
+	public function markConnectionFailed(DeliveryOrder|DeliveryOrderItem $holder, int $operatorTelegramId, ?string $reason = null): DeliveryActionResult
 	{
-		$order->refresh();
+		$holder->refresh();
 
-		if ($this->isCompleted($order)) {
+		if ($this->isCompleted($holder)) {
 			return DeliveryActionResult::fail($this->completedMessage());
 		}
 
-		$order->forceFill([
+		$holder->forceFill([
 			'status' => DeliveryOrderStatus::CONNECTION_FAILED,
 			'operator_telegram_id' => $operatorTelegramId,
 		])->save();
 
-		$this->recordEvent($order, 'connection_failed', 'telegram', (string) $operatorTelegramId, [
+		$this->recordEvent($this->orderOf($holder), 'connection_failed', 'telegram', (string) $operatorTelegramId, $this->holderContext($holder) + [
 			'reason' => $reason,
 		]);
 
 		return DeliveryActionResult::ok('Статус обновлен: ошибка подключения.');
 	}
 
-	public function grantExtraAttempts(DeliveryOrder $order, int $operatorTelegramId, int $amount): DeliveryActionResult
+	public function grantExtraAttempts(DeliveryOrder|DeliveryOrderItem $holder, int $operatorTelegramId, int $amount): DeliveryActionResult
 	{
-		$order->refresh();
+		$holder->refresh();
 
-		if ($this->isCompleted($order)) {
+		if ($this->isCompleted($holder)) {
 			return DeliveryActionResult::fail($this->completedMessage());
 		}
 
 		$amount = max(1, $amount);
 
-		$order->forceFill([
-			'connection_attempts_limit' => (int) $order->connection_attempts_limit + $amount,
+		$holder->forceFill([
+			'connection_attempts_limit' => (int) $holder->connection_attempts_limit + $amount,
 			'connection_locked_until' => null,
-			'status' => $order->account_id === null
+			'status' => $holder->account_id === null
 				? DeliveryOrderStatus::WAITING_FOR_OPERATOR
 				: DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE,
 			'operator_telegram_id' => $operatorTelegramId,
 		])->save();
 
-		$this->recordEvent($order, 'extra_attempts_granted', 'telegram', (string) $operatorTelegramId, [
+		$this->recordEvent($this->orderOf($holder), 'extra_attempts_granted', 'telegram', (string) $operatorTelegramId, $this->holderContext($holder) + [
 			'amount' => $amount,
-			'attempts_limit' => $order->connection_attempts_limit,
+			'attempts_limit' => $holder->connection_attempts_limit,
 		]);
 
 		return DeliveryActionResult::ok("Добавлено попыток: {$amount}.");
@@ -524,6 +631,16 @@ final class DeliveryOrderService
 			->where('is_active', true)
 			->first();
 
+		// P.4: uniform tab list — the first game (order) + any additional items.
+		$hideCreds = in_array($order->status, [
+			DeliveryOrderStatus::EXPIRED,
+			DeliveryOrderStatus::CANCELLED,
+		], true);
+		$items = [$this->serializeHolder($order, 0, $hideCreds)];
+		foreach ($order->items as $item) {
+			$items[] = $this->serializeHolder($item, (int) $item->position, $hideCreds);
+		}
+
 		return [
 			'id' => $order->id,
 			'status' => $order->status->value,
@@ -531,6 +648,7 @@ final class DeliveryOrderService
 			'customer_email' => $this->maskEmail((string) $order->customer_email),
 			'platform' => $order->platform,
 			'game' => $order->game,
+			'items' => $items,
 			'expires_at' => $order->token_expires_at?->toIso8601String(),
 			// P.2: hide credentials once the link is expired or the order is
 			// cancelled (client is shown "Link expired" / "Cancelled" instead).
@@ -555,6 +673,52 @@ final class DeliveryOrderService
 			] : null,
 			'tutorial_url' => $this->tutorialUrl((string) $order->platform),
 			'polling_interval_seconds' => (int) config('delivery.polling_interval_seconds', 8),
+		];
+	}
+
+	/**
+	 * Uniform per-game payload for the client tabs (works for the order's first
+	 * game and for additional items). `id` = 0 for the first game, item id otherwise.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function serializeHolder(DeliveryOrder|DeliveryOrderItem $holder, int $position, bool $hideCreds): array
+	{
+		$platform = (string) $holder->platform;
+		$instruction = DeliveryPlatformInstruction::query()
+			->where('platform', $platform)
+			->where('is_active', true)
+			->first();
+
+		$hide = $hideCreds || in_array($holder->status, [
+			DeliveryOrderStatus::EXPIRED,
+			DeliveryOrderStatus::CANCELLED,
+		], true);
+
+		return [
+			'id' => $holder instanceof DeliveryOrderItem ? (int) $holder->id : 0,
+			'position' => $position,
+			'game' => $holder->game,
+			'platform' => $platform,
+			'issue_platform' => $holder->issue_platform,
+			'status' => $holder->status?->value,
+			'account' => ($holder->display_login !== null && !$hide) ? [
+				'login' => $holder->display_login,
+				'password' => $holder->display_password,
+				'password_type' => $holder->display_password_type?->value,
+			] : null,
+			'connection' => [
+				'required' => $this->requiresConnectionCode($platform),
+				'attempts_used' => (int) $holder->connection_attempts_used,
+				'attempts_limit' => (int) $holder->connection_attempts_limit,
+				'locked_until' => $holder->connection_locked_until?->toIso8601String(),
+				'last_submitted_at' => $holder->last_connection_code_submitted_at?->toIso8601String(),
+			],
+			'instruction' => $instruction !== null ? [
+				'title' => $instruction->title,
+				'body' => $instruction->body,
+			] : null,
+			'tutorial_url' => $this->tutorialUrl($platform),
 		];
 	}
 
@@ -650,21 +814,40 @@ final class DeliveryOrderService
 		}
 	}
 
-	private function lockForRetry(DeliveryOrder $order): void
+	private function lockForRetry(DeliveryOrder|DeliveryOrderItem $holder): void
 	{
-		$order->forceFill([
+		$holder->forceFill([
 			'status' => DeliveryOrderStatus::LOCKED_24H,
 			'connection_locked_until' => now()->addHours((int) config('delivery.connection_lock_hours', 24)),
 		])->save();
 
-		$this->recordEvent($order, 'connection_locked', payload: [
-			'locked_until' => $order->connection_locked_until?->toIso8601String(),
+		$this->recordEvent($this->orderOf($holder), 'connection_locked', payload: $this->holderContext($holder) + [
+			'locked_until' => $holder->connection_locked_until?->toIso8601String(),
 		]);
 	}
 
-	private function isCompleted(DeliveryOrder $order): bool
+	private function isCompleted(DeliveryOrder|DeliveryOrderItem $holder): bool
 	{
-		return $order->status === DeliveryOrderStatus::CONNECTED;
+		return $holder->status === DeliveryOrderStatus::CONNECTED;
+	}
+
+	/**
+	 * The owning order for a holder (item → its order; order → itself).
+	 * Used for order-level concerns: expiry and event ownership.
+	 */
+	private function orderOf(DeliveryOrder|DeliveryOrderItem $holder): DeliveryOrder
+	{
+		return $holder instanceof DeliveryOrderItem ? $holder->order : $holder;
+	}
+
+	/**
+	 * @return array<string, mixed> Item context for event payloads.
+	 */
+	private function holderContext(DeliveryOrder|DeliveryOrderItem $holder): array
+	{
+		return $holder instanceof DeliveryOrderItem
+			? ['item_id' => $holder->id, 'position' => $holder->position]
+			: [];
 	}
 
 	private function completedMessage(): string
