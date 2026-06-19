@@ -847,6 +847,23 @@
 					actions.appendChild(buildAddGameControls(order));
 				}
 
+				// Cancel the whole order (refund/chargeback)
+				if (!['cancelled', 'expired'].includes(order.status)) {
+					const cancelWrap = document.createElement('div');
+					cancelWrap.style.cssText = 'width:100%;margin-top:12px;';
+					const cancelBtn = document.createElement('button');
+					cancelBtn.type = 'button';
+					cancelBtn.className = 'btn btn-outline-danger btn-sm w-100';
+					cancelBtn.textContent = 'Отменить заказ';
+					cancelBtn.addEventListener('click', () => {
+						if (confirm('Отменить заказ? Клиент потеряет доступ к данным на странице.')) {
+							deliveryAction(cancelBtn, `/webapp/api/delivery-orders/${order.id}/cancel`, {});
+						}
+					});
+					cancelWrap.appendChild(cancelBtn);
+					actions.appendChild(cancelWrap);
+				}
+
 				card.appendChild(actions);
 				deliveryList.appendChild(card);
 			});

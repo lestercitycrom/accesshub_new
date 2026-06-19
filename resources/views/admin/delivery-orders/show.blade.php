@@ -78,7 +78,16 @@
 						</div>
 					</div>
 				@endif
-			</div>
+							@if(!in_array($order->status->value, ['cancelled', 'expired'], true))
+					<div class="rounded-xl border border-red-200 bg-red-50 p-4 space-y-2">
+						<div class="text-sm font-semibold text-red-700">Отмена заказа</div>
+						<p class="text-xs text-slate-500">Для возврата/чарджбэка. Клиент потеряет доступ к данным на странице.</p>
+						<x-admin.button variant="danger" wire:click="cancelOrder" wire:confirm="Отменить заказ? Клиент потеряет доступ к данным." class="w-full">Отменить заказ</x-admin.button>
+					</div>
+				@elseif($order->status->value === 'cancelled')
+					<div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">Заказ отменён{{ $order->cancelled_at ? ' · '.$order->cancelled_at->format('d.m.Y H:i') : '' }}.</div>
+				@endif
+</div>
 		</x-admin.card>
 
 		<x-admin.card title="Выдача">

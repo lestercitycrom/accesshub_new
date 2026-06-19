@@ -42,6 +42,7 @@ Route::withoutMiddleware(['auth', 'admin'])->group(function () {
         Route::post('/webapp/api/delivery-orders/{deliveryOrder}/failed', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'failed'])->name('webapp.delivery-orders.failed');
         Route::post('/webapp/api/delivery-orders/{deliveryOrder}/extra-attempts', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'extraAttempts'])->name('webapp.delivery-orders.extra-attempts');
         Route::post('/webapp/api/delivery-orders/{deliveryOrder}/replace', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'replace'])->name('webapp.delivery-orders.replace');
+        Route::post('/webapp/api/delivery-orders/{deliveryOrder}/cancel', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'cancel'])->name('webapp.delivery-orders.cancel');
         Route::middleware('legacy-webapp')->group(function (): void {
             Route::get('/webapp/api/history', App\WebApp\Http\Controllers\HistoryController::class)->name('webapp.history');
             Route::get('/webapp/api/stolen', App\WebApp\Http\Controllers\StolenController::class)->name('webapp.stolen');

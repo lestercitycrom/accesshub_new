@@ -471,6 +471,35 @@ final class DeliveryOrderService
 		});
 	}
 
+	/**
+	 * P.3: cancel the whole order (refund/chargeback). Revokes the client link
+	 * (credentials are hidden by publicPayload once cancelled). Account uses are
+	 * NOT returned to the pool — the credentials were already exposed to the buyer.
+	 */
+	public function cancelOrder(DeliveryOrder $order, int $operatorTelegramId, ?string $reason = null): DeliveryActionResult
+	{
+		$order->refresh();
+
+		if ($order->status === DeliveryOrderStatus::CANCELLED) {
+			return DeliveryActionResult::ok('Заказ уже отменён.');
+		}
+
+		$order->forceFill([
+			'status' => DeliveryOrderStatus::CANCELLED,
+			'cancelled_at' => now(),
+		])->save();
+
+		$order->items()->update([
+			'status' => DeliveryOrderStatus::CANCELLED->value,
+		]);
+
+		$this->recordEvent($order, 'order_cancelled', 'telegram', (string) $operatorTelegramId, [
+			'reason' => $reason,
+		]);
+
+		return DeliveryActionResult::ok('Заказ отменён.');
+	}
+
 	public function submitConnectionCode(DeliveryOrder|DeliveryOrderItem $holder, string $code): DeliveryActionResult
 	{
 		$holder->refresh();

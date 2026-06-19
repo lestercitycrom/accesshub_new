@@ -125,6 +125,15 @@ final class DeliveryOrderShow extends Component
 		session()->flash('message', $result->message() ?? 'Игра добавлена.');
 	}
 
+	public function cancelOrder(DeliveryOrderService $orders): void
+	{
+		$this->withOperator(function (int $telegramId) use ($orders): void {
+			$result = $orders->cancelOrder($this->deliveryOrder, $telegramId, 'admin');
+			$this->refreshOrder();
+			$this->flashResult($result, 'Заказ отменён.');
+		});
+	}
+
 	public function itemConnecting(int $itemId): void
 	{
 		$this->itemAction($itemId, fn ($s, $i, $t) => $s->markOperatorConnecting($i, $t), 'Статус обновлен: оператор подключает.');

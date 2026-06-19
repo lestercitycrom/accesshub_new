@@ -275,6 +275,27 @@ final class DeliveryOrdersController
 		);
 	}
 
+	public function cancel(Request $request, DeliveryOrder $deliveryOrder): JsonResponse
+	{
+		$user = $this->authorizedUser($request);
+		if ($user instanceof JsonResponse) {
+			return $user;
+		}
+
+		$result = $this->deliveryOrderService->cancelOrder(
+			$deliveryOrder,
+			(int) $user->telegram_id,
+			trim((string) $request->input('reason', '')) ?: null,
+		);
+
+		return $this->actionResponse(
+			$deliveryOrder,
+			$result->successful(),
+			$result->message() ?? 'Заказ отменён.',
+			$result->successful() ? 200 : 422,
+		);
+	}
+
 	private function resolveHolder(DeliveryOrder $order, Request $request): DeliveryOrder|DeliveryOrderItem|JsonResponse
 	{
 		$itemId = (int) $request->input('item_id', 0);
