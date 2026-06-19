@@ -36,6 +36,7 @@ Route::withoutMiddleware(['auth', 'admin'])->group(function () {
         Route::get('/webapp/api/delivery-orders', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'index'])->name('webapp.delivery-orders.index');
         Route::get('/webapp/api/delivery-orders/{deliveryOrder}/options', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'options'])->name('webapp.delivery-orders.options');
         Route::post('/webapp/api/delivery-orders/{deliveryOrder}/assign', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'assign'])->name('webapp.delivery-orders.assign');
+        Route::post('/webapp/api/delivery-orders/{deliveryOrder}/add-game', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'addGame'])->name('webapp.delivery-orders.add-game');
         Route::post('/webapp/api/delivery-orders/{deliveryOrder}/connecting', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'connecting'])->name('webapp.delivery-orders.connecting');
         Route::post('/webapp/api/delivery-orders/{deliveryOrder}/connected', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'connected'])->name('webapp.delivery-orders.connected');
         Route::post('/webapp/api/delivery-orders/{deliveryOrder}/failed', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'failed'])->name('webapp.delivery-orders.failed');

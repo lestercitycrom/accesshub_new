@@ -570,22 +570,23 @@
 			return wrap;
 		}
 
-		function buildDeliveryConnectionControls(order) {
+		function buildDeliveryConnectionControls(order, itemId = null) {
 			const wrap = document.createElement('div');
 			wrap.className = 'd-flex flex-wrap gap-2';
 			wrap.style.cssText = 'width:100%;';
+			const wi = (p = {}) => itemId ? { ...p, item_id: itemId } : p;
 
 			const connectingBtn = document.createElement('button');
 			connectingBtn.type = 'button';
 			connectingBtn.className = 'btn btn-outline-secondary btn-sm';
 			connectingBtn.textContent = 'Подключаю';
-			connectingBtn.addEventListener('click', () => deliveryAction(connectingBtn, `/webapp/api/delivery-orders/${order.id}/connecting`, {}));
+			connectingBtn.addEventListener('click', () => deliveryAction(connectingBtn, `/webapp/api/delivery-orders/${order.id}/connecting`, wi()));
 
 			const connectedBtn = document.createElement('button');
 			connectedBtn.type = 'button';
 			connectedBtn.className = 'btn btn-success btn-sm';
 			connectedBtn.textContent = 'Подключено';
-			connectedBtn.addEventListener('click', () => deliveryAction(connectedBtn, `/webapp/api/delivery-orders/${order.id}/connected`, {}));
+			connectedBtn.addEventListener('click', () => deliveryAction(connectedBtn, `/webapp/api/delivery-orders/${order.id}/connected`, wi()));
 
 			const extraInput = document.createElement('input');
 			extraInput.type = 'number';
@@ -599,9 +600,9 @@
 			extraBtn.type = 'button';
 			extraBtn.className = 'btn btn-outline-secondary btn-sm';
 			extraBtn.textContent = '+ попытки';
-			extraBtn.addEventListener('click', () => deliveryAction(extraBtn, `/webapp/api/delivery-orders/${order.id}/extra-attempts`, {
+			extraBtn.addEventListener('click', () => deliveryAction(extraBtn, `/webapp/api/delivery-orders/${order.id}/extra-attempts`, wi({
 				amount: extraInput.value,
-			}));
+			})));
 
 			const failInput = document.createElement('input');
 			failInput.type = 'text';
@@ -613,9 +614,9 @@
 			failBtn.type = 'button';
 			failBtn.className = 'btn btn-outline-danger btn-sm';
 			failBtn.textContent = 'Ошибка';
-			failBtn.addEventListener('click', () => deliveryAction(failBtn, `/webapp/api/delivery-orders/${order.id}/failed`, {
+			failBtn.addEventListener('click', () => deliveryAction(failBtn, `/webapp/api/delivery-orders/${order.id}/failed`, wi({
 				reason: failInput.value.trim(),
-			}));
+			})));
 
 			wrap.appendChild(connectingBtn);
 			wrap.appendChild(connectedBtn);
@@ -627,7 +628,7 @@
 			return wrap;
 		}
 
-		function buildDeliveryReplaceControls(order) {
+		function buildDeliveryReplaceControls(order, itemId = null) {
 			const wrap = document.createElement('div');
 			wrap.style.cssText = 'width:100%;margin-top:8px;';
 
@@ -653,14 +654,97 @@
 			btn.type = 'button';
 			btn.className = 'btn btn-outline-secondary btn-sm w-100';
 			btn.textContent = 'Выдать замену';
-			btn.addEventListener('click', () => deliveryAction(btn, `/webapp/api/delivery-orders/${order.id}/replace`, {
-				reason: select.value,
-			}));
+			btn.addEventListener('click', () => deliveryAction(btn, `/webapp/api/delivery-orders/${order.id}/replace`, itemId
+				? { reason: select.value, item_id: itemId }
+				: { reason: select.value }));
 
 			wrap.appendChild(select);
 			wrap.appendChild(btn);
 
 			return wrap;
+		}
+
+		// "Add game" controls (issues an ADDITIONAL game into the order as a new item).
+		function buildAddGameControls(order) {
+			const wrap = document.createElement('div');
+			wrap.style.cssText = 'width:100%;margin-top:12px;padding-top:12px;border-top:1px dashed rgba(255,255,255,.15);';
+
+			const title = document.createElement('div');
+			title.className = 'fw-semibold mb-2';
+			title.style.fontSize = '13px';
+			title.textContent = '➕ Добавить игру в заказ';
+			wrap.appendChild(title);
+
+			const platformSelect = document.createElement('select');
+			platformSelect.className = 'form-select form-select-sm mb-2';
+			fillSelect(platformSelect, order.issue_platform_options || [], '');
+
+			const gameSelect = document.createElement('select');
+			gameSelect.className = 'form-select form-select-sm mb-2';
+			fillSelect(gameSelect, [], '');
+
+			const accountSelect = document.createElement('select');
+			accountSelect.className = 'form-select form-select-sm mb-2';
+			fillAccountSelect(accountSelect, [], '');
+
+			const ctx = { id: order.id, issue_platform: '', game: '' };
+			platformSelect.addEventListener('change', () => {
+				ctx.issue_platform = platformSelect.value;
+				ctx.game = '';
+				refreshDeliveryOptions(ctx, platformSelect, gameSelect, accountSelect);
+			});
+			gameSelect.addEventListener('change', () => {
+				ctx.game = gameSelect.value;
+				refreshDeliveryAccounts(ctx, platformSelect, gameSelect, accountSelect);
+			});
+
+			const addBtn = document.createElement('button');
+			addBtn.type = 'button';
+			addBtn.className = 'btn btn-outline-primary btn-sm w-100';
+			addBtn.textContent = 'Добавить игру';
+			addBtn.addEventListener('click', () => {
+				const game = gameSelect.value;
+				const issuePlatform = platformSelect.value;
+				if (!game || !issuePlatform) {
+					flashDeliveryStatus('Выберите игру и платформу из списка.');
+					return;
+				}
+				const payload = { game, issue_platform: issuePlatform };
+				if (accountSelect.value) payload.account_id = accountSelect.value;
+				deliveryAction(addBtn, `/webapp/api/delivery-orders/${order.id}/add-game`, payload);
+			});
+
+			wrap.appendChild(platformSelect);
+			wrap.appendChild(gameSelect);
+			wrap.appendChild(accountSelect);
+			wrap.appendChild(addBtn);
+			return wrap;
+		}
+
+		// Renders one additional game (item) with its info + per-item controls.
+		function buildItemSection(order, item) {
+			const sec = document.createElement('div');
+			sec.style.cssText = 'width:100%;margin-top:12px;padding:12px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.03);';
+
+			sec.innerHTML = `
+				<div class="list-row"><div class="list-label">🎮 Игра</div><div class="list-value">${escapeHtml(item.game || '-')} <span class="chip">${escapeHtml(item.status_label || item.status || '-')}</span></div></div>
+				<div class="list-row"><div class="list-label">Платформа</div><div class="list-value">${escapeHtml(item.issue_platform || item.platform || '-')}</div></div>
+				<div class="list-row"><div class="list-label">Логин</div><div class="list-value"><code>${escapeHtml(item.display_login || '-')}</code></div></div>
+				<div class="list-row"><div class="list-label">Пароль</div><div class="list-value"><code>${escapeHtml(item.display_password || '-')}</code>${item.display_password_type === 'fake' ? ' <span class="chip">fake</span>' : ''}</div></div>
+				<div class="list-row"><div class="list-label">Код</div><div class="list-value"><code>${escapeHtml(item.last_connection_code || '-')}</code></div></div>
+				<div class="list-row"><div class="list-label">Попытки</div><div class="list-value">${escapeHtml(item.connection_attempts_used || 0)} / ${escapeHtml(item.connection_attempts_limit || 0)}</div></div>
+			`;
+
+			if (item.status === 'connected') {
+				const done = document.createElement('div');
+				done.style.cssText = 'margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(40,167,69,.15);border:1px solid rgba(40,167,69,.4);color:#a8d8a8;font-size:12px;';
+				done.textContent = '✅ Подключено. Поля зафиксированы.';
+				sec.appendChild(done);
+			} else {
+				sec.appendChild(buildDeliveryConnectionControls(order, item.id));
+				sec.appendChild(buildDeliveryReplaceControls(order, item.id));
+			}
+			return sec;
 		}
 
 		function renderDeliveryOrders(items) {
@@ -740,18 +824,29 @@
 
 				const actions = document.createElement('div');
 				actions.className = 'list-actions';
+
+				// First game (lives on the order)
 				if (order.status === 'connected') {
 					const done = document.createElement('div');
 					done.style.cssText = 'width:100%;padding:10px 12px;border-radius:10px;background:rgba(40,167,69,.15);border:1px solid rgba(40,167,69,.4);color:#a8d8a8;font-size:13px;line-height:1.5;';
-					done.textContent = '✅ Заказ подключён и завершён. Поля зафиксированы.';
+					done.textContent = '✅ Первая игра подключена. Поля зафиксированы.';
 					actions.appendChild(done);
-				} else {
+				} else if (!['cancelled', 'expired'].includes(order.status)) {
 					actions.appendChild(buildDeliveryAssignControls(order));
 					if (order.account_id) {
 						actions.appendChild(buildDeliveryConnectionControls(order));
 						actions.appendChild(buildDeliveryReplaceControls(order));
 					}
 				}
+
+				// Additional games (items)
+				(order.items || []).forEach((item) => actions.appendChild(buildItemSection(order, item)));
+
+				// Add another game
+				if (!['cancelled', 'expired'].includes(order.status)) {
+					actions.appendChild(buildAddGameControls(order));
+				}
+
 				card.appendChild(actions);
 				deliveryList.appendChild(card);
 			});

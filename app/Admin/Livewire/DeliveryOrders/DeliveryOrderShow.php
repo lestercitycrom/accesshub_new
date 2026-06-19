@@ -7,6 +7,7 @@ namespace App\Admin\Livewire\DeliveryOrders;
 use App\Delivery\Concerns\NormalizesDeliveryPlatforms;
 use App\Delivery\Models\DeliveryEvent;
 use App\Delivery\Models\DeliveryOrder;
+use App\Delivery\Models\DeliveryOrderItem;
 use App\Delivery\Services\DeliveryOrderService;
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
@@ -28,6 +29,8 @@ final class DeliveryOrderShow extends Component
 	public string $extraAttempts = '1';
 	public string $failReason = '';
 	public string $replacementReason = 'wrong_password';
+	public string $newGame = '';
+	public string $newGamePlatform = '';
 
 	public function mount(DeliveryOrder $deliveryOrder): void
 	{
@@ -88,6 +91,82 @@ final class DeliveryOrderShow extends Component
 		}
 
 		session()->flash('message', $result->message() ?? 'Аккаунт выдан.');
+	}
+
+	public function addGame(DeliveryOrderService $orders): void
+	{
+		Gate::authorize('admin');
+
+		$telegramId = $this->selectedOperatorTelegramId();
+		if ($telegramId === null) {
+			$this->flashError('Выберите активного Telegram оператора.');
+			return;
+		}
+		if (trim($this->newGame) === '') {
+			$this->flashError('Укажите игру для добавления.');
+			return;
+		}
+
+		$result = $orders->addGame(
+			$this->deliveryOrder,
+			$telegramId,
+			trim($this->newGame),
+			trim($this->newGamePlatform) !== '' ? trim($this->newGamePlatform) : null,
+		);
+
+		$this->refreshOrder();
+
+		if ($result->failed()) {
+			$this->flashError($result->message() ?? 'Не удалось добавить игру.');
+			return;
+		}
+
+		$this->newGame = '';
+		session()->flash('message', $result->message() ?? 'Игра добавлена.');
+	}
+
+	public function itemConnecting(int $itemId): void
+	{
+		$this->itemAction($itemId, fn ($s, $i, $t) => $s->markOperatorConnecting($i, $t), 'Статус обновлен: оператор подключает.');
+	}
+
+	public function itemConnected(int $itemId): void
+	{
+		$this->itemAction($itemId, fn ($s, $i, $t) => $s->markConnected($i, $t), 'Статус обновлен: подключено.');
+	}
+
+	public function itemFailed(int $itemId): void
+	{
+		$this->itemAction($itemId, fn ($s, $i, $t) => $s->markConnectionFailed($i, $t, 'admin'), 'Статус обновлен: ошибка.');
+	}
+
+	public function itemExtra(int $itemId): void
+	{
+		$this->itemAction($itemId, fn ($s, $i, $t) => $s->grantExtraAttempts($i, $t, 1), 'Добавлена попытка.');
+	}
+
+	public function itemReplace(int $itemId): void
+	{
+		$this->itemAction($itemId, fn ($s, $i, $t) => $s->replaceAccount($i, $t, 'dead'), 'Замена выдана.');
+	}
+
+	private function itemAction(int $itemId, callable $callback, string $okMessage): void
+	{
+		$this->withOperator(function (int $telegramId) use ($itemId, $callback, $okMessage): void {
+			$item = DeliveryOrderItem::query()
+				->where('id', $itemId)
+				->where('delivery_order_id', $this->deliveryOrder->id)
+				->first();
+
+			if ($item === null) {
+				$this->flashError('Игра не найдена в заказе.');
+				return;
+			}
+
+			$result = $callback(app(DeliveryOrderService::class), $item, $telegramId);
+			$this->refreshOrder();
+			$this->flashResult($result, $okMessage);
+		});
 	}
 
 	public function markOperatorConnecting(DeliveryOrderService $orders): void
@@ -296,6 +375,7 @@ final class DeliveryOrderShow extends Component
 	{
 		return view('admin.delivery-orders.show', [
 			'order' => $this->deliveryOrder,
+			'items' => $this->deliveryOrder->items,
 			'operators' => $this->operators,
 			'issuePlatformOptions' => $this->issuePlatformOptions,
 			'availableGames' => $this->availableGames,
@@ -311,7 +391,7 @@ final class DeliveryOrderShow extends Component
 	private function refreshOrder(): void
 	{
 		$this->deliveryOrder->refresh();
-		$this->deliveryOrder->load(['operator', 'account', 'issuance']);
+		$this->deliveryOrder->load(['operator', 'account', 'issuance', 'items']);
 	}
 
 	private function defaultIssuePlatform(): string

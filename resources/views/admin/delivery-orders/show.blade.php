@@ -244,6 +244,58 @@
 		</x-admin.card>
 	</div>
 
+	<x-admin.card title="Дополнительные игры в заказе">
+		<div class="space-y-4">
+			@forelse($items as $it)
+				<div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+					<div class="flex flex-wrap items-center gap-2">
+						<span class="font-semibold text-slate-900">{{ $it->game ?: '—' }}</span>
+						<x-admin.badge :variant="$this->statusVariant($it->status->value)">{{ $this->statusLabel($it->status->value) }}</x-admin.badge>
+						<span class="text-xs text-slate-500">{{ $it->issue_platform ?: $it->platform }}</span>
+					</div>
+					<div class="grid grid-cols-1 gap-1 sm:grid-cols-2 text-sm">
+						<x-admin.field label="Login">{{ $it->display_login ?: '—' }}</x-admin.field>
+						<x-admin.field label="Password">{{ $it->display_password ?: '—' }}@if($it->display_password_type === 'fake') (fake)@endif</x-admin.field>
+						<x-admin.field label="Код">{{ $it->last_connection_code ?: '—' }}</x-admin.field>
+						<x-admin.field label="Попытки">{{ $it->connection_attempts_used }} / {{ $it->connection_attempts_limit }}</x-admin.field>
+					</div>
+					@if($it->status->value === 'connected')
+						<div class="rounded-lg border border-green-200 bg-green-50 p-2 text-sm text-green-700">✅ Подключено. Поля зафиксированы.</div>
+					@else
+						<div class="flex flex-wrap gap-2">
+							<x-admin.button variant="secondary" wire:click="itemConnecting({{ $it->id }})">Подключаю</x-admin.button>
+							<x-admin.button variant="primary" wire:click="itemConnected({{ $it->id }})">Подключено</x-admin.button>
+							<x-admin.button variant="secondary" wire:click="itemExtra({{ $it->id }})">+1 попытка</x-admin.button>
+							<x-admin.button variant="danger" wire:click="itemFailed({{ $it->id }})">Ошибка</x-admin.button>
+							<x-admin.button variant="secondary" wire:click="itemReplace({{ $it->id }})">Замена (dead)</x-admin.button>
+						</div>
+					@endif
+				</div>
+			@empty
+				<p class="text-sm text-slate-500">Дополнительных игр нет. Первая игра — в блоке «Выдача» выше.</p>
+			@endforelse
+
+			@if($order->status->value !== 'connected' && $order->status->value !== 'cancelled' && $order->status->value !== 'expired')
+				<div class="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+					<div class="text-sm font-semibold text-slate-700">➕ Добавить игру</div>
+					<input type="text" wire:model="newGame" placeholder="Название игры"
+						class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+					<select wire:model="newGamePlatform"
+						class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+						<option value="">Платформа выдачи…</option>
+						@foreach($issuePlatformOptions as $platform)
+							<option value="{{ $platform }}">{{ $platform }}</option>
+						@endforeach
+					</select>
+					<x-admin.button variant="primary" wire:click="addGame" wire:loading.attr="disabled" wire:target="addGame" class="w-full">
+						<span wire:loading.remove wire:target="addGame">Добавить игру</span>
+						<span wire:loading wire:target="addGame">Добавление…</span>
+					</x-admin.button>
+				</div>
+			@endif
+		</div>
+	</x-admin.card>
+
 	<x-admin.card title="События delivery">
 		<div class="overflow-x-auto rounded-xl border border-slate-200">
 			<table class="min-w-full text-sm">

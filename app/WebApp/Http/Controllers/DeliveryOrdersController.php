@@ -7,6 +7,7 @@ namespace App\WebApp\Http\Controllers;
 use App\Delivery\Concerns\NormalizesDeliveryPlatforms;
 use App\Delivery\Models\DeliveryEvent;
 use App\Delivery\Models\DeliveryOrder;
+use App\Delivery\Models\DeliveryOrderItem;
 use App\Delivery\Services\DeliveryOrderService;
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
@@ -118,6 +119,37 @@ final class DeliveryOrdersController
 		);
 	}
 
+	public function addGame(Request $request, DeliveryOrder $deliveryOrder): JsonResponse
+	{
+		$user = $this->authorizedUser($request);
+		if ($user instanceof JsonResponse) {
+			return $user;
+		}
+
+		$game = trim((string) $request->input('game', ''));
+		$issuePlatform = trim((string) $request->input('issue_platform', ''));
+		$accountId = (int) $request->input('account_id', 0);
+
+		if ($game === '') {
+			return $this->actionResponse($deliveryOrder, false, 'Укажите игру для выдачи.', 422);
+		}
+
+		$result = $this->deliveryOrderService->addGame(
+			$deliveryOrder,
+			(int) $user->telegram_id,
+			$game,
+			$issuePlatform !== '' ? $issuePlatform : null,
+			$accountId > 0 ? $accountId : null,
+		);
+
+		return $this->actionResponse(
+			$deliveryOrder,
+			$result->successful(),
+			$result->message() ?? ($result->successful() ? 'Игра добавлена.' : 'Не удалось добавить игру.'),
+			$result->successful() ? 200 : 422,
+		);
+	}
+
 	public function connecting(Request $request, DeliveryOrder $deliveryOrder): JsonResponse
 	{
 		$user = $this->authorizedUser($request);
@@ -125,7 +157,12 @@ final class DeliveryOrdersController
 			return $user;
 		}
 
-		$result = $this->deliveryOrderService->markOperatorConnecting($deliveryOrder, (int) $user->telegram_id);
+		$holder = $this->resolveHolder($deliveryOrder, $request);
+		if ($holder instanceof JsonResponse) {
+			return $holder;
+		}
+
+		$result = $this->deliveryOrderService->markOperatorConnecting($holder, (int) $user->telegram_id);
 
 		return $this->actionResponse(
 			$deliveryOrder,
@@ -142,7 +179,12 @@ final class DeliveryOrdersController
 			return $user;
 		}
 
-		$result = $this->deliveryOrderService->markConnected($deliveryOrder, (int) $user->telegram_id);
+		$holder = $this->resolveHolder($deliveryOrder, $request);
+		if ($holder instanceof JsonResponse) {
+			return $holder;
+		}
+
+		$result = $this->deliveryOrderService->markConnected($holder, (int) $user->telegram_id);
 
 		return $this->actionResponse(
 			$deliveryOrder,
@@ -159,8 +201,13 @@ final class DeliveryOrdersController
 			return $user;
 		}
 
+		$holder = $this->resolveHolder($deliveryOrder, $request);
+		if ($holder instanceof JsonResponse) {
+			return $holder;
+		}
+
 		$result = $this->deliveryOrderService->markConnectionFailed(
-			$deliveryOrder,
+			$holder,
 			(int) $user->telegram_id,
 			trim((string) $request->input('reason', '')) ?: null,
 		);
@@ -182,7 +229,12 @@ final class DeliveryOrdersController
 
 		$amount = max(1, min(20, (int) $request->input('amount', 1)));
 
-		$result = $this->deliveryOrderService->grantExtraAttempts($deliveryOrder, (int) $user->telegram_id, $amount);
+		$holder = $this->resolveHolder($deliveryOrder, $request);
+		if ($holder instanceof JsonResponse) {
+			return $holder;
+		}
+
+		$result = $this->deliveryOrderService->grantExtraAttempts($holder, (int) $user->telegram_id, $amount);
 
 		return $this->actionResponse(
 			$deliveryOrder,
@@ -204,8 +256,13 @@ final class DeliveryOrdersController
 			return $this->actionResponse($deliveryOrder, false, 'Укажите причину замены.', 422);
 		}
 
+		$holder = $this->resolveHolder($deliveryOrder, $request);
+		if ($holder instanceof JsonResponse) {
+			return $holder;
+		}
+
 		$result = $this->deliveryOrderService->replaceAccount(
-			$deliveryOrder,
+			$holder,
 			(int) $user->telegram_id,
 			$reason,
 		);
@@ -218,10 +275,33 @@ final class DeliveryOrdersController
 		);
 	}
 
+	private function resolveHolder(DeliveryOrder $order, Request $request): DeliveryOrder|DeliveryOrderItem|JsonResponse
+	{
+		$itemId = (int) $request->input('item_id', 0);
+		if ($itemId <= 0) {
+			return $order;
+		}
+
+		$item = DeliveryOrderItem::query()
+			->where('id', $itemId)
+			->where('delivery_order_id', $order->id)
+			->first();
+
+		if ($item === null) {
+			return response()->json([
+				'ok' => false,
+				'message' => 'Игра не найдена в заказе.',
+				'order' => $this->serializeOrder($order),
+			], 404);
+		}
+
+		return $item;
+	}
+
 	private function actionResponse(DeliveryOrder $order, bool $ok, string $message, int $status = 200): JsonResponse
 	{
 		$order->refresh();
-		$order->load(['operator', 'account', 'issuance']);
+		$order->load(['operator', 'account', 'issuance', 'items']);
 
 		return response()->json([
 			'ok' => $ok,
@@ -289,6 +369,36 @@ final class DeliveryOrdersController
 			'available_games' => $this->availableGames((string) ($order->issue_platform ?? $order->platform), ''),
 			'available_accounts' => $this->availableAccounts((string) ($order->issue_platform ?? $order->platform), (string) $order->game),
 			'replacements' => $this->replacementEvents($order),
+			'items' => $order->items->map(fn (DeliveryOrderItem $item): array => $this->serializeItem($item))->all(),
+		];
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function serializeItem(DeliveryOrderItem $item): array
+	{
+		$platform = (string) ($item->issue_platform ?: $item->platform);
+
+		return [
+			'id' => (int) $item->id,
+			'position' => (int) $item->position,
+			'game' => $item->game,
+			'platform' => $item->platform,
+			'issue_platform' => $item->issue_platform,
+			'status' => $item->status?->value,
+			'status_label' => $this->statusLabel((string) $item->status?->value),
+			'account_id' => $item->account_id,
+			'display_login' => $item->display_login,
+			'display_password' => $item->display_password,
+			'display_password_type' => $item->display_password_type?->value,
+			'connection_attempts_used' => (int) $item->connection_attempts_used,
+			'connection_attempts_limit' => (int) $item->connection_attempts_limit,
+			'connection_locked_until' => $item->connection_locked_until?->toIso8601String(),
+			'last_connection_code' => $item->last_connection_code,
+			'connected_at' => $item->connected_at?->toIso8601String(),
+			'available_games' => $this->availableGames($platform, ''),
+			'available_accounts' => $this->availableAccounts($platform, (string) $item->game),
 		];
 	}
 

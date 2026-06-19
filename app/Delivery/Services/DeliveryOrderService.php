@@ -298,11 +298,13 @@ final class DeliveryOrderService
 		return DeliveryActionResult::ok('Game added.');
 	}
 
-	public function replaceAccount(DeliveryOrder $order, int $operatorTelegramId, string $reason): DeliveryActionResult
+	public function replaceAccount(DeliveryOrder|DeliveryOrderItem $holder, int $operatorTelegramId, string $reason): DeliveryActionResult
 	{
-		$order->refresh();
+		$holder->refresh();
+		$owner = $this->orderOf($holder);
+		$ctx = $this->holderContext($holder);
 
-		if ($this->isCompleted($order)) {
+		if ($this->isCompleted($holder)) {
 			return DeliveryActionResult::fail($this->completedMessage());
 		}
 
@@ -311,17 +313,17 @@ final class DeliveryOrderService
 			return DeliveryActionResult::fail('Replacement reason is required.');
 		}
 
-		if ($order->account_id === null || $order->issuance_id === null || $order->game === null || $order->issue_platform === null) {
+		if ($holder->account_id === null || $holder->issuance_id === null || $holder->game === null || $holder->issue_platform === null) {
 			return DeliveryActionResult::fail('Account is not assigned yet.');
 		}
 
-		return DB::transaction(function () use ($order, $operatorTelegramId, $reason): DeliveryActionResult {
-			$order->refresh();
+		return DB::transaction(function () use ($holder, $owner, $ctx, $operatorTelegramId, $reason): DeliveryActionResult {
+			$holder->refresh();
 
 			$original = Issuance::query()
 				->with('account')
 				->lockForUpdate()
-				->find($order->issuance_id);
+				->find($holder->issuance_id);
 
 			if ($original === null) {
 				return DeliveryActionResult::fail('Original issuance was not found.');
@@ -333,17 +335,17 @@ final class DeliveryOrderService
 
 			$now = CarbonImmutable::now();
 			$issuedAccountIds = Issuance::query()
-				->where('order_id', $order->order_number)
+				->where('order_id', $owner->order_number)
 				->pluck('account_id')
 				->filter()
 				->map(fn ($accountId): int => (int) $accountId)
 				->all();
 
 			$replacement = Account::query()
-				->where('game', (string) $order->game)
+				->where('game', (string) $holder->game)
 				->where('status', AccountStatus::ACTIVE)
-				->where(function ($query) use ($order): void {
-					foreach ($this->issuePlatformCandidates((string) $order->issue_platform) as $index => $platform) {
+				->where(function ($query) use ($holder): void {
+					foreach ($this->issuePlatformCandidates((string) $holder->issue_platform) as $index => $platform) {
 						$method = $index === 0 ? 'whereJsonContains' : 'orWhereJsonContains';
 						$query->{$method}('platform', $platform);
 					}
@@ -397,16 +399,16 @@ final class DeliveryOrderService
 				'replaced_by_telegram_id' => $operatorTelegramId,
 				'replaced_at' => $now->toDateTimeString(),
 				'replacement_reason' => $reason,
-				'replacement_delivery_order_id' => $order->id,
+				'replacement_delivery_order_id' => $owner->id,
 			]);
 			$original->save();
 
 			$newIssuance = Issuance::query()->create([
-				'order_id' => (string) $order->order_number,
+				'order_id' => (string) $owner->order_number,
 				'telegram_id' => $operatorTelegramId,
 				'account_id' => $replacement->id,
-				'game' => (string) $order->game,
-				'platform' => (string) $order->issue_platform,
+				'game' => (string) $holder->game,
+				'platform' => (string) $holder->issue_platform,
 				'qty' => 1,
 				'issued_at' => $now,
 				'cooldown_until' => $replacement->available_uses === 0 ? $replacement->next_release_at : null,
@@ -414,7 +416,7 @@ final class DeliveryOrderService
 					'is_replacement' => true,
 					'original_issuance_id' => $original->id,
 					'replacement_reason' => $reason,
-					'delivery_order_id' => $order->id,
+					'delivery_order_id' => $owner->id,
 				],
 			]);
 
@@ -423,23 +425,23 @@ final class DeliveryOrderService
 				'telegram_id' => $operatorTelegramId,
 				'type' => 'ISSUED',
 				'payload' => [
-					'order_id' => (string) $order->order_number,
+					'order_id' => (string) $owner->order_number,
 					'issuance_id' => $newIssuance->id,
 					'is_replacement' => true,
 					'replacement_reason' => $reason,
-					'game' => (string) $order->game,
-					'platform' => (string) $order->issue_platform,
-					'delivery_order_id' => $order->id,
+					'game' => (string) $holder->game,
+					'platform' => (string) $holder->issue_platform,
+					'delivery_order_id' => $owner->id,
 				],
 			]);
 
-			$requiresConnection = $this->requiresConnectionCode((string) $order->platform);
+			$requiresConnection = $this->requiresConnectionCode((string) $holder->platform);
 			$passwordType = $requiresConnection ? DeliveryPasswordType::FAKE : DeliveryPasswordType::REAL;
 			$displayPassword = $requiresConnection
 				? $this->fakePasswordFactory->make()
 				: (string) $replacement->password;
 
-			$order->forceFill([
+			$holder->forceFill([
 				'status' => $requiresConnection
 					? DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE
 					: DeliveryOrderStatus::ACCOUNT_ASSIGNED,
@@ -456,7 +458,7 @@ final class DeliveryOrderService
 				'connected_at' => null,
 			])->save();
 
-			$this->recordEvent($order, 'account_replaced', 'telegram', (string) $operatorTelegramId, [
+			$this->recordEvent($owner, 'account_replaced', 'telegram', (string) $operatorTelegramId, $ctx + [
 				'reason' => $reason,
 				'old_account_id' => $original->account_id,
 				'old_issuance_id' => $original->id,
