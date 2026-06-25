@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Admin\Livewire\Settings;
 
-use App\Domain\Accounts\Models\Account;
+use App\Domain\Accounts\Services\AccountDeletionService;
 use App\Domain\Settings\Services\SettingsService;
 use App\Telegram\Services\TelegramClient;
 use Illuminate\Support\Facades\Gate;
@@ -96,7 +96,7 @@ final class SettingsIndex extends Component
 			return;
 		}
 
-		Account::query()->delete();
+		app(AccountDeletionService::class)->deleteAll();
 
 		$this->confirmPassword = '';
 		$this->successMessage = 'Все аккаунты удалены.';

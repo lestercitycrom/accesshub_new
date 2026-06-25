@@ -6,6 +6,7 @@ namespace App\Admin\Livewire\Accounts;
 
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
+use App\Domain\Accounts\Services\AccountDeletionService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
@@ -103,7 +104,7 @@ final class AccountsIndex extends Component
 			return;
 		}
 
-		$account->delete();
+		app(AccountDeletionService::class)->deleteOne($accountId);
 
 		$this->selected = array_values(array_filter($this->selected, fn ($id) => (int) $id !== $accountId));
 		$this->alertMessage = 'Аккаунт удалён.';
