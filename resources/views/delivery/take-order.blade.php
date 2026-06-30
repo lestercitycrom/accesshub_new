@@ -146,15 +146,19 @@
 	{{-- Bottom grid --}}
 	<div class="mt-7 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-[1.35fr_.8fr_1.8fr_1fr]">
 		{{-- Join community --}}
-		<div class="rounded-[18px] border border-[#dde9f8] bg-white/90 p-6 shadow-[0_18px_60px_rgba(8,31,74,.08)]">
-			<h3 class="text-[20px] font-extrabold">Join our community</h3>
-			<p class="mt-3 text-sm leading-[1.55] text-[#29466f]">Get exclusive discounts, news and promo codes by joining our Telegram channel.</p>
-			<a href="#" class="mt-4 inline-flex items-center gap-2 rounded-[10px] bg-[#0b6bff] px-5 py-3 text-sm font-extrabold text-white"><svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M21.5 4.5 2.5 12l5.5 1.8L18 7l-7.5 8 .3 4 2.7-3 4.5 3.2z"/></svg> Join Telegram</a>
+		<div class="relative overflow-hidden rounded-[18px] border border-[#dde9f8] bg-white/90 p-6 shadow-[0_18px_60px_rgba(8,31,74,.08)]">
+			<img src="{{ asset('site/illus-community.webp') }}" alt="" class="pointer-events-none absolute -right-3 top-1/2 hidden w-[170px] -translate-y-1/2 select-none sm:block" draggable="false">
+			<div class="relative z-10 max-w-[64%]">
+				<h3 class="text-[20px] font-extrabold">Join our community</h3>
+				<p class="mt-3 text-sm leading-[1.55] text-[#29466f]">Get exclusive discounts, news and promo codes by joining our Telegram channel.</p>
+				<a href="#" class="mt-4 inline-flex items-center gap-2 rounded-[10px] bg-[#0b6bff] px-5 py-3 text-sm font-extrabold text-white"><svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M21.5 4.5 2.5 12l5.5 1.8L18 7l-7.5 8 .3 4 2.7-3 4.5 3.2z"/></svg> Join Telegram</a>
+			</div>
 		</div>
 		{{-- Offer --}}
-		<div class="flex flex-col justify-center rounded-[18px] border border-[#dde9f8] bg-white/90 p-6 text-center shadow-[0_18px_60px_rgba(8,31,74,.08)]">
+		<div class="flex flex-col items-center justify-center rounded-[18px] border border-[#dde9f8] bg-white/90 p-6 text-center shadow-[0_18px_60px_rgba(8,31,74,.08)]">
 			<div class="text-[26px] font-extrabold text-[#0b6bff]">10 – 30% OFF</div>
 			<div class="mt-1 text-sm text-[#29466f]">For our subscribers</div>
+			<img src="{{ asset('site/illus-offer.webp') }}" alt="" class="mt-3 w-24 select-none" draggable="false">
 		</div>
 		{{-- How it works mini --}}
 		<div class="rounded-[18px] border border-[#dde9f8] bg-white/90 p-6 shadow-[0_18px_60px_rgba(8,31,74,.08)]">
