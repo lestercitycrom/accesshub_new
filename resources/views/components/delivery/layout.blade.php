@@ -43,11 +43,17 @@
 		}
 		main { width: min(880px, 100%); margin: 0 auto; padding: 20px 14px 40px; }
 
-		.topbar {
-			display: flex; align-items: center; justify-content: space-between;
-			gap: 12px; padding: 6px 4px 18px;
+		/* Top app bar — dark, full-width, matching the main site's navbar.
+		   Stays a single row at every width; fonts shrink on mobile so the
+		   live clock + Support Hours never overflow off-screen. */
+		.appbar { width: 100%; background: #212529; color: #f8f9fa; box-shadow: var(--shadow-sm); }
+		.appbar-inner {
+			width: min(880px, 100%); margin: 0 auto;
+			display: flex; align-items: center; justify-content: space-between; gap: 12px;
+			padding: 10px 14px;
 		}
-		.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--text); }
+		.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: #fff; min-width: 0; }
+		.brand .brand-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 		.brand .logo {
 			width: 34px; height: 34px; border-radius: 8px; flex: none;
 			background: linear-gradient(135deg, var(--grad-from) 0%, var(--grad-to) 100%);
@@ -55,13 +61,15 @@
 			color: #fff; box-shadow: var(--shadow-sm);
 		}
 		.brand .logo svg { width: 20px; height: 20px; display: block; }
-		.topbar .tag { color: var(--muted); font-size: 13px; }
-		.hours { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 12px; line-height: 1.3; text-align: right; }
-		.hours .hours-now { font-weight: 700; color: var(--text); font-size: 13px; white-space: nowrap; }
-		.hours .hours-status { font-weight: 700; }
-		.hours .hours-status.is-online { color: var(--ok); }
-		.hours .hours-status.is-offline { color: var(--danger); }
-		.hours .hours-support b { color: var(--text); white-space: nowrap; }
+		.hours { display: flex; align-items: center; gap: 12px; color: rgba(248,249,250,.75); font-size: 12px; line-height: 1.25; flex: none; }
+		.hours .vr { width: 1px; height: 30px; background: rgba(255,255,255,.22); flex: none; }
+		.hours .hours-now { font-weight: 700; color: #fff; font-size: 15px; white-space: nowrap; }
+		.hours .hours-status { font-weight: 700; font-size: 12px; }
+		.hours .hours-status.is-online { color: #4ade80; }
+		.hours .hours-status.is-offline { color: #f87171; }
+		.hours .hours-support { text-align: center; }
+		.hours .hours-support .hs-label { font-size: 11px; opacity: .75; }
+		.hours .hours-support b { color: #fff; white-space: nowrap; font-size: 13px; }
 		.icon { width: 18px; height: 18px; display: block; flex: none; }
 		.alert .ic { display: inline-flex; }
 		.alert .ic svg { width: 18px; height: 18px; display: block; }
@@ -214,17 +222,32 @@
 			.platforms { grid-template-columns: 1fr; }
 			.details { grid-template-columns: 1fr; }
 		}
+		@media (max-width: 576px) {
+			.appbar-inner { padding: 8px 12px; }
+			.brand { font-size: 14px; gap: 8px; }
+			.brand .logo { width: 28px; height: 28px; }
+			.brand .logo svg { width: 16px; height: 16px; }
+			.hours { gap: 8px; }
+			.hours .vr { height: 26px; }
+			.hours .hours-now { font-size: 12px; }
+			.hours .hours-status { font-size: 11px; }
+			.hours .hours-support .hs-label { font-size: 9px; }
+			.hours .hours-support b { font-size: 11px; }
+		}
+		@media (max-width: 360px) {
+			/* Last-resort safety: keep the logo, drop the brand label so the
+			   clock + Support Hours always fit on the narrowest phones. */
+			.brand .brand-text { display: none; }
+		}
 		@media (max-width: 420px) {
-			.topbar .tag { display: none; }
-			.hours .hours-support { display: none; }
 			.cred { flex-direction: column; align-items: stretch; }
 			.copy-btn { width: 100%; }
 		}
 	</style>
 </head>
 <body>
-	<main>
-		<div class="topbar">
+	<header class="appbar">
+		<div class="appbar-inner">
 			<span class="brand">
 				<span class="logo">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -232,13 +255,15 @@
 						<line x1="6.5" y1="11" x2="9.5" y2="11"/><line x1="8" y1="9.5" x2="8" y2="12.5"/>
 						<circle cx="15.5" cy="13" r=".6" fill="currentColor"/><circle cx="18" cy="11" r=".6" fill="currentColor"/>
 					</svg>
-				</span> Game Delivery</span>
+				</span> <span class="brand-text">Game Delivery</span></span>
 			<div class="hours" id="hoursWidget">
 				<div class="hours-now"><span id="hoursTime">—</span> <span id="hoursStatus" class="hours-status"></span></div>
-				<div class="hours-support">Support Hours <b id="hoursRange"></b></div>
+				<div class="vr"></div>
+				<div class="hours-support"><div class="hs-label">Support Hours</div><b id="hoursRange"></b></div>
 			</div>
 		</div>
-
+	</header>
+	<main>
 		{{ $slot }}
 
 		<p class="foot">Need help? <a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600;text-decoration:none;">Contact the seller.</a></p>
