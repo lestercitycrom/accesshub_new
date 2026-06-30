@@ -32,31 +32,10 @@
 				We deliver your favorite games to your account quickly and safely. Play more, wait less.
 			</p>
 
-			{{-- Platform cluster (decorative) --}}
-			<div class="mt-8 flex flex-wrap gap-3">
-				@foreach($platforms as $platform)
-					<span class="flex h-14 w-14 items-center justify-center rounded-2xl border border-white bg-white shadow-md {{ $pf[$platform]['color'] ?? 'text-slate-700' }}">
-						{!! $pf[$platform]['svg'] ?? '' !!}
-					</span>
-				@endforeach
-			</div>
-
-			<div class="mt-8 grid grid-cols-3 gap-3 sm:max-w-md">
-				<div class="rounded-2xl border border-white bg-white/70 p-3 text-center shadow-sm">
-					<div class="mx-auto mb-1 flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg></div>
-					<div class="text-xs font-bold text-slate-900">Secure</div>
-					<div class="text-[11px] text-slate-500">delivery</div>
-				</div>
-				<div class="rounded-2xl border border-white bg-white/70 p-3 text-center shadow-sm">
-					<div class="mx-auto mb-1 flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></div>
-					<div class="text-xs font-bold text-slate-900">5–30 min</div>
-					<div class="text-[11px] text-slate-500">delivery</div>
-				</div>
-				<div class="rounded-2xl border border-white bg-white/70 p-3 text-center shadow-sm">
-					<div class="mx-auto mb-1 flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg></div>
-					<div class="text-xs font-bold text-slate-900">Live</div>
-					<div class="text-[11px] text-slate-500">support</div>
-				</div>
+			{{-- Hero illustration (extracted from the original mockup) --}}
+			<div class="relative mt-8 max-w-xl">
+				<img src="{{ asset('site/hero.webp') }}" alt="Game delivery" class="w-full select-none rounded-xl" loading="eager" draggable="false">
+				<img src="{{ asset('site/platforms.webp') }}" alt="" class="pointer-events-none absolute -left-4 top-1/2 hidden w-14 -translate-y-1/2 select-none drop-shadow-lg sm:block" loading="eager" draggable="false">
 			</div>
 		</div>
 
