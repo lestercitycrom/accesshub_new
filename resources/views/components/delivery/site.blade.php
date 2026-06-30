@@ -12,27 +12,27 @@
 	@vite(['resources/css/app.css', 'resources/js/app.js'])
 	<style>
 		[x-cloak]{display:none!important}
-		body{font-family:'Inter',ui-sans-serif,system-ui,sans-serif;background:radial-gradient(circle at 34% 24%,#eaf6ff 0,#f8fbff 34%,#f6faff 100%);}
+		body{font-family:'Inter',ui-sans-serif,system-ui,sans-serif;background:radial-gradient(circle at 34% 24%,#efeafb 0,#f8f6fd 34%,#f5f2fd 100%);}
 	</style>
 </head>
 <body class="min-h-screen text-[#071632] antialiased">
 
 	{{-- Header --}}
-	<header class="sticky top-0 z-40 border-b border-[#dde9f8] bg-white/70 backdrop-blur-xl">
+	<header class="sticky top-0 z-40 border-b border-[#e4ddf6] bg-white/70 backdrop-blur-xl">
 		<div class="mx-auto flex h-[76px] max-w-[1500px] items-center justify-between gap-6 px-5 sm:h-[88px] sm:px-9">
 			<a href="{{ route('delivery.take-order') }}" class="flex shrink-0 items-center gap-3">
-				<img src="{{ asset('site/icons/logo.svg') }}" alt="" class="h-11 w-11">
+				<img src="{{ asset('site/mock/logo.webp') }}" alt="" class="h-11 w-11 rounded-[12px]">
 				<span class="leading-none">
-					<span class="block text-[22px] font-extrabold tracking-tight sm:text-[26px]">Global<span class="text-[#0b6bff]">Games</span></span>
+					<span class="block text-[22px] font-extrabold tracking-tight sm:text-[26px]">Global<span class="text-[#5b3df5]">Games</span></span>
 					<span class="mt-1 block text-[13px] font-medium text-[#27446f]">Game Delivery</span>
 				</span>
 			</a>
 
 			<nav class="hidden flex-1 items-center justify-center gap-10 text-[15px] font-bold text-[#0c2750] lg:flex">
-				<a href="{{ route('delivery.how-it-works') }}" class="hover:text-[#0b6bff]">How it works</a>
-				<a href="{{ route('delivery.how-it-works') }}#guarantee" class="hover:text-[#0b6bff]">Guarantee</a>
-				<a href="{{ route('delivery.how-it-works') }}#faq" class="hover:text-[#0b6bff]">FAQ</a>
-				<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="hover:text-[#0b6bff]">Contact us</a>
+				<a href="{{ route('delivery.how-it-works') }}" class="hover:text-[#5b3df5]">How it works</a>
+				<a href="{{ route('delivery.how-it-works') }}#guarantee" class="hover:text-[#5b3df5]">Guarantee</a>
+				<a href="{{ route('delivery.how-it-works') }}#faq" class="hover:text-[#5b3df5]">FAQ</a>
+				<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="hover:text-[#5b3df5]">Contact us</a>
 			</nav>
 
 			<div class="flex shrink-0 items-center gap-5 text-[#09224b]" id="hoursWidget">
@@ -57,15 +57,15 @@
 	</main>
 
 	<footer class="mx-auto max-w-[1500px] px-5 pb-10 pt-3 sm:px-9">
-		<div class="flex flex-col items-center justify-between gap-4 border-t border-[#dde9f8] pt-6 text-[13px] text-[#63769a] sm:flex-row">
+		<div class="flex flex-col items-center justify-between gap-4 border-t border-[#e4ddf6] pt-6 text-[13px] text-[#63769a] sm:flex-row">
 			<div class="flex flex-wrap items-center justify-center gap-4">
 				<span>© {{ date('Y') }} GlobalGames. All rights reserved.</span>
-				<a href="{{ route('delivery.how-it-works') }}" class="hover:text-[#0b6bff]">How it works</a>
-				<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="hover:text-[#0b6bff]">Terms &amp; Support</a>
+				<a href="{{ route('delivery.how-it-works') }}" class="hover:text-[#5b3df5]">How it works</a>
+				<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="hover:text-[#5b3df5]">Terms &amp; Support</a>
 			</div>
-			<div class="flex items-center gap-3 text-[#0b6bff]">
+			<div class="flex items-center gap-3 text-[#5b3df5]">
 				@foreach(['M21.5 4.5 2.5 12l5.5 1.8L18 7l-7.5 8 .3 4 2.7-3 4.5 3.2z','M8 12a4 4 0 1 0 8 0 4 4 0 0 0-8 0M2 12a10 10 0 1 1 20 0 10 10 0 0 1-20 0','M22 5.9c-.7.3-1.5.5-2.3.6.8-.5 1.5-1.3 1.8-2.3-.8.5-1.7.8-2.6 1a4 4 0 0 0-6.8 3.6A11.3 11.3 0 0 1 3.8 4.6a4 4 0 0 0 1.2 5.3c-.6 0-1.2-.2-1.7-.5a4 4 0 0 0 3.2 4 4 4 0 0 1-1.8.1 4 4 0 0 0 3.7 2.8A8 8 0 0 1 2 18a11.3 11.3 0 0 0 6.1 1.8c7.4 0 11.4-6.1 11.4-11.4v-.5c.8-.6 1.5-1.3 2-2z','M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5m5 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10m4.5-1.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2'] as $d)
-					<a href="#" class="flex h-9 w-9 items-center justify-center rounded-full bg-[#eaf3ff] hover:bg-[#dbeafe]"><svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="{{ $d }}"/></svg></a>
+					<a href="#" class="flex h-9 w-9 items-center justify-center rounded-full bg-[#efe9fc] hover:bg-[#dbeafe]"><svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="{{ $d }}"/></svg></a>
 				@endforeach
 			</div>
 		</div>
