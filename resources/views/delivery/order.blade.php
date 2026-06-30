@@ -3,12 +3,12 @@
 		id="orderApp"
 		data-status-url="{{ route('delivery.order.status', ['token' => $order->token]) }}"
 		data-code-url="{{ route('delivery.order.connection-code.store', ['token' => $order->token]) }}"
-		data-delivered-art="{{ asset('site/banner-delivered.webp') }}"
-		data-processing-art="{{ asset('site/banner-processing.webp') }}">
+		data-delivered-art="{{ asset('site/banner-delivered-blue.webp') }}"
+		data-processing-art="{{ asset('site/banner-processing-blue.webp') }}">
 
 		{{-- Top bar --}}
 		<div class="mb-4 flex items-center justify-between gap-3">
-			<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-indigo-600">
+			<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#0b6bff]">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
 				Back to store
 			</a>
@@ -16,17 +16,17 @@
 		</div>
 
 		{{-- Status banner --}}
-		<div class="relative overflow-hidden rounded-3xl border border-white bg-gradient-to-r from-violet-50 via-violet-100 to-violet-300 p-6 shadow-sm sm:p-8">
+		<div class="relative overflow-hidden rounded-3xl border border-white bg-gradient-to-r from-[#eaf6ff] via-[#d6e9ff] to-[#bcdcff] p-6 shadow-sm sm:p-8">
 			<div class="relative z-10 max-w-md">
-				<p class="text-sm font-semibold text-violet-700/80">Your order is</p>
+				<p class="text-sm font-semibold text-[#0b6bff]/80">Your order is</p>
 				<h1 id="bannerBig" class="mt-1 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">Processing</h1>
 				<p id="bannerSub" class="mt-3 text-sm leading-relaxed text-slate-600"></p>
-				<p id="bannerEta" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-violet-700">
+				<p id="bannerEta" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#0b6bff]">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
 					<span id="bannerEtaText">Estimated time: 5 – 30 minutes</span>
 				</p>
 			</div>
-			<img id="bannerArt" src="{{ asset('site/banner-processing.webp') }}" alt=""
+			<img id="bannerArt" src="{{ asset('site/banner-processing-blue.webp') }}" alt=""
 				class="pointer-events-none absolute right-0 top-1/2 hidden h-[115%] -translate-y-1/2 select-none object-contain sm:block" draggable="false">
 		</div>
 
@@ -87,18 +87,18 @@
 				<label for="connection_code" class="text-sm font-semibold text-slate-700">Connection code</label>
 				<input id="connection_code" name="connection_code" maxlength="8" minlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false"
 					placeholder="6–8 characters"
-					class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm uppercase tracking-[0.12em] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
+					class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm uppercase tracking-[0.12em] outline-none focus:border-[#0b6bff] focus:ring-2 focus:ring-[#cfe3fb]">
 				<p class="mt-2 text-xs text-slate-500" id="attemptsText"></p>
 				<div class="mt-3 hidden items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700" id="connError">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 h-4 w-4 shrink-0"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
 					<span id="connErrorText"></span>
 				</div>
-				<button type="submit" id="connSubmit" class="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-200 transition hover:opacity-95 disabled:opacity-60">
+				<button type="submit" id="connSubmit" class="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0b8dff] to-[#005be0] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-200 transition hover:opacity-95 disabled:opacity-60">
 					<span class="btn-label">Send code</span>
 				</button>
 			</form>
 
-			<div class="mt-4 hidden items-start gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-sm text-indigo-700" id="connProgress">
+			<div class="mt-4 hidden items-start gap-2 rounded-xl border border-[#bcdcff] bg-[#eaf3ff] px-3 py-2.5 text-sm text-[#0b6bff]" id="connProgress">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 h-4 w-4 shrink-0"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
 				<span id="connProgressText"></span>
 			</div>
@@ -120,9 +120,9 @@
 				<h2 class="text-lg font-bold text-slate-900">What's next?</h2>
 				<ul class="mt-3 space-y-3 text-sm text-slate-600">
 					<li class="flex items-start gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-500"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/></svg><span><b class="text-slate-900">Keep your account secure</b><br>Do not share your account details with anyone.</span></li>
-					<li class="flex items-start gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 h-5 w-5 shrink-0 text-indigo-500"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span><b class="text-slate-900">Having issues?</b><br>Contact our support team, we are here to help.</span></li>
+					<li class="flex items-start gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 h-5 w-5 shrink-0 text-[#0b6bff]"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span><b class="text-slate-900">Having issues?</b><br>Contact our support team, we are here to help.</span></li>
 				</ul>
-				<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 text-sm font-bold text-white shadow-md">
+				<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0b8dff] to-[#005be0] px-4 py-3 text-sm font-bold text-white shadow-md">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
 					Contact support
 				</a>
@@ -180,7 +180,7 @@
 					col.className = 'flex flex-col items-center text-center';
 					const circle = document.createElement('div');
 					circle.className = 'flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ' +
-						(done ? 'bg-indigo-600 text-white' : active ? 'bg-indigo-600 text-white ring-4 ring-indigo-100' : 'bg-slate-100 text-slate-400');
+						(done ? 'bg-[#0b6bff] text-white' : active ? 'bg-[#0b6bff] text-white ring-4 ring-[#cfe3fb]' : 'bg-slate-100 text-slate-400');
 					circle.innerHTML = done
 						? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="h-4 w-4"><polyline points="20 6 9 17 4 12"/></svg>'
 						: String(n);
@@ -286,9 +286,9 @@
 
 			function tabDot(status) {
 				if (['connected', 'account_assigned'].includes(status)) return 'bg-emerald-500';
-				if (status === 'waiting_for_connection_code') return 'bg-violet-500';
+				if (status === 'waiting_for_connection_code') return 'bg-[#38bdf8]';
 				if (['connection_failed', 'locked_24h'].includes(status)) return 'bg-rose-500';
-				if (['connection_code_submitted', 'operator_connecting', 'waiting_for_operator', 'new'].includes(status)) return 'bg-indigo-500';
+				if (['connection_code_submitted', 'operator_connecting', 'waiting_for_operator', 'new'].includes(status)) return 'bg-[#0b6bff]';
 				return 'bg-slate-400';
 			}
 
@@ -302,7 +302,7 @@
 					const b = document.createElement('button');
 					b.type = 'button';
 					b.className = 'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ' +
-						(active ? 'border-transparent bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300');
+						(active ? 'border-transparent bg-gradient-to-r from-[#0b8dff] to-[#005be0] text-white shadow' : 'border-slate-200 bg-white text-slate-700 hover:border-[#9cc7f7]');
 					const dot = document.createElement('span'); dot.className = 'h-2 w-2 rounded-full ' + (active ? 'bg-white' : tabDot(it.status));
 					const label = document.createElement('span'); label.textContent = it.game || ('Game ' + (i + 1));
 					b.append(dot, label);

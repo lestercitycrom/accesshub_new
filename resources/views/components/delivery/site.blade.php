@@ -6,61 +6,68 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="csrf-token" content="{{ csrf_token() }}">
 	<title>{{ $title }} · GlobalGames</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 	@vite(['resources/css/app.css', 'resources/js/app.js'])
-	<style>[x-cloak]{display:none!important}</style>
+	<style>
+		[x-cloak]{display:none!important}
+		body{font-family:'Inter',ui-sans-serif,system-ui,sans-serif;background:radial-gradient(circle at 34% 24%,#eaf6ff 0,#f8fbff 34%,#f6faff 100%);}
+	</style>
 </head>
-<body class="min-h-screen text-slate-900 antialiased" style="background: radial-gradient(1000px 520px at 78% -60px, #e7e3fb 0%, rgba(231,227,251,0) 55%), radial-gradient(820px 520px at 6% 0px, #eaf0ff 0%, rgba(234,240,255,0) 52%), #f7f7fc;">
+<body class="min-h-screen text-[#071632] antialiased">
 
 	{{-- Header --}}
-	<header class="sticky top-0 z-40 border-b border-white/60 bg-white/70 backdrop-blur">
-		<div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-			{{-- Brand --}}
-			<a href="{{ route('delivery.take-order') }}" class="flex shrink-0 items-center gap-2.5">
-				<span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><rect x="2" y="6" width="20" height="12" rx="5"/><line x1="6.5" y1="11" x2="9.5" y2="11"/><line x1="8" y1="9.5" x2="8" y2="12.5"/><circle cx="15.5" cy="13" r=".7" fill="currentColor"/><circle cx="18" cy="11" r=".7" fill="currentColor"/></svg>
-				</span>
-				<span class="leading-tight">
-					<span class="block text-lg font-extrabold tracking-tight">GlobalGames</span>
-					<span class="block text-[11px] font-medium text-slate-500">Game Delivery</span>
+	<header class="sticky top-0 z-40 border-b border-[#dde9f8] bg-white/70 backdrop-blur-xl">
+		<div class="mx-auto flex h-[76px] max-w-[1500px] items-center justify-between gap-6 px-5 sm:h-[88px] sm:px-9">
+			<a href="{{ route('delivery.take-order') }}" class="flex shrink-0 items-center gap-3">
+				<img src="{{ asset('site/icons/logo.svg') }}" alt="" class="h-11 w-11">
+				<span class="leading-none">
+					<span class="block text-[22px] font-extrabold tracking-tight sm:text-[26px]">Global<span class="text-[#0b6bff]">Games</span></span>
+					<span class="mt-1 block text-[13px] font-medium text-[#27446f]">Game Delivery</span>
 				</span>
 			</a>
 
-			{{-- Nav (placeholders for now) --}}
-			<nav class="hidden items-center gap-7 text-sm font-semibold text-slate-700 lg:flex">
-				<a href="{{ route('delivery.how-it-works') }}" class="hover:text-indigo-600">How it works</a>
-				<a href="{{ route('delivery.how-it-works') }}#guarantee" class="hover:text-indigo-600">Guarantee</a>
-				<a href="{{ route('delivery.how-it-works') }}#faq" class="hover:text-indigo-600">FAQ</a>
-				<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="hover:text-indigo-600">Contact us</a>
+			<nav class="hidden flex-1 items-center justify-center gap-10 text-[15px] font-bold text-[#0c2750] lg:flex">
+				<a href="{{ route('delivery.how-it-works') }}" class="hover:text-[#0b6bff]">How it works</a>
+				<a href="{{ route('delivery.how-it-works') }}#guarantee" class="hover:text-[#0b6bff]">Guarantee</a>
+				<a href="{{ route('delivery.how-it-works') }}#faq" class="hover:text-[#0b6bff]">FAQ</a>
+				<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="hover:text-[#0b6bff]">Contact us</a>
 			</nav>
 
-			{{-- Status + hours widget --}}
-			<div class="flex shrink-0 items-center gap-3" id="hoursWidget">
-				<span class="hidden items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold sm:inline-flex">
-					<span id="hoursDot" class="h-2 w-2 rounded-full bg-emerald-500"></span>
+			<div class="flex shrink-0 items-center gap-5 text-[#09224b]" id="hoursWidget">
+				<span class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-bold shadow-[0_10px_30px_rgba(8,31,74,.08)]">
+					<span id="hoursDot" class="h-2 w-2 rounded-full bg-[#16c36a]"></span>
 					<span id="hoursStatus">Online</span>
 				</span>
-				<span class="hidden items-center gap-1.5 text-xs font-semibold text-slate-600 md:inline-flex">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-slate-400"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+				<span class="hidden items-center gap-2 text-[13px] font-semibold md:inline-flex">
+					<svg viewBox="0 0 24 24" fill="none" stroke="#7d93b6" stroke-width="2" class="h-5 w-5"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
 					<span id="hoursTime">—</span>
 				</span>
-				<span class="hidden items-center gap-1.5 text-xs text-slate-600 lg:inline-flex">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-slate-400"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-					<span class="leading-tight"><span class="block text-[10px] uppercase tracking-wide text-slate-400">Support Hours</span><b id="hoursRange" class="block font-bold text-slate-700">09:00 – 23:00 EET</b></span>
+				<span class="hidden items-center gap-2 lg:inline-flex">
+					<img src="{{ asset('site/icons/headset.svg') }}" alt="" class="h-6 w-6">
+					<span class="leading-tight"><span class="block text-[11px] font-semibold text-[#63769a]">Support Hours</span><b id="hoursRange" class="block text-[13px] font-bold text-[#09224b]">09:00 – 23:00 EET</b></span>
 				</span>
 			</div>
 		</div>
 	</header>
 
-	<main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
+	<main class="mx-auto max-w-[1500px] px-5 py-7 sm:px-9 sm:py-8">
 		{{ $slot }}
 	</main>
 
-	<footer class="mx-auto max-w-7xl px-4 pb-10 pt-4 sm:px-6">
-		<div class="flex flex-col items-center justify-center gap-1 text-xs text-slate-400 sm:flex-row sm:gap-4">
-			<span>© {{ date('Y') }} GlobalGames. All rights reserved.</span>
-			<span class="hidden sm:inline">·</span>
-			<a href="{{ route('delivery.how-it-works') }}" class="hover:text-slate-600">How it works</a>
-			<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="hover:text-slate-600">Terms &amp; Support</a>
+	<footer class="mx-auto max-w-[1500px] px-5 pb-10 pt-3 sm:px-9">
+		<div class="flex flex-col items-center justify-between gap-4 border-t border-[#dde9f8] pt-6 text-[13px] text-[#63769a] sm:flex-row">
+			<div class="flex flex-wrap items-center justify-center gap-4">
+				<span>© {{ date('Y') }} GlobalGames. All rights reserved.</span>
+				<a href="{{ route('delivery.how-it-works') }}" class="hover:text-[#0b6bff]">How it works</a>
+				<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="hover:text-[#0b6bff]">Terms &amp; Support</a>
+			</div>
+			<div class="flex items-center gap-3 text-[#0b6bff]">
+				@foreach(['M21.5 4.5 2.5 12l5.5 1.8L18 7l-7.5 8 .3 4 2.7-3 4.5 3.2z','M8 12a4 4 0 1 0 8 0 4 4 0 0 0-8 0M2 12a10 10 0 1 1 20 0 10 10 0 0 1-20 0','M22 5.9c-.7.3-1.5.5-2.3.6.8-.5 1.5-1.3 1.8-2.3-.8.5-1.7.8-2.6 1a4 4 0 0 0-6.8 3.6A11.3 11.3 0 0 1 3.8 4.6a4 4 0 0 0 1.2 5.3c-.6 0-1.2-.2-1.7-.5a4 4 0 0 0 3.2 4 4 4 0 0 1-1.8.1 4 4 0 0 0 3.7 2.8A8 8 0 0 1 2 18a11.3 11.3 0 0 0 6.1 1.8c7.4 0 11.4-6.1 11.4-11.4v-.5c.8-.6 1.5-1.3 2-2z','M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5m5 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10m4.5-1.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2'] as $d)
+					<a href="#" class="flex h-9 w-9 items-center justify-center rounded-full bg-[#eaf3ff] hover:bg-[#dbeafe]"><svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="{{ $d }}"/></svg></a>
+				@endforeach
+			</div>
 		</div>
 	</footer>
 
@@ -89,7 +96,7 @@
 				if (timeEl) timeEl.textContent = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())} ${label}`;
 				const open = isOpen();
 				if (statusEl) statusEl.textContent = open ? 'Online' : 'Offline';
-				if (dotEl) dotEl.className = `h-2 w-2 rounded-full ${open ? 'bg-emerald-500' : 'bg-rose-500'}`;
+				if (dotEl) dotEl.className = `h-2 w-2 rounded-full ${open ? 'bg-[#16c36a]' : 'bg-[#ef4444]'}`;
 				document.dispatchEvent(new CustomEvent('delivery-hours-tick', { detail: { open } }));
 			}
 			tick();
