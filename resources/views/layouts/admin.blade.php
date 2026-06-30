@@ -94,7 +94,7 @@
 
 					{{-- Admin User dropdown (settings / server / logs / telegram users + logout) --}}
 					<div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false" @click.outside="open = false">
-						<button type="button" @click="open = !open"
+						<button type="button" @click="open = true"
 							class="inline-flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm transition hover:bg-white/5">
 							<span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white font-semibold">
 								{{ strtoupper(substr((string) auth()->user()?->name, 0, 1)) }}

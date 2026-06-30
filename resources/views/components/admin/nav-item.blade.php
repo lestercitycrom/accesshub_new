@@ -33,7 +33,7 @@
 
 @if($hasChildren)
 	<div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false" @click.outside="open = false">
-		<button type="button" @click="open = !open"
+		<button type="button" @click="open = true"
 			class="shrink-0 rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $groupActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
 			@if($icon !== '')<x-admin.icon :name="$icon" class="h-4 w-4" />@endif
 			<span>{{ $label }}</span>
