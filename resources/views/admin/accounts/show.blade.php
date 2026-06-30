@@ -132,34 +132,23 @@
 					</div>
 				@endif
 
-				{{-- Дополнительно --}}
-				@if($account->mail_account_login || $account->mail_account_password || $account->comment || $account->two_fa_mail_account_date || $account->recover_code)
-					<div class="space-y-2 pt-3 border-t border-slate-100">
-						<div class="text-xs font-medium text-slate-400">Дополнительно</div>
+				{{-- Дополнительно — поля показываем всегда (с «—», если пусто),
+				     чтобы оператор видел структуру и что именно не заполнено. --}}
+				<div class="space-y-2 pt-3 border-t border-slate-100">
+					<div class="text-xs font-medium text-slate-400">Дополнительно</div>
 
-						<div class="grid grid-cols-1 gap-2">
-							@if($account->mail_account_login)
-								<x-admin.field label="Логин почты">{{ $account->mail_account_login }}</x-admin.field>
-							@endif
-							@if($account->mail_account_password)
-								<x-admin.field label="Пароль почты">{{ $account->mail_account_password }}</x-admin.field>
-							@endif
-							@if($account->two_fa_mail_account_date)
-								<x-admin.field label="Дата 2FA почты">{{ $account->two_fa_mail_account_date }}</x-admin.field>
-							@endif
-							@if($account->recover_code)
-								<x-admin.field label="Код восстановления">
-									<span class="whitespace-pre-wrap">{{ $account->recover_code }}</span>
-								</x-admin.field>
-							@endif
-							@if($account->comment)
-								<x-admin.field label="Комментарий">
-									<span class="whitespace-pre-wrap font-normal text-slate-700">{{ $account->comment }}</span>
-								</x-admin.field>
-							@endif
-						</div>
+					<div class="grid grid-cols-1 gap-2">
+						<x-admin.field label="Логин почты">{{ $account->mail_account_login ?: '—' }}</x-admin.field>
+						<x-admin.field label="Пароль почты">{{ $account->mail_account_password ?: '—' }}</x-admin.field>
+						<x-admin.field label="Дата 2FA почты">{{ $account->two_fa_mail_account_date ?: '—' }}</x-admin.field>
+						<x-admin.field label="Код восстановления">
+							<span class="whitespace-pre-wrap">{{ $account->recover_code ?: '—' }}</span>
+						</x-admin.field>
+						<x-admin.field label="Комментарий">
+							<span class="whitespace-pre-wrap font-normal text-slate-700">{{ $account->comment ?: '—' }}</span>
+						</x-admin.field>
 					</div>
-				@endif
+				</div>
 
 			</div>
 		</x-admin.card>
