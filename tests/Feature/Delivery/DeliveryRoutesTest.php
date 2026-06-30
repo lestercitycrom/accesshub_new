@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Http;
 it('renders take order page', function (): void {
 	$this->get(route('delivery.take-order'))
 		->assertOk()
-		->assertSee('Get Game')
+		->assertSee('Track order')
 		->assertSee('Xbox');
 });
 

@@ -14,14 +14,15 @@ try {
 	const resp = await page.goto(base + '/take-order', { waitUntil: 'domcontentloaded' });
 	ok('take-order HTTP 200', resp && resp.status() === 200, String(resp && resp.status()));
 
-	ok('header "Get your game"', (await page.locator('h1', { hasText: 'Get your game' }).count()) > 0);
+	ok('hero "delivered"', (await page.locator('h1', { hasText: 'delivered' }).count()) > 0);
+	ok('card "Track your order"', (await page.locator('h2', { hasText: 'Track your order' }).count()) > 0);
 
 	const ph = await page.locator('#order_number').getAttribute('placeholder');
-	ok('order# placeholder = e.g. 3233159', ph === 'e.g. 3233159', ph);
+	ok('order# placeholder', /order number/i.test(ph || ''), ph);
 
-	const seller = page.locator('a', { hasText: 'Contact the seller' });
+	const seller = page.locator('a', { hasText: 'Contact us' });
 	const sellerHref = await seller.getAttribute('href');
-	ok('seller link -> difmark', sellerHref === 'https://difmark.com/en/profile/GlobalGames', sellerHref);
+	ok('Contact us -> difmark', sellerHref === 'https://difmark.com/en/profile/GlobalGames', sellerHref);
 
 	// Working-hours widget
 	ok('hours widget visible', await page.locator('#hoursWidget').isVisible());
