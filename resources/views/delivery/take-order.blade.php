@@ -16,24 +16,24 @@
 	@endphp
 
 	{{-- Hero + Track card --}}
-	<div class="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)]">
+	<div class="grid items-center gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,440px)]">
 
-		{{-- Hero: copy, then art below it (stacked — never overlaps the headline) --}}
-		<div class="order-2 lg:order-1">
-			<div class="max-w-[470px]">
+		{{-- Hero: copy + art side by side (compact, like the concept) --}}
+		<div class="order-2 grid items-center gap-6 lg:order-1 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
+			<div class="max-w-[440px]">
 				<span class="inline-flex items-center gap-2 rounded-xl bg-[#edf6ff] px-3.5 py-2 text-xs font-extrabold text-[#005be0]">
 					<img src="{{ $ico('shield') }}" alt="" class="h-4 w-4"> Fast. Secure. Reliable.
 				</span>
-				<h1 class="mt-6 text-[42px] font-extrabold leading-[1.05] tracking-[-0.04em] sm:text-[56px]">
+				<h1 class="mt-6 text-[40px] font-extrabold leading-[1.05] tracking-[-0.04em] sm:text-[54px]">
 					Your game,<br><span class="text-[#0b6bff]">delivered</span> fast
 				</h1>
-				<p class="mt-5 max-w-md text-[18px] leading-[1.65] text-[#243b63]">
+				<p class="mt-5 text-[18px] leading-[1.65] text-[#243b63]">
 					We deliver your favorite games to your account quickly and safely.
 					<b class="text-[#0b6bff]">Play more</b>, wait less.
 				</p>
 			</div>
 			<img src="{{ asset('site/hero-blue.webp') }}" alt="Game delivery"
-				class="mx-auto mt-8 w-full max-w-[500px] select-none drop-shadow-[0_24px_44px_rgba(11,107,255,.16)] lg:mx-0"
+				class="mx-auto w-full max-w-[420px] select-none drop-shadow-[0_24px_44px_rgba(11,107,255,.16)]"
 				loading="eager" draggable="false">
 		</div>
 
