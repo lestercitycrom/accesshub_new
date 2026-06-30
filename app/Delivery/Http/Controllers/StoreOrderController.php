@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Delivery\Http\Controllers;
 
+use App\Delivery\Models\DeliveryLink;
 use App\Delivery\Services\DeliveryOrderService;
 use App\Delivery\Services\DeliveryTelegramNotifier;
 use App\Delivery\Services\WorkingHours;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 
 final class StoreOrderController
@@ -19,7 +21,7 @@ final class StoreOrderController
 		private readonly WorkingHours $workingHours,
 	) {}
 
-	public function __invoke(Request $request): RedirectResponse
+	public function __invoke(Request $request, ?string $code = null): RedirectResponse
 	{
 		// Public client site is English-facing; app locale is 'ru' (operators).
 		// Force English so validation messages shown to the client are in English.
@@ -48,6 +50,52 @@ final class StoreOrderController
 			return back()->withInput()->with('error', 'Too many requests. Please try again later.');
 		}
 		RateLimiter::hit($rateKey, 3600);
+
+		// Unique "stock key" link: consume the code and the order creation in one
+		// atomic step so a double-submit can't create two orders / spend it twice.
+		if ($code !== null) {
+			$redeem = DB::transaction(function () use ($code, $data): array {
+				$link = DeliveryLink::query()->where('code', $code)->lockForUpdate()->first();
+
+				if ($link === null) {
+					return ['abort' => 404];
+				}
+
+				if ($link->isUsed()) {
+					// Already redeemed — bounce the buyer to their existing order.
+					return ['order' => $link->order];
+				}
+
+				$order = $this->orders->createFromCustomerInput(
+					orderNumber: (string) $data['order_number'],
+					customerEmail: (string) $data['email'],
+					platform: (string) $data['platform'],
+					game: $link->game,
+				);
+
+				$link->forceFill(['used_at' => now(), 'delivery_order_id' => $order->id])->save();
+
+				return ['order' => $order, 'created' => true];
+			});
+
+			if (($redeem['abort'] ?? null) === 404) {
+				abort(404);
+			}
+
+			$order = $redeem['order'] ?? null;
+			if ($order === null) {
+				return back()->withInput()->with('error', 'This link has already been used.');
+			}
+
+			if ($redeem['created'] ?? false) {
+				$notifier = $this->telegramNotifier;
+				app()->terminating(static function () use ($notifier, $order): void {
+					$notifier->notifyNewOrder($order);
+				});
+			}
+
+			return redirect()->route('delivery.order.show', ['token' => $order->token]);
+		}
 
 		$order = $this->orders->createFromCustomerInput(
 			orderNumber: (string) $data['order_number'],

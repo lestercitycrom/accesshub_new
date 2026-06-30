@@ -20,6 +20,7 @@ return [
 		['label' => 'Аккаунты', 'route' => 'admin.accounts.index', 'icon' => 'users'],
 		['label' => 'Delivery', 'route' => 'admin.delivery-orders.index', 'icon' => 'list'],
 		['label' => 'Инструкции', 'route' => 'admin.delivery-instructions.index', 'icon' => 'file-text'],
+		['label' => 'Ссылки', 'route' => 'admin.delivery-links.index', 'icon' => 'link'],
 		['label' => 'Пользователи Telegram', 'route' => 'admin.telegram-users.index', 'icon' => 'message-circle'],
 		['label' => 'Проблемные', 'route' => 'admin.problems.index', 'icon' => 'alert-triangle'],
 		['label' => 'Логи', 'route' => 'admin.issuances.index', 'icon' => 'file-text'],

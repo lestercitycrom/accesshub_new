@@ -16,8 +16,8 @@
 <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
 	<header class="sticky top-0 z-40 bg-gradient-to-r from-slate-900 to-slate-800 text-slate-100 border-b border-white/10">
 		<div class="mx-auto {{ config('admin-kit.layout.container', 'max-w-7xl') }} px-4">
-			<div class="h-16 flex items-center justify-between gap-4">
-				<a href="{{ route('admin.accounts.index') }}" class="flex items-center gap-2">
+			<div class="h-16 flex min-w-0 items-center justify-between gap-4">
+				<a href="{{ route('admin.accounts.index') }}" class="flex shrink-0 items-center gap-2">
 					<img src="/accesshub_logo_strict_2_plane_lock_128.png" alt="" class="h-9 w-9 rounded-xl object-contain" width="36" height="36">
 					<span class="font-semibold tracking-wide">{{ config('app.name') }}</span>
 				</a>
@@ -47,7 +47,7 @@
 					</form>
 				@endif
 
-				<nav class="hidden md:flex items-center gap-1">
+				<nav class="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto md:flex [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 					@foreach((array) config('admin-kit.nav', []) as $item)
 						@php
 							$route = (string) ($item['route'] ?? '');
@@ -60,14 +60,14 @@
 						@if($isServer && $label !== '')
 							@php $isActive = request()->path() === 'admin/server'; @endphp
 							<a href="{{ url('/admin/server') }}"
-								class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+								class="shrink-0 rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
 								<x-admin.icon name="alert-triangle" class="h-4 w-4" />
 								<span>{{ $label }}</span>
 							</a>
 						@elseif($route !== '' && $label !== '' && $hasRoute)
 							@php $isActive = request()->routeIs($route); @endphp
 							<a href="{{ route($route) }}"
-								class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+								class="shrink-0 rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
 								@if($icon !== '')<x-admin.icon :name="$icon" class="h-4 w-4" />@endif
 								<span>{{ $label }}</span>
 							</a>
@@ -76,7 +76,7 @@
 					@endforeach
 				</nav>
 
-				<div class="flex items-center gap-3">
+				<div class="flex shrink-0 items-center gap-3">
 					{{-- Quick actions --}}
 					@if(config('admin-kit.features.quick_actions') && count((array) config('admin-kit.quick_actions', [])) > 0)
 					@php
@@ -114,7 +114,7 @@
 						</details>
 					@endif
 
-					<a class="hidden sm:flex items-center gap-2 text-sm text-slate-200 hover:text-white"
+					<a class="hidden xl:flex items-center gap-2 text-sm text-slate-200 hover:text-white"
 						href="{{ route('profile.edit') }}">
 						<span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white font-semibold">
 							{{ strtoupper(substr((string) auth()->user()?->name, 0, 1)) }}

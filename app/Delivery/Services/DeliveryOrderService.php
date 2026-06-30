@@ -32,18 +32,20 @@ final class DeliveryOrderService
 		private readonly FakePasswordFactory $fakePasswordFactory,
 	) {}
 
-	public function createFromCustomerInput(string $orderNumber, string $customerEmail, string $platform): DeliveryOrder
+	public function createFromCustomerInput(string $orderNumber, string $customerEmail, string $platform, ?string $game = null): DeliveryOrder
 	{
 		$orderNumber = trim($orderNumber);
 		$customerEmail = strtolower(trim($customerEmail));
 		$platform = $this->normalizePlatform($platform);
+		$game = trim((string) $game) ?: null;
 
-		return DB::transaction(function () use ($orderNumber, $customerEmail, $platform): DeliveryOrder {
+		return DB::transaction(function () use ($orderNumber, $customerEmail, $platform, $game): DeliveryOrder {
 			$order = DeliveryOrder::query()->create([
 				'token' => $this->makeUniqueToken(),
 				'order_number' => $orderNumber,
 				'customer_email' => $customerEmail,
 				'platform' => $platform,
+				'game' => $game,
 				'status' => DeliveryOrderStatus::WAITING_FOR_OPERATOR,
 				'token_expires_at' => now()->addHours((int) config('delivery.link_ttl_hours', 72)),
 				'connection_attempts_limit' => (int) config('delivery.connection_attempts_limit', 3),
@@ -53,6 +55,7 @@ final class DeliveryOrderService
 				'order_number' => $orderNumber,
 				'customer_email' => $customerEmail,
 				'platform' => $platform,
+				'game' => $game,
 			]);
 
 			return $order;

@@ -30,7 +30,12 @@
 				<span id="offlineNoticeText"></span>
 			</div>
 
-			<form method="post" action="{{ route('delivery.take-order.store') }}" id="takeOrderForm" novalidate>
+			@php
+				$formAction = ($code ?? null)
+					? route('delivery.take-order.coded.store', ['code' => $code])
+					: route('delivery.take-order.store');
+			@endphp
+			<form method="post" action="{{ $formAction }}" id="takeOrderForm" novalidate>
 				@csrf
 
 				<div class="form-row">

@@ -81,6 +81,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 	Route::get('/delivery-orders', App\Admin\Livewire\DeliveryOrders\DeliveryOrdersIndex::class)->name('delivery-orders.index');
 	Route::get('/delivery-orders/{deliveryOrder}', App\Admin\Livewire\DeliveryOrders\DeliveryOrderShow::class)->name('delivery-orders.show');
 	Route::get('/delivery-instructions', App\Admin\Livewire\DeliveryInstructions\DeliveryInstructionsIndex::class)->name('delivery-instructions.index');
+	Route::get('/delivery-links', App\Admin\Livewire\DeliveryLinks\DeliveryLinksIndex::class)->name('delivery-links.index');
 
 	Route::get('/issuances', App\Admin\Livewire\Logs\IssuancesIndex::class)->name('issuances.index');
 	Route::get('/events', App\Admin\Livewire\Logs\AccountEventsIndex::class)->name('events.index');
@@ -93,4 +94,5 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
 	Route::get('/export/accounts.csv', App\Admin\Http\Controllers\Export\ExportAccountsCsvController::class)->name('export.accounts.csv');
 	Route::get('/export/issuances.csv', App\Admin\Http\Controllers\Export\ExportIssuancesCsvController::class)->name('export.issuances.csv');
+	Route::get('/export/delivery-links.csv', App\Admin\Http\Controllers\Export\ExportDeliveryLinksCsvController::class)->name('export.delivery-links.csv');
 });

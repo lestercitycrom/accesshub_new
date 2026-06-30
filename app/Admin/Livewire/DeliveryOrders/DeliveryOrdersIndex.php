@@ -97,7 +97,7 @@ final class DeliveryOrdersIndex extends Component
 
 		return $query
 			->orderBy($this->sortBy, $direction)
-			->paginate(20);
+			->paginate(17);
 	}
 
 	public function getStatusOptionsProperty(): array
