@@ -91,6 +91,29 @@ fake password + code flow) vs `direct_delivery_platforms` (Steam/Epic → real c
   fails open on a bad tz. `enforce` (env `DELIVERY_WORKING_HOURS`, on in prod) gates the hard block; the
   clock widget always shows.
 
+## Unique delivery links ("stock keys")
+
+The marketplace (difmark) sells via **live-stock** and **rejects duplicate keys**. Our "key" is a
+delivery URL, so the single shared `/take-order` can't be uploaded many times. Solution: pre-generated
+**unique, single-use** codes producing links like `/take-order/{code}`.
+
+- Table `delivery_links` (`code` unique, `batch`, `note`, `used_at`, `delivery_order_id`). Model
+  `App\Delivery\Models\DeliveryLink` (`generateCode()` = lowercase 16-char token; `unused()`/`used()` scopes).
+- Routes (in `routes/delivery.php`): `GET|POST /take-order/{code}` (`whereAlphaNumeric`, so they never
+  shadow the plain `/take-order`). Same controllers as the plain form, with an optional `?string $code`.
+- **`TakeOrderPageController`**: unknown code → 404; used code → redirect to its order (`410` if the order
+  was deleted); unused → render the form (the Blade posts to `take-order.coded.store` when `$code` is set).
+- **`StoreOrderController`**: when `$code` is present it consumes the link **and** creates the order inside
+  one `DB::transaction` + `lockForUpdate` (double-submit can't create two orders / spend it twice). Used
+  code at submit → redirect to the existing order, no new order. The plain (codeless) path is unchanged.
+- **Admin**: `admin/delivery-links` (`DeliveryLinks\DeliveryLinksIndex`) bulk-generates a batch (chunked
+  insert, cap `MAX_PER_BATCH`), lists batches with used/unused counts, and can delete *unused* links.
+  Export: `admin/export/delivery-links.csv` (`?batch=&only=unused|all`) → **plain newline-separated full
+  URLs** (no header) — the format marketplaces expect for bulk key upload. URLs are derived from the route
+  at export, so they follow `APP_URL` (host-independent storage).
+- Design decisions (confirmed with customer): single-use; same take-order form (buyer still enters order #/
+  email/platform); codes are **generic** (not bound to platform/offer) — one shared pool.
+
 ## Telegram webhook security (A1)
 
 `/api/telegram/webhook` trusts `from.id` after an `is_active` check only. Forged payloads with a known
@@ -124,7 +147,7 @@ it the other way blocks all updates.
 ## Tests
 
 ```bash
-php artisan test tests/Feature/Delivery        # 63 passing — the safety net; run after any change
+php artisan test tests/Feature/Delivery        # 71 passing — the safety net; run after any change
 QA_BASE=https://download-games.info npm run delivery:e2e   # Playwright, read-only against prod
 ```
 QA fixtures: `npm run delivery:qa:seed` (tokens `qa-waiting-0001` / `qa-qr-0001` / `qa-locked-0001`).
