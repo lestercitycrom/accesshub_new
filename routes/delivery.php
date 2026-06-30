@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Delivery\Http\Controllers\HowItWorksController;
 use App\Delivery\Http\Controllers\OrderStatusController;
 use App\Delivery\Http\Controllers\ShowOrderController;
 use App\Delivery\Http\Controllers\StoreConnectionCodeController;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Route;
 Route::withoutMiddleware(['auth', 'admin'])
 	->name('delivery.')
 	->group(function (): void {
+		Route::get('/how-it-works', HowItWorksController::class)->name('how-it-works');
+
 		Route::get('/take-order', TakeOrderPageController::class)->name('take-order');
 		Route::post('/take-order', StoreOrderController::class)
 			->middleware('throttle:20,1')

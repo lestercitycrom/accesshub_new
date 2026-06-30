@@ -1,105 +1,133 @@
-<x-dynamic-component component="delivery.layout" title="Order {{ $payload['order_number'] }}">
-	<style>
-		.tabbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
-		.tab { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:999px; padding:8px 16px; font:inherit; font-weight:600; font-size:14px; cursor:pointer; box-shadow:var(--shadow-sm); transition:all .15s; }
-		.tab:hover { border-color:var(--accent); }
-		.tab--active { background:linear-gradient(135deg, var(--grad-from) 0%, var(--grad-to) 100%); color:#fff; border-color:transparent; }
-		.tab-dot { width:9px; height:9px; border-radius:50%; background:var(--muted); flex:none; }
-		.tab--active .tab-dot { background:#fff; }
-		.tab-dot.dot-ok { background:var(--ok); } .tab-dot.dot-accent { background:var(--grad-to); }
-		.tab-dot.dot-danger { background:var(--danger); } .tab-dot.dot-info { background:var(--info); }
-	</style>
-
-	<div id="orderApp"
+<x-delivery.site :title="'Order ' . $payload['order_number']">
+	<div class="mx-auto max-w-5xl"
+		id="orderApp"
 		data-status-url="{{ route('delivery.order.status', ['token' => $order->token]) }}"
-		data-code-url="{{ route('delivery.order.connection-code.store', ['token' => $order->token]) }}">
+		data-code-url="{{ route('delivery.order.connection-code.store', ['token' => $order->token]) }}"
+		data-delivered-art="{{ asset('site/banner-delivered.webp') }}"
+		data-processing-art="{{ asset('site/banner-processing.webp') }}">
 
-		{{-- Header --}}
-		<div class="card">
-			<div class="card-grad-header" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
-				<div>
-					<h1>Order #<span id="orderNumber">{{ $payload['order_number'] }}</span></h1>
-					<p id="platformLine">{{ $payload['platform'] }}</p>
-				</div>
-				<span class="badge badge--muted" id="statusBadge"><span class="dot"></span><span class="badge-text">…</span></span>
+		{{-- Top bar --}}
+		<div class="mb-4 flex items-center justify-between gap-3">
+			<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-indigo-600">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+				Back to store
+			</a>
+			<span class="text-sm font-semibold text-slate-500">Order #<span id="orderNumber">{{ $payload['order_number'] }}</span></span>
+		</div>
+
+		{{-- Status banner --}}
+		<div class="relative overflow-hidden rounded-3xl border border-white bg-gradient-to-r from-violet-50 via-violet-100 to-violet-300 p-6 shadow-sm sm:p-8">
+			<div class="relative z-10 max-w-md">
+				<p class="text-sm font-semibold text-violet-700/80">Your order is</p>
+				<h1 id="bannerBig" class="mt-1 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">Processing</h1>
+				<p id="bannerSub" class="mt-3 text-sm leading-relaxed text-slate-600"></p>
+				<p id="bannerEta" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-violet-700">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+					<span id="bannerEtaText">Estimated time: 5 – 30 minutes</span>
+				</p>
 			</div>
+			<img id="bannerArt" src="{{ asset('site/banner-processing.webp') }}" alt=""
+				class="pointer-events-none absolute right-0 top-1/2 hidden h-[115%] -translate-y-1/2 select-none object-contain sm:block" draggable="false">
+		</div>
 
-			<div class="card-body">
-				<div class="alert alert--info hidden" id="stateBanner" style="margin-bottom:16px;">
-					<span class="ic" id="bannerIcon"></span>
-					<span><strong id="bannerTitle"></strong><br><span id="bannerText"></span></span>
-				</div>
+		{{-- Stepper --}}
+		<div id="stepper" class="mt-6 grid grid-cols-4 gap-2"></div>
 
-				<div class="details">
-					<div class="detail"><div class="k">Order number</div><div class="v" id="dOrderNumber">{{ $payload['order_number'] }}</div></div>
-					<div class="detail"><div class="k">Platform</div><div class="v" id="dPlatform">{{ $payload['platform'] }}</div></div>
-					<div class="detail" id="dGameWrap"><div class="k">Game</div><div class="v" id="dGame"></div></div>
-					<div class="detail" id="dEmailWrap"><div class="k">Email</div><div class="v" id="dEmail"></div></div>
-					<div class="detail" id="dExpiresWrap"><div class="k">Link valid until</div><div class="v" id="dExpires"></div></div>
-				</div>
+		{{-- Tabs (multi-game) --}}
+		<div class="mt-6 hidden flex-wrap gap-2" id="tabBar"></div>
+
+		{{-- Info cards --}}
+		<div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+			@php
+				$infoCard = fn($label, $id, $val = '') => '';
+			@endphp
+			<div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+				<div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg> Platform</div>
+				<div class="mt-1.5 font-bold text-slate-900" id="dPlatform">{{ $payload['platform'] }}</div>
+			</div>
+			<div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+				<div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><rect x="2" y="6" width="20" height="12" rx="5"/><line x1="7" y1="11" x2="10" y2="11"/><line x1="8.5" y1="9.5" x2="8.5" y2="12.5"/></svg> Game</div>
+				<div class="mt-1.5 truncate font-bold text-slate-900" id="dGame">—</div>
+			</div>
+			<div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+				<div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 14h6"/></svg> Order number</div>
+				<div class="mt-1.5 truncate font-bold text-slate-900" id="dOrderNumber">{{ $payload['order_number'] }}</div>
+			</div>
+			<div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+				<div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg> Order placed</div>
+				<div class="mt-1.5 font-bold text-slate-900">{{ $order->created_at?->format('d M Y') }}<span class="block text-xs font-medium text-slate-500">at {{ $order->created_at?->format('H:i:s') }}</span></div>
+			</div>
+			<div class="col-span-2 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:col-span-1">
+				<div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg> Email</div>
+				<div class="mt-1.5 truncate font-bold text-slate-900" id="dEmail">—</div>
 			</div>
 		</div>
 
-		{{-- Tabs (one per game; shown only when there are several) --}}
-		<div class="tabbar hidden" id="tabBar"></div>
-
-		{{-- Warning: do not change credentials --}}
-		<div class="card hidden" id="credWarningCard">
-			<div class="card-body">
-				<div class="alert alert--warn" style="margin:0;">
-					<span class="ic"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
-					<span><strong>Do not change the login or password.</strong><br>Changing the account credentials will break access to the game, and the order cannot be restored.</span>
-				</div>
+		{{-- Account details --}}
+		<div class="mt-6 hidden rounded-3xl border border-white bg-white p-6 shadow-sm" id="accountCard">
+			<div class="flex items-center gap-2">
+				<h2 class="text-lg font-bold text-slate-900">Your account details</h2>
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5 text-emerald-500"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg>
+			</div>
+			<p class="mt-1 text-sm text-slate-500">Use the credentials below to log in to your account.</p>
+			<div class="mt-4 space-y-2" id="accountBlock"></div>
+			<div class="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-sm text-rose-700">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 h-4 w-4 shrink-0"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+				<span><strong>IMPORTANT.</strong> Do not change the account login or password. Doing so may cause a temporary loss of access to the game. If you have any questions, contact the seller.</span>
 			</div>
 		</div>
 
-		{{-- Account + Instruction (active game) --}}
-		<div class="card">
-			<div class="card-body">
-				<h2>Account</h2>
-				<div id="accountBlock" class="stack">
-					<p class="muted">Loading…</p>
+		{{-- Connection code (QR platforms) --}}
+		<section class="mt-6 hidden rounded-3xl border border-white bg-white p-6 shadow-sm" id="connectionCard">
+			<h2 class="text-lg font-bold text-slate-900">Console connection</h2>
+			<p class="mt-1 text-sm text-slate-500" id="connDesc">Enter the code shown on your console screen to finish the connection.</p>
+
+			<form id="connForm" class="mt-4 hidden">
+				@csrf
+				<label for="connection_code" class="text-sm font-semibold text-slate-700">Connection code</label>
+				<input id="connection_code" name="connection_code" maxlength="8" minlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false"
+					placeholder="6–8 characters"
+					class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm uppercase tracking-[0.12em] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
+				<p class="mt-2 text-xs text-slate-500" id="attemptsText"></p>
+				<div class="mt-3 hidden items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700" id="connError">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 h-4 w-4 shrink-0"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+					<span id="connErrorText"></span>
 				</div>
+				<button type="submit" id="connSubmit" class="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-200 transition hover:opacity-95 disabled:opacity-60">
+					<span class="btn-label">Send code</span>
+				</button>
+			</form>
+
+			<div class="mt-4 hidden items-start gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-sm text-indigo-700" id="connProgress">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 h-4 w-4 shrink-0"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+				<span id="connProgressText"></span>
 			</div>
-			<div class="card-body">
-				<details class="accordion" id="instructionWrap" open>
-					<summary><span>Instructions</span><span class="chev">▾</span></summary>
-					<div id="instructionBlock" class="acc-body">
-						<p class="muted">Instructions will appear here when delivery starts.</p>
-					</div>
-				</details>
-			</div>
-		</div>
-
-		{{-- Connection code (active game) --}}
-		<section class="card hidden" id="connectionCard">
-			<div class="card-body">
-				<h2>Console connection</h2>
-				<p class="muted" id="connDesc">Enter the code shown on your console screen to finish the connection.</p>
-
-				<form id="connForm" class="hidden" style="margin-top:14px;">
-					@csrf
-					<div class="form-row" style="margin-bottom:8px;">
-						<label for="connection_code">Connection code</label>
-						<input id="connection_code" name="connection_code" maxlength="8" minlength="6"
-							autocomplete="off" autocapitalize="characters" spellcheck="false"
-							placeholder="6–8 characters" style="letter-spacing:.12em;text-transform:uppercase;">
-					</div>
-					<p class="muted" id="attemptsText" style="margin:0 0 12px;font-size:13px;"></p>
-					<div class="alert alert--danger hidden" id="connError" style="margin-bottom:12px;">
-						<span class="ic"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><span id="connErrorText"></span>
-					</div>
-					<button type="submit" class="btn" id="connSubmit"><span class="btn-label">Send code</span></button>
-				</form>
-
-				<div class="alert alert--info hidden" id="connProgress" style="margin-top:14px;">
-					<span class="ic"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span><span id="connProgressText"></span>
-				</div>
-				<div class="alert alert--danger hidden" id="connLocked" style="margin-top:14px;">
-					<span class="ic"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span id="connLockedText"></span>
-				</div>
+			<div class="mt-4 hidden items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700" id="connLocked">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 h-4 w-4 shrink-0"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+				<span id="connLockedText"></span>
 			</div>
 		</section>
+
+		{{-- Instructions + What's next --}}
+		<div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+			<div class="rounded-3xl border border-white bg-white p-6 shadow-sm">
+				<h2 class="text-lg font-bold text-slate-900">Instructions</h2>
+				<div class="mt-3 text-sm leading-relaxed text-slate-600" id="instructionBlock">
+					<p class="text-slate-400">Instructions will appear here when delivery starts.</p>
+				</div>
+			</div>
+			<div class="rounded-3xl border border-white bg-white p-6 shadow-sm">
+				<h2 class="text-lg font-bold text-slate-900">What's next?</h2>
+				<ul class="mt-3 space-y-3 text-sm text-slate-600">
+					<li class="flex items-start gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-500"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/></svg><span><b class="text-slate-900">Keep your account secure</b><br>Do not share your account details with anyone.</span></li>
+					<li class="flex items-start gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 h-5 w-5 shrink-0 text-indigo-500"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span><b class="text-slate-900">Having issues?</b><br>Contact our support team, we are here to help.</span></li>
+				</ul>
+				<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 text-sm font-bold text-white shadow-md">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+					Contact support
+				</a>
+			</div>
+		</div>
 	</div>
 
 	<script>
@@ -108,364 +136,255 @@
 			const statusUrl = root.dataset.statusUrl;
 			const codeUrl = root.dataset.codeUrl;
 			const csrf = document.querySelector('meta[name="csrf-token"]').content;
-
 			const el = (id) => document.getElementById(id);
-			const statusBadge = el('statusBadge');
-			const accountBlock = el('accountBlock');
-			const instructionBlock = el('instructionBlock');
-			const connectionCard = el('connectionCard');
-			const connForm = el('connForm');
-			const connInput = el('connection_code');
-			const connSubmit = el('connSubmit');
-			const attemptsText = el('attemptsText');
-			const connError = el('connError');
-			const connProgress = el('connProgress');
-			const connLocked = el('connLocked');
 
-			const BADGE = {
-				new: ['Waiting for operator', 'badge--info badge--pulse'],
-				waiting_for_operator: ['Waiting for operator', 'badge--info badge--pulse'],
-				account_assigned: ['Account ready', 'badge--ok'],
-				waiting_for_connection_code: ['Enter connection code', 'badge--accent'],
-				connection_code_submitted: ['Code received', 'badge--info'],
-				operator_connecting: ['Operator connecting', 'badge--info badge--pulse'],
-				connected: ['Connected', 'badge--ok'],
-				connection_failed: ['Connection failed', 'badge--danger'],
-				locked_24h: ['Locked', 'badge--danger'],
-				expired: ['Link expired', 'badge--muted'],
-				cancelled: ['Cancelled', 'badge--muted'],
-			};
-
-			const S = (paths) => '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
-			const ICON = {
-				clock: S('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>'),
-				check: S('<circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/>'),
-				bolt: S('<polygon points="13 2 4 14 11 14 11 22 20 10 13 10 13 2"/>'),
-				mail: S('<rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/>'),
-				plug: S('<path d="M9 2v6M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0V8Z"/><path d="M12 17v5"/>'),
-				alert: S('<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
-				lock: S('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
-				xcircle: S('<circle cx="12" cy="12" r="9"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/>'),
-				info: S('<circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/>'),
-			};
-
+			const STEPS = ['Order received', 'Processing', 'In Delivery', 'Delivered'];
 			const TERMINAL = ['connected', 'expired', 'cancelled'];
 			const CONN_FORM_STATES = ['account_assigned', 'waiting_for_connection_code', 'connection_failed'];
 			const CONN_PROGRESS_STATES = ['connection_code_submitted', 'operator_connecting'];
 			const CONN_VISIBLE_STATES = [...CONN_FORM_STATES, ...CONN_PROGRESS_STATES, 'locked_24h'];
+			const IN_DELIVERY = ['account_assigned', 'waiting_for_connection_code', 'connection_code_submitted', 'operator_connecting', 'connection_failed', 'locked_24h'];
 
-			let pollingMs = 8000;
-			let pollTimer = null;
-			let lastPayload = null;
-			let items = [];
-			let activeId = null;
+			let pollingMs = 8000, pollTimer = null, lastPayload = null, items = [], activeId = null;
 
-			function fmtDate(iso) {
-				if (!iso) return null;
-				const d = new Date(iso);
-				if (isNaN(d)) return null;
-				return d.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
-			}
+			const fmtDate = (iso) => { if (!iso) return null; const d = new Date(iso); return isNaN(d) ? null : d.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }); };
+			const maskEmail = (e) => { if (!e || !e.includes('@')) return e || ''; const [u, d] = e.split('@'); return (u.slice(0, 2) + '***') + '@' + d; };
 
-			function setBanner(cls, icon, title, text) {
-				const banner = el('stateBanner');
-				if (!title && !text) { banner.classList.add('hidden'); return; }
-				banner.className = 'alert ' + cls;
-				banner.style.marginBottom = '16px';
-				el('bannerIcon').innerHTML = ICON[icon] || ICON.info;
-				el('bannerTitle').textContent = title || '';
-				el('bannerText').textContent = text || '';
-			}
-
-			function bannerFor(item) {
-				const c = item.connection || {};
-				switch (item.status) {
+			function bannerInfo(status) {
+				switch (status) {
+					case 'connected': return ['Delivered 🎉', 'Your game account is ready! Follow the instructions below to access your game.', null];
 					case 'new':
-					case 'waiting_for_operator':
-						return ['alert--info', 'clock', 'Waiting for operator',
-							'Your order is being checked. Keep this page open — it updates automatically.'];
-					case 'account_assigned':
-						return ['alert--ok', 'check', 'Account assigned', 'Your account details are ready below.'];
-					case 'waiting_for_connection_code':
-						return ['alert--accent', 'bolt', 'Action needed',
-							'Enter the code shown on your console to finish the connection.'];
-					case 'connection_code_submitted':
-						return ['alert--info', 'mail', 'Code received',
-							'We received your code. An operator will connect your console shortly.'];
-					case 'operator_connecting':
-						return ['alert--info', 'plug', 'Operator is connecting your console', 'Please keep this page open.'];
-					case 'connected':
-						return ['alert--ok', 'check', 'Connected', 'Your console has been connected successfully.'];
-					case 'connection_failed':
-						return ['alert--danger', 'alert', 'Connection failed',
-							'The last attempt did not go through. You can try again below.'];
-					case 'locked_24h': {
-						const until = fmtDate(c.locked_until);
-						return ['alert--danger', 'lock', 'Temporarily locked',
-							'Too many attempts.' + (until ? ' Try again after ' + until + '.' : '') +
-							' An operator may grant extra attempts.'];
-					}
-					case 'expired':
-						return ['alert--muted', 'clock', 'This link has expired',
-							'Please request a new delivery link from the seller.'];
-					case 'cancelled':
-						return ['alert--muted', 'xcircle', 'Order cancelled', 'Contact the seller.'];
-					default:
-						return ['alert--info', 'info', '', ''];
+					case 'waiting_for_operator': return ['Processing', 'We are working on your order and preparing your game.', 'Estimated time: 5 – 30 minutes'];
+					case 'expired': return ['Link expired', 'This link has expired. Please request a new delivery link from the seller.', null];
+					case 'cancelled': return ['Order cancelled', 'Please contact the seller about this order.', null];
+					default: return ['In Delivery', 'We are preparing your access. Follow the steps below.', 'Estimated time: 5 – 30 minutes'];
 				}
 			}
 
-			function credRow(label, value, hint) {
+			function activeStep(status) {
+				if (status === 'connected') return 4;
+				if (IN_DELIVERY.includes(status)) return 3;
+				if (status === 'expired' || status === 'cancelled') return 0;
+				return 2;
+			}
+
+			function renderStepper(status) {
+				const cur = activeStep(status);
+				const wrap = el('stepper');
+				wrap.replaceChildren();
+				STEPS.forEach((name, i) => {
+					const n = i + 1;
+					const done = cur >= 4 ? true : n < cur;
+					const active = n === cur;
+					const col = document.createElement('div');
+					col.className = 'flex flex-col items-center text-center';
+					const circle = document.createElement('div');
+					circle.className = 'flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ' +
+						(done ? 'bg-indigo-600 text-white' : active ? 'bg-indigo-600 text-white ring-4 ring-indigo-100' : 'bg-slate-100 text-slate-400');
+					circle.innerHTML = done
+						? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="h-4 w-4"><polyline points="20 6 9 17 4 12"/></svg>'
+						: String(n);
+					const label = document.createElement('div');
+					label.className = 'mt-1.5 text-[11px] font-semibold leading-tight ' + (done || active ? 'text-slate-800' : 'text-slate-400');
+					label.textContent = name;
+					col.append(circle, label);
+					wrap.append(col);
+				});
+			}
+
+			function copyBtn(value) {
+				const b = document.createElement('button');
+				b.type = 'button'; b.dataset.copy = value;
+				b.className = 'copy-btn shrink-0 rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-50';
+				b.title = 'Copy';
+				b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+				return b;
+			}
+
+			function credRow(label, value, { mask = false, hint = null } = {}) {
 				const row = document.createElement('div');
+				row.className = 'rounded-xl border border-slate-200 bg-slate-50/60';
+				const top = document.createElement('div');
+				top.className = 'flex items-center gap-2 px-3 py-2.5';
 				const main = document.createElement('div');
-				main.className = 'cred-main';
-				const l = document.createElement('div'); l.className = 'cred-label'; l.textContent = label;
-				const v = document.createElement('div'); v.className = 'cred-value'; v.textContent = value;
+				main.className = 'min-w-0 flex-1';
+				const l = document.createElement('div'); l.className = 'text-[11px] font-semibold uppercase tracking-wide text-slate-400'; l.textContent = label;
+				const v = document.createElement('div'); v.className = 'truncate font-mono text-sm text-slate-900';
+				let revealed = !mask;
+				const masked = () => '•'.repeat(Math.max(6, Math.min(14, (value || '').length)));
+				v.textContent = revealed ? value : masked();
 				main.append(l, v);
-				const btn = document.createElement('button');
-				btn.type = 'button'; btn.className = 'copy-btn'; btn.textContent = 'Copy';
-				btn.dataset.copy = value;
-				const cred = document.createElement('div'); cred.className = 'cred';
-				cred.append(main, btn);
-				const wrap = document.createElement('div');
-				wrap.append(cred);
-				if (hint) { const h = document.createElement('div'); h.className = 'field-hint'; h.textContent = hint; wrap.append(h); }
-				row.append(wrap);
-				return row.firstChild;
+				top.append(main);
+				if (mask) {
+					const eye = document.createElement('button');
+					eye.type = 'button'; eye.title = 'Show'; eye.className = 'shrink-0 rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-50';
+					eye.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+					eye.addEventListener('click', () => { revealed = !revealed; v.textContent = revealed ? value : masked(); });
+					top.append(eye);
+				}
+				top.append(copyBtn(value));
+				row.append(top);
+				if (hint) { const h = document.createElement('div'); h.className = 'px-3 pb-2.5 text-xs text-slate-500'; h.textContent = hint; row.append(h); }
+				return row;
 			}
 
 			function renderAccount(item) {
-				accountBlock.replaceChildren();
-				if (!item.account) {
-					const p = document.createElement('p');
-					p.className = 'muted';
-					p.textContent = TERMINAL.includes(item.status) && item.status !== 'connected'
-						? 'No account is attached to this game.'
-						: 'Waiting for operator to assign an account…';
-					accountBlock.append(p);
-					return;
-				}
-				accountBlock.append(credRow('Login', item.account.login || '', null));
+				const card = el('accountCard');
+				const block = el('accountBlock');
+				block.replaceChildren();
+				if (!item.account) { card.classList.add('hidden'); return; }
+				card.classList.remove('hidden');
+				block.append(credRow('Email / Username', item.account.login || '', {}));
 				const isFake = item.account.password_type === 'fake';
-				const hint = isFake
-					? 'Use these details to start the console connection. Final sign-in is completed after you send the code.'
-					: null;
-				accountBlock.append(credRow('Password', item.account.password || '', hint));
+				block.append(credRow('Password', item.account.password || '', {
+					mask: true,
+					hint: isFake ? 'Use these details to start the console connection. Final sign-in is completed after you send the code.' : null,
+				}));
 			}
 
 			function renderInstruction(item) {
-				instructionBlock.replaceChildren();
+				const block = el('instructionBlock');
+				block.replaceChildren();
 				if (item.instruction && (item.instruction.title || item.instruction.body)) {
-					if (item.instruction.title) {
-						const h = document.createElement('h3'); h.textContent = item.instruction.title;
-						instructionBlock.append(h);
-					}
-					const body = document.createElement('div');
-					body.textContent = item.instruction.body || '';
-					instructionBlock.append(body);
+					if (item.instruction.title) { const h = document.createElement('div'); h.className = 'mb-1 font-bold text-slate-900'; h.textContent = item.instruction.title; block.append(h); }
+					const body = document.createElement('div'); body.className = 'whitespace-pre-wrap'; body.textContent = item.instruction.body || ''; block.append(body);
 				} else {
-					const p = document.createElement('p'); p.className = 'muted';
-					p.textContent = 'Instructions will appear here when delivery starts.';
-					instructionBlock.append(p);
+					const p = document.createElement('p'); p.className = 'text-slate-400'; p.textContent = 'Instructions will appear here when delivery starts.'; block.append(p);
 				}
-
 				if (item.tutorial_url) {
 					const a = document.createElement('a');
-					a.href = item.tutorial_url;
-					a.target = '_blank';
-					a.rel = 'noopener noreferrer';
-					a.className = 'btn secondary';
-					a.style.cssText = 'margin-top:14px;text-decoration:none;';
+					a.href = item.tutorial_url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+					a.className = 'mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50';
 					a.textContent = 'Open installation tutorial';
-					instructionBlock.append(a);
+					block.append(a);
 				}
 			}
 
 			function renderConnection(item) {
 				const c = item.connection || {};
 				const show = c.required && CONN_VISIBLE_STATES.includes(item.status);
-				connectionCard.classList.toggle('hidden', !show);
+				el('connectionCard').classList.toggle('hidden', !show);
 				if (!show) return;
-
 				const inForm = CONN_FORM_STATES.includes(item.status);
 				const inProgress = CONN_PROGRESS_STATES.includes(item.status);
 				const locked = item.status === 'locked_24h';
-
-				connForm.classList.toggle('hidden', !inForm);
-				connProgress.classList.toggle('hidden', !inProgress);
-				connLocked.classList.toggle('hidden', !locked);
-
+				el('connForm').classList.toggle('hidden', !inForm);
+				el('connProgress').classList.toggle('hidden', !inProgress);
+				el('connProgress').classList.toggle('flex', inProgress);
+				el('connLocked').classList.toggle('hidden', !locked);
+				el('connLocked').classList.toggle('flex', locked);
 				const used = c.attempts_used || 0, limit = c.attempts_limit || 0;
-				attemptsText.textContent = limit ? `Attempts used: ${used} of ${limit}` : '';
+				el('attemptsText').textContent = limit ? `Attempts used: ${used} of ${limit}` : '';
 				const noAttempts = limit && used >= limit;
-				connSubmit.disabled = !!noAttempts;
-				connSubmit.querySelector('.btn-label').textContent = noAttempts ? 'No attempts left' : 'Send code';
-
-				if (inProgress) {
-					el('connProgressText').textContent = item.status === 'operator_connecting'
-						? 'Operator is connecting your console. Please keep this page open.'
-						: 'We received your code. Waiting for an operator to connect your console.';
-				}
-				if (locked) {
-					const until = fmtDate(c.locked_until);
-					el('connLockedText').textContent = 'Too many attempts.' +
-						(until ? ' Try again after ' + until + '.' : '') + ' An operator may grant extra attempts.';
-				}
+				const sub = el('connSubmit'); sub.disabled = !!noAttempts;
+				sub.querySelector('.btn-label').textContent = noAttempts ? 'No attempts left' : 'Send code';
+				if (inProgress) el('connProgressText').textContent = item.status === 'operator_connecting'
+					? 'Operator is connecting your console. Please keep this page open.'
+					: 'We received your code. Waiting for an operator to connect your console.';
+				if (locked) { const until = fmtDate(c.locked_until); el('connLockedText').textContent = 'Too many attempts.' + (until ? ' Try again after ' + until + '.' : '') + ' An operator may grant extra attempts.'; }
 			}
 
-			function tabDotClass(status) {
-				if (status === 'connected' || status === 'account_assigned') return 'dot-ok';
-				if (status === 'waiting_for_connection_code') return 'dot-accent';
-				if (status === 'connection_failed' || status === 'locked_24h') return 'dot-danger';
-				if (['connection_code_submitted', 'operator_connecting', 'waiting_for_operator', 'new'].includes(status)) return 'dot-info';
-				return '';
+			function tabDot(status) {
+				if (['connected', 'account_assigned'].includes(status)) return 'bg-emerald-500';
+				if (status === 'waiting_for_connection_code') return 'bg-violet-500';
+				if (['connection_failed', 'locked_24h'].includes(status)) return 'bg-rose-500';
+				if (['connection_code_submitted', 'operator_connecting', 'waiting_for_operator', 'new'].includes(status)) return 'bg-indigo-500';
+				return 'bg-slate-400';
 			}
 
 			function renderTabs() {
 				const bar = el('tabBar');
 				bar.replaceChildren();
-				if (items.length <= 1) { bar.classList.add('hidden'); return; }
-				bar.classList.remove('hidden');
+				if (items.length <= 1) { bar.classList.add('hidden'); bar.classList.remove('flex'); return; }
+				bar.classList.remove('hidden'); bar.classList.add('flex');
 				items.forEach((it, i) => {
+					const active = String(it.id) === String(activeId);
 					const b = document.createElement('button');
 					b.type = 'button';
-					b.className = 'tab' + (String(it.id) === String(activeId) ? ' tab--active' : '');
-					const dot = document.createElement('span');
-					dot.className = 'tab-dot ' + tabDotClass(it.status);
-					const label = document.createElement('span');
-					label.textContent = it.game || ('Game ' + (i + 1));
+					b.className = 'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ' +
+						(active ? 'border-transparent bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300');
+					const dot = document.createElement('span'); dot.className = 'h-2 w-2 rounded-full ' + (active ? 'bg-white' : tabDot(it.status));
+					const label = document.createElement('span'); label.textContent = it.game || ('Game ' + (i + 1));
 					b.append(dot, label);
 					b.addEventListener('click', () => { activeId = it.id; if (lastPayload) render(lastPayload); });
 					bar.append(b);
 				});
 			}
 
-			function activeItem() {
-				return items.find((i) => String(i.id) === String(activeId)) || items[0];
-			}
-
-			function legacyItem(p) {
-				return { id: 0, game: p.game, platform: p.platform, status: p.status, account: p.account, connection: p.connection, instruction: p.instruction, tutorial_url: p.tutorial_url };
-			}
+			const activeItem = () => items.find((i) => String(i.id) === String(activeId)) || items[0];
+			const legacyItem = (p) => ({ id: 0, game: p.game, platform: p.platform, status: p.status, account: p.account, connection: p.connection, instruction: p.instruction, tutorial_url: p.tutorial_url });
 
 			function render(payload) {
 				if (!payload || !payload.status) return;
 				lastPayload = payload;
 				pollingMs = Math.max(3000, (payload.polling_interval_seconds || 8) * 1000);
-
 				items = Array.isArray(payload.items) && payload.items.length ? payload.items : [legacyItem(payload)];
-				if (activeId === null || !items.some((i) => String(i.id) === String(activeId))) {
-					activeId = items[0].id;
-				}
+				if (activeId === null || !items.some((i) => String(i.id) === String(activeId))) activeId = items[0].id;
 
-				// order-level header
 				el('orderNumber').textContent = payload.order_number || '';
 				el('dOrderNumber').textContent = payload.order_number || '';
-				el('dEmailWrap').classList.toggle('hidden', !payload.customer_email);
-				el('dEmail').textContent = payload.customer_email || '';
-				const exp = fmtDate(payload.expires_at);
-				el('dExpiresWrap').classList.toggle('hidden', !exp);
-				el('dExpires').textContent = exp || '';
+				el('dEmail').textContent = payload.customer_email ? maskEmail(payload.customer_email) : '—';
 
 				renderTabs();
-
 				const item = activeItem();
-				const [badgeText, badgeCls] = BADGE[item.status] || [String(item.status).replaceAll('_', ' '), 'badge--muted'];
-				statusBadge.className = 'badge ' + badgeCls;
-				statusBadge.innerHTML = '<span class="dot"></span>';
-				const t = document.createElement('span'); t.className = 'badge-text'; t.textContent = badgeText;
-				statusBadge.append(t);
 
-				setBanner(...bannerFor(item));
-				el('platformLine').textContent = [item.platform, item.game].filter(Boolean).join(' · ');
-				el('dPlatform').textContent = item.platform || '';
-				el('dGameWrap').classList.toggle('hidden', !item.game);
-				el('dGame').textContent = item.game || '';
+				const [big, sub, eta] = bannerInfo(item.status);
+				el('bannerBig').textContent = big;
+				el('bannerSub').textContent = sub;
+				el('bannerEta').classList.toggle('hidden', !eta);
+				if (eta) el('bannerEtaText').textContent = eta;
+				el('bannerArt').src = item.status === 'connected' ? root.dataset.deliveredArt : root.dataset.processingArt;
+
+				renderStepper(item.status);
+
+				el('dPlatform').textContent = item.platform || payload.platform || '';
+				el('dGame').textContent = item.game || '—';
 
 				renderAccount(item);
-				el('credWarningCard')?.classList.toggle('hidden', !item.account);
 				renderInstruction(item);
 				renderConnection(item);
 			}
 
-			// --- copy buttons (event delegation) ---
+			// copy (delegated)
 			document.addEventListener('click', async (e) => {
 				const btn = e.target.closest('.copy-btn');
 				if (!btn) return;
 				const value = btn.dataset.copy || '';
 				try {
-					if (navigator.clipboard && window.isSecureContext) {
-						await navigator.clipboard.writeText(value);
-					} else {
-						const ta = document.createElement('textarea');
-						ta.value = value; ta.style.position = 'fixed'; ta.style.opacity = '0';
-						document.body.append(ta); ta.select(); document.execCommand('copy'); ta.remove();
-					}
-					btn.classList.add('copied');
-					const prev = btn.textContent; btn.textContent = 'Copied';
-					setTimeout(() => { btn.classList.remove('copied'); btn.textContent = prev; }, 1600);
-				} catch (_) {
-					btn.textContent = 'Press Ctrl+C';
-				}
+					if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(value);
+					else { const ta = document.createElement('textarea'); ta.value = value; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.append(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+					btn.classList.add('text-emerald-600', 'border-emerald-300');
+					setTimeout(() => btn.classList.remove('text-emerald-600', 'border-emerald-300'), 1500);
+				} catch (_) {}
 			});
 
-			// --- polling ---
 			async function refresh() {
 				try {
-					const res = await fetch(statusUrl, { headers: { 'Accept': 'application/json' } });
-					if (res.ok) {
-						const data = await res.json();
-						render(data);
-						// stop polling only when every game has reached a terminal state
-						if (items.length && items.every((i) => TERMINAL.includes(i.status))) return;
-					}
-				} catch (_) { /* keep polling on transient errors */ }
+					const res = await fetch(statusUrl, { headers: { Accept: 'application/json' } });
+					if (res.ok) { render(await res.json()); if (items.length && items.every((i) => TERMINAL.includes(i.status))) return; }
+				} catch (_) {}
 				pollTimer = setTimeout(refresh, pollingMs);
 			}
 
-			// --- connection code submit (for the active game) ---
-			connForm.addEventListener('submit', async (e) => {
+			el('connForm').addEventListener('submit', async (e) => {
 				e.preventDefault();
-				connError.classList.add('hidden');
+				const connError = el('connError'); connError.classList.add('hidden');
+				const connInput = el('connection_code'), connSubmit = el('connSubmit');
 				const code = (connInput.value || '').trim().toUpperCase();
-				if (!/^[A-Za-z0-9]{6,8}$/.test(code)) {
-					el('connErrorText').textContent = 'Code must be 6–8 letters or digits.';
-					connError.classList.remove('hidden');
-					return;
-				}
+				if (!/^[A-Za-z0-9]{6,8}$/.test(code)) { el('connErrorText').textContent = 'Code must be 6–8 letters or digits.'; connError.classList.remove('hidden'); connError.classList.add('flex'); return; }
 				connSubmit.disabled = true;
-				const label = connSubmit.querySelector('.btn-label');
-				const prevLabel = label.textContent;
-				label.textContent = 'Sending…';
-				connSubmit.insertAdjacentHTML('afterbegin', '<span class="spinner"></span>');
+				const label = connSubmit.querySelector('.btn-label'); const prev = label.textContent; label.textContent = 'Sending…';
 				try {
-					const res = await fetch(codeUrl, {
-						method: 'POST',
-						headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-						body: JSON.stringify({ connection_code: code, item: activeId }),
-					});
+					const res = await fetch(codeUrl, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify({ connection_code: code, item: activeId }) });
 					const data = await res.json().catch(() => ({}));
-					if (data.order) {
-						connInput.value = '';
-						render(data.order);
-					}
-					if (!data.ok) {
-						el('connErrorText').textContent = data.message || 'Unable to send code. Please try again.';
-						connError.classList.remove('hidden');
-					}
-				} catch (_) {
-					el('connErrorText').textContent = 'Network error. Please try again.';
-					connError.classList.remove('hidden');
-				} finally {
-					const sp = connSubmit.querySelector('.spinner'); if (sp) sp.remove();
-					label.textContent = prevLabel;
-					connSubmit.disabled = false;
-				}
+					if (data.order) { connInput.value = ''; render(data.order); }
+					if (!data.ok) { el('connErrorText').textContent = data.message || 'Unable to send code. Please try again.'; connError.classList.remove('hidden'); connError.classList.add('flex'); }
+				} catch (_) { el('connErrorText').textContent = 'Network error. Please try again.'; connError.classList.remove('hidden'); connError.classList.add('flex'); }
+				finally { label.textContent = prev; connSubmit.disabled = false; }
 			});
 
-			// initial state from server payload, then start polling
 			render(@json($payload));
 			pollTimer = setTimeout(refresh, pollingMs);
 		})();
 	</script>
-</x-dynamic-component>
+</x-delivery.site>

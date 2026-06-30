@@ -27,9 +27,9 @@
 
 			{{-- Nav (placeholders for now) --}}
 			<nav class="hidden items-center gap-7 text-sm font-semibold text-slate-700 lg:flex">
-				<a href="#" class="hover:text-indigo-600">How it works</a>
-				<a href="#" class="hover:text-indigo-600">Guarantee</a>
-				<a href="#" class="hover:text-indigo-600">FAQ</a>
+				<a href="{{ route('delivery.how-it-works') }}" class="hover:text-indigo-600">How it works</a>
+				<a href="{{ route('delivery.how-it-works') }}#guarantee" class="hover:text-indigo-600">Guarantee</a>
+				<a href="{{ route('delivery.how-it-works') }}#faq" class="hover:text-indigo-600">FAQ</a>
 				<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="hover:text-indigo-600">Contact us</a>
 			</nav>
 
@@ -59,8 +59,8 @@
 		<div class="flex flex-col items-center justify-center gap-1 text-xs text-slate-400 sm:flex-row sm:gap-4">
 			<span>© {{ date('Y') }} GlobalGames. All rights reserved.</span>
 			<span class="hidden sm:inline">·</span>
-			<a href="#" class="hover:text-slate-600">Terms of Service</a>
-			<a href="#" class="hover:text-slate-600">Privacy Policy</a>
+			<a href="{{ route('delivery.how-it-works') }}" class="hover:text-slate-600">How it works</a>
+			<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="hover:text-slate-600">Terms &amp; Support</a>
 		</div>
 	</footer>
 
