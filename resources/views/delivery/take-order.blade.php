@@ -4,13 +4,13 @@
 			? route('delivery.take-order.coded.store', ['code' => $code])
 			: route('delivery.take-order.store');
 
-		// Brand-ish platform glyphs (approximations; swap for real logos later).
+		// Hand-built brand logos (no source asset for these — kept recognizable).
 		$pf = [
-			'PlayStation' => ['color' => 'text-[#0070d1]', 'svg' => '<svg viewBox="0 0 24 24" fill="currentColor" class="h-7 w-7"><path d="M9.5 3.5v13.8l3 1V7.2c0-.6.3-.9.7-.8.6.2.7.8.7 1.4 0 1.9 0 4 2.4 4.9 1.1.4 2.1.5 3 .2V11c-.6.3-1.6.5-2.2 0-.5-.4-.5-1.1-.5-1.8V6.3c0-1.6-.4-2.8-3.1-3.7C12.5 2.1 11 1.8 9.5 3.5Z"/><path d="M14 19.6l5.2-1.9c.6-.2.7-.5.2-.7-.5-.2-1.4-.3-2-.1L14 18.1v1.5Z" opacity=".6"/><path d="M4.6 18.9c-.7-.2-.8-.6-.1-.9l4.9-1.7v1.5l-3.5 1.2c-.4.1-.9.1-1.3-.1Z" opacity=".6"/></svg>'],
-			'Xbox' => ['color' => 'text-[#107c10]', 'svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="h-7 w-7"><circle cx="12" cy="12" r="9.5"/><path d="M6 5c3 2 5.5 5 6 7 .5-2 3-5 6-7M5 19c1.5-4 4.5-7 7-9 2.5 2 5.5 5 7 9"/></svg>'],
-			'Nintendo' => ['color' => 'text-[#e60012]', 'svg' => '<svg viewBox="0 0 24 24" fill="currentColor" class="h-7 w-7"><rect x="4" y="3" width="7" height="18" rx="3.5"/><circle cx="7.5" cy="8" r="1.4" fill="#fff"/><rect x="13" y="3" width="7" height="18" rx="3.5" opacity=".35"/></svg>'],
-			'Steam' => ['color' => 'text-slate-800', 'svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" class="h-7 w-7"><circle cx="12" cy="12" r="9.5"/><circle cx="15.5" cy="9" r="2.6"/><circle cx="9" cy="15" r="2.2" fill="currentColor"/><path d="M2.6 13.5 7 15.3"/></svg>'],
-			'Epic Games' => ['color' => 'text-slate-800', 'svg' => '<svg viewBox="0 0 24 24" fill="currentColor" class="h-7 w-7"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M9 7h6v1.6h-4v2h3.4v1.6H11v2.2h4V16H9z" fill="#fff"/></svg>'],
+			'PlayStation' => '<svg viewBox="0 0 48 48" class="h-8 w-8"><path fill="#0070D1" d="M17 7v27.6l6.2 2V12c0-1 .4-1.6 1.2-1.4 1 .3 1.2 1.4 1.2 2.4v7.9c3.9 1.9 7 .2 7-4.8 0-5-1.9-7.2-7.4-9C22.6 7.1 19.6 7 17 7Z"/><path fill="#0070D1" opacity=".85" d="M29.5 34l9.1-3.3c1.1-.4 1.3-1 .3-1.4-1-.4-2.7-.5-3.8-.1l-5.6 2V34Z"/><path fill="#0070D1" opacity=".85" d="M9.6 33c-1.4-.4-1.5-1.3-.2-1.8l8.1-2.9v2.7L11.6 33.1c-.7.2-1.4.2-2-.1Z"/></svg>',
+			'Xbox' => '<svg viewBox="0 0 48 48" class="h-8 w-8"><circle cx="24" cy="24" r="20" fill="#107C10"/><path d="M14 13 34 35M34 13 14 35" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></svg>',
+			'Nintendo' => '<svg viewBox="0 0 48 48" class="h-8 w-8"><rect x="7" y="6" width="15" height="36" rx="7.5" fill="#E60012"/><circle cx="14.5" cy="15" r="2.9" fill="#fff"/><rect x="26" y="6" width="15" height="36" rx="7.5" fill="#3a3a3a"/></svg>',
+			'Steam' => '<svg viewBox="0 0 48 48" class="h-8 w-8"><circle cx="24" cy="24" r="20" fill="#171a21"/><circle cx="30" cy="18" r="5.5" fill="none" stroke="#fff" stroke-width="2.6"/><circle cx="30" cy="18" r="1.9" fill="#fff"/><circle cx="16" cy="30" r="5" fill="#fff"/><path d="M7 27l9 4" stroke="#fff" stroke-width="2.2"/></svg>',
+			'Epic Games' => '<svg viewBox="0 0 48 48" class="h-8 w-8"><rect x="7" y="4" width="34" height="40" rx="8" fill="#2a2a2a"/><text x="24" y="21" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="10" font-weight="700">EPIC</text><text x="24" y="33" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="7.5" letter-spacing="0.5">GAMES</text></svg>',
 		];
 	@endphp
 
@@ -33,9 +33,9 @@
 			</p>
 
 			{{-- Hero illustration (extracted from the original mockup) --}}
-			<div class="relative mt-8 max-w-xl">
-				<img src="{{ asset('site/hero.webp') }}" alt="Game delivery" class="w-full select-none rounded-xl" loading="eager" draggable="false">
-				<img src="{{ asset('site/platforms.webp') }}" alt="" class="pointer-events-none absolute -left-4 top-1/2 hidden w-14 -translate-y-1/2 select-none drop-shadow-lg sm:block" loading="eager" draggable="false">
+			<div class="relative mt-8 max-w-2xl">
+				<img src="{{ asset('site/platforms.webp') }}" alt="" class="pointer-events-none absolute -left-3 top-1/2 z-10 hidden w-16 -translate-y-1/2 select-none drop-shadow-xl sm:block" loading="eager" draggable="false">
+				<img src="{{ asset('site/hero.webp') }}" alt="Game delivery" class="w-full select-none rounded-2xl" loading="eager" draggable="false">
 			</div>
 		</div>
 
@@ -63,13 +63,13 @@
 					{{-- 1. Platform --}}
 					<div>
 						<label class="text-sm font-semibold text-slate-700">1. Select platform</label>
-						<div class="mt-2 grid grid-cols-5 gap-2" role="radiogroup" aria-label="Platform">
+						<div class="mt-3 grid grid-cols-5 gap-2.5" role="radiogroup" aria-label="Platform">
 							@foreach($platforms as $platform)
 								<label class="cursor-pointer">
 									<input type="radio" name="platform" value="{{ $platform }}" class="peer sr-only" @checked(old('platform') === $platform) required>
-									<div class="flex flex-col items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-1 py-3 text-center transition peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-checked:ring-2 peer-checked:ring-indigo-200 hover:border-slate-300">
-										<span class="{{ $pf[$platform]['color'] ?? 'text-slate-700' }}">{!! $pf[$platform]['svg'] ?? '' !!}</span>
-										<span class="text-[10px] font-semibold leading-tight text-slate-600">{{ $platform }}</span>
+									<div class="flex flex-col items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-1 py-3.5 text-center text-slate-600 transition peer-checked:border-indigo-500 peer-checked:bg-indigo-50/70 peer-checked:text-indigo-700 peer-checked:ring-2 peer-checked:ring-indigo-200 hover:border-slate-300">
+										<span class="flex h-8 w-8 items-center justify-center">{!! $pf[$platform] ?? '' !!}</span>
+										<span class="text-[11px] font-semibold leading-tight">{{ $platform }}</span>
 									</div>
 								</label>
 							@endforeach
@@ -89,7 +89,7 @@
 								class="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
 						</div>
 						@error('order_number') <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>
-						@else <p class="mt-1.5 text-xs text-slate-400">You can find it in your order confirmation email</p> @enderror
+						@else <p class="mt-1.5 text-xs text-indigo-400">You can find it in your order confirmation email</p> @enderror
 					</div>
 
 					{{-- 3. Email --}}
@@ -104,7 +104,7 @@
 								class="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
 						</div>
 						@error('email') <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>
-						@else <p class="mt-1.5 text-xs text-slate-400">The email you used when placing the order</p> @enderror
+						@else <p class="mt-1.5 text-xs text-indigo-400">The email you used when placing the order</p> @enderror
 					</div>
 
 					<button type="submit" id="submitBtn"

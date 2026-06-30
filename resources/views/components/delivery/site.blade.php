@@ -9,7 +9,7 @@
 	@vite(['resources/css/app.css', 'resources/js/app.js'])
 	<style>[x-cloak]{display:none!important}</style>
 </head>
-<body class="min-h-screen bg-gradient-to-b from-slate-50 via-indigo-50/40 to-indigo-100/60 text-slate-900 antialiased">
+<body class="min-h-screen text-slate-900 antialiased" style="background: radial-gradient(1000px 520px at 78% -60px, #e7e3fb 0%, rgba(231,227,251,0) 55%), radial-gradient(820px 520px at 6% 0px, #eaf0ff 0%, rgba(234,240,255,0) 52%), #f7f7fc;">
 
 	{{-- Header --}}
 	<header class="sticky top-0 z-40 border-b border-white/60 bg-white/70 backdrop-blur">
