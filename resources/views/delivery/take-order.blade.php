@@ -16,15 +16,15 @@
 	@endphp
 
 	{{-- Hero + Track card --}}
-	<div class="grid items-center gap-8 lg:grid-cols-[1.05fr_1fr]">
+	<div class="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)]">
 
-		{{-- Hero (copy + art) --}}
-		<div class="relative order-2 lg:order-1 lg:min-h-[470px]">
-			<div class="relative z-10 max-w-[430px] lg:pt-4">
+		{{-- Hero: copy, then art below it (stacked — never overlaps the headline) --}}
+		<div class="order-2 lg:order-1">
+			<div class="max-w-[470px]">
 				<span class="inline-flex items-center gap-2 rounded-xl bg-[#edf6ff] px-3.5 py-2 text-xs font-extrabold text-[#005be0]">
 					<img src="{{ $ico('shield') }}" alt="" class="h-4 w-4"> Fast. Secure. Reliable.
 				</span>
-				<h1 class="mt-6 text-[44px] font-extrabold leading-[1.05] tracking-[-0.04em] sm:text-[58px]">
+				<h1 class="mt-6 text-[42px] font-extrabold leading-[1.05] tracking-[-0.04em] sm:text-[56px]">
 					Your game,<br><span class="text-[#0b6bff]">delivered</span> fast
 				</h1>
 				<p class="mt-5 max-w-md text-[18px] leading-[1.65] text-[#243b63]">
@@ -33,7 +33,7 @@
 				</p>
 			</div>
 			<img src="{{ asset('site/hero-blue.webp') }}" alt="Game delivery"
-				class="mx-auto mt-8 w-full max-w-[520px] select-none drop-shadow-[0_24px_44px_rgba(11,107,255,.16)] lg:absolute lg:right-0 lg:top-1/2 lg:mt-0 lg:w-[80%] lg:max-w-[560px] lg:-translate-y-1/2"
+				class="mx-auto mt-8 w-full max-w-[500px] select-none drop-shadow-[0_24px_44px_rgba(11,107,255,.16)] lg:mx-0"
 				loading="eager" draggable="false">
 		</div>
 
