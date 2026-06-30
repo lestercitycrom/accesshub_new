@@ -108,8 +108,8 @@
 	<x-admin.filters-bar>
 		<div class="lg:col-span-3">
 			<x-admin.filter-input
-				label="Поиск по ID"
-				placeholder="Введите ID аккаунта..."
+				label="Поиск"
+				placeholder="игра / логин / почта / ID..."
 				icon="search"
 				wire:model.live="q"
 			/>

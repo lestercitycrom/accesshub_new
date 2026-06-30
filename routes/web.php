@@ -15,9 +15,10 @@ Route::get('/', function () {
 		return redirect()->route('admin.accounts.index');
 	}
 
-	// Public face of the site is the delivery client form (download-games.info).
-	// Operators/admins reach the panel directly via /login.
-	return redirect()->route('delivery.take-order');
+	// On the live domain nginx serves the legacy site at "/", so this only runs
+	// on bare app hosts. Send guests to the login page (not the public take-order
+	// form) — operators expect the panel, not the client flow.
+	return redirect()->route('login');
 })->name('home');
 
 // WebApp routes (no auth required)

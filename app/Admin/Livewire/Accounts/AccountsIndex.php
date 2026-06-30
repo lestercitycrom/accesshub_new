@@ -117,8 +117,20 @@ final class AccountsIndex extends Component
 	{
 		return Account::query()
 			->with('assignedOperator')
-			->when($this->q !== '' && is_numeric(trim($this->q)), function ($query): void {
-				$query->where('id', (int) trim($this->q));
+			->when($this->q !== '', function ($query): void {
+				// Search by game name, console login or mail login (and by exact id
+				// when the term is numeric). login/game are plain columns; the
+				// encrypted password fields are intentionally not searchable.
+				$term = trim($this->q);
+				$query->where(function ($inner) use ($term): void {
+					$like = '%' . $term . '%';
+					$inner->where('game', 'like', $like)
+						->orWhere('login', 'like', $like)
+						->orWhere('mail_account_login', 'like', $like);
+					if (is_numeric($term)) {
+						$inner->orWhere('id', (int) $term);
+					}
+				});
 			})
 			->when($this->statusFilter !== '', function ($query): void {
 				$query->where('status', $this->statusFilter);
