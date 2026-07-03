@@ -3,52 +3,35 @@
 		$formAction = ($code ?? null)
 			? route('delivery.take-order.coded.store', ['code' => $code])
 			: route('delivery.take-order.store');
-
-		// Recognizable platform marks (placeholders — swap for licensed brand assets).
-		$pf = [
-			'PlayStation' => '<svg viewBox="0 0 48 48" class="h-8 w-8"><path fill="#0070D1" d="M17 7v27.6l6.2 2V12c0-1 .4-1.6 1.2-1.4 1 .3 1.2 1.4 1.2 2.4v7.9c3.9 1.9 7 .2 7-4.8 0-5-1.9-7.2-7.4-9C22.6 7.1 19.6 7 17 7Z"/><path fill="#0070D1" opacity=".85" d="M29.5 34l9.1-3.3c1.1-.4 1.3-1 .3-1.4-1-.4-2.7-.5-3.8-.1l-5.6 2V34Z"/><path fill="#0070D1" opacity=".85" d="M9.6 33c-1.4-.4-1.5-1.3-.2-1.8l8.1-2.9v2.7L11.6 33.1c-.7.2-1.4.2-2-.1Z"/></svg>',
-			'Xbox' => '<svg viewBox="0 0 48 48" class="h-8 w-8"><circle cx="24" cy="24" r="20" fill="#107C10"/><path d="M14 13 34 35M34 13 14 35" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></svg>',
-			'Nintendo' => '<svg viewBox="0 0 48 48" class="h-8 w-8"><rect x="7" y="6" width="15" height="36" rx="7.5" fill="#E60012"/><circle cx="14.5" cy="15" r="2.9" fill="#fff"/><rect x="26" y="6" width="15" height="36" rx="7.5" fill="#3a3a3a"/></svg>',
-			'Steam' => '<svg viewBox="0 0 48 48" class="h-8 w-8"><circle cx="24" cy="24" r="20" fill="#171a21"/><circle cx="30" cy="18" r="5.5" fill="none" stroke="#fff" stroke-width="2.6"/><circle cx="30" cy="18" r="1.9" fill="#fff"/><circle cx="16" cy="30" r="5" fill="#fff"/><path d="M7 27l9 4" stroke="#fff" stroke-width="2.2"/></svg>',
-			'Epic Games' => '<svg viewBox="0 0 48 48" class="h-8 w-8"><rect x="7" y="4" width="34" height="40" rx="8" fill="#2a2a2a"/><text x="24" y="21" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="10" font-weight="700">EPIC</text><text x="24" y="33" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="7.5" letter-spacing="0.5">GAMES</text></svg>',
-		];
-		$ico = fn ($name) => asset('site/icons/' . $name . '.svg');
+		$mock = fn ($name) => asset('site/mock/' . $name . '.webp');
 	@endphp
 
-	{{-- Hero + Track card --}}
-	<div class="grid items-center gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,440px)]">
+	{{-- Hero + Track card (layout of the original mockup) --}}
+	<div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,420px)]">
 
-		{{-- Hero: copy + art side by side (compact, like the concept) --}}
-		<div class="order-2 grid items-center gap-6 lg:order-1 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
-			<div class="max-w-[440px]">
-				<span class="inline-flex items-center gap-2 rounded-xl bg-[#f4eaff] px-3.5 py-2 text-xs font-extrabold text-[#4627ee]">
-					<img src="{{ $ico('shield') }}" alt="" class="h-4 w-4"> Fast. Secure. Reliable.
+		{{-- Hero: full composition cut from the mockup, live copy overlaid top-left --}}
+		<div class="relative order-2 lg:order-1">
+			<div class="relative z-10 max-w-[300px] lg:absolute lg:left-[2%] lg:top-[-8px]">
+				<span class="inline-flex items-center gap-2 rounded-full bg-[#f0e9fd] px-3.5 py-1.5 text-[12px] font-extrabold text-[#5b3df5]">
+					<img src="{{ $mock('ic-shield') }}" alt="" class="h-4 w-4"> Fast. Secure. Reliable.
 				</span>
-				<h1 class="mt-6 text-[40px] font-extrabold leading-[1.05] tracking-[-0.04em] sm:text-[54px]">
-					Your game,<br><span class="text-[#5b3df5]">delivered</span> fast
+				<h1 class="mt-3.5 text-[36px] font-extrabold leading-[1.04] tracking-[-0.03em] text-[#17142b] sm:text-[41px]">
+					Your game,<br><span class="text-[#5535fc]">delivered</span> fast
 				</h1>
-				<p class="mt-5 text-[18px] leading-[1.65] text-[#243b63]">
-					We deliver your favorite games to your account quickly and safely.
-					<b class="text-[#5b3df5]">Play more</b>, wait less.
+				<p class="mt-3.5 text-[14px] leading-[1.6] text-[#4c4964]">
+					We deliver your favorite games to your account quickly and safely.<br>
+					Play more, wait less.
 				</p>
 			</div>
-			<img src="{{ asset('site/mock/hero.webp') }}" alt="Game delivery"
-				class="mx-auto w-full max-w-[460px] select-none drop-shadow-[0_24px_44px_rgba(91,61,245,.16)]"
-				loading="eager" draggable="false">
+			<img src="{{ $mock('hero') }}" alt="Game delivery"
+				class="w-full select-none lg:mt-0" loading="eager" draggable="false">
 		</div>
 
-		{{-- Track your order card --}}
+		{{-- Right column: Track card + three feature cards --}}
 		<div class="order-1 lg:order-2">
-			<div class="rounded-[22px] border border-[#e4ddf6] bg-white/90 p-6 shadow-[0_18px_60px_rgba(8,31,74,.08)] sm:p-7">
-				<div class="flex items-start justify-between gap-4">
-					<div>
-						<h2 class="text-[28px] font-extrabold leading-tight">Track your order</h2>
-						<p class="mt-1 text-sm text-[#28456e]">Enter your order details to see the status</p>
-					</div>
-					<span class="inline-flex shrink-0 items-center gap-1.5 rounded-[10px] bg-[#edfdf4] px-3 py-2 text-[13px] font-extrabold text-[#07974a]">
-						<img src="{{ $ico('shield') }}" alt="" class="h-4 w-4"> 100% Secure
-					</span>
-				</div>
+			<div class="rounded-2xl border border-[#e9e5f7] bg-white p-6 shadow-[0_16px_44px_rgba(38,24,98,.07)]">
+				<h2 class="text-[24px] font-extrabold leading-tight text-[#17142b]">Track your order</h2>
+				<p class="mt-1 text-[13px] text-[#8a86a8]">Enter your order details to see the status</p>
 
 				@if(session('error'))
 					<div class="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
@@ -62,20 +45,19 @@
 					<span id="offlineNoticeText"></span>
 				</div>
 
-				<form method="post" action="{{ $formAction }}" id="takeOrderForm" novalidate class="mt-5 space-y-4">
+				<form method="post" action="{{ $formAction }}" id="takeOrderForm" novalidate class="mt-4 space-y-3.5">
 					@csrf
 
 					{{-- 1. Platform --}}
 					<div>
-						<label class="text-sm font-extrabold text-[#0c2750]">1. Select platform</label>
-						<div class="mt-2.5 grid grid-cols-5 gap-3" role="radiogroup" aria-label="Platform">
+						<label class="text-[13px] font-extrabold text-[#211d3a]">1. Select platform</label>
+						<div class="mt-2 grid grid-cols-5 gap-1.5" role="radiogroup" aria-label="Platform">
 							@foreach($platforms as $platform)
 								<label class="cursor-pointer">
 									<input type="radio" name="platform" value="{{ $platform }}" class="peer sr-only" @checked(old('platform') === $platform) required>
-									<div class="relative flex h-[88px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[#e4ddf6] bg-white px-1 text-center font-bold text-[#0c2750] transition peer-checked:border-[#5b3df5] peer-checked:text-[#5b3df5] peer-checked:shadow-[0_8px_24px_rgba(91,61,245,.12)] hover:border-[#c3b2f0]">
-										<span class="hidden text-[#5b3df5] peer-checked:block absolute right-1.5 top-1.5"><svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-										<span class="flex h-8 w-8 items-center justify-center">{!! $pf[$platform] ?? '' !!}</span>
-										<span class="text-[11px] font-bold leading-tight">{{ $platform }}</span>
+									<div class="flex h-[60px] flex-col items-center justify-center gap-1 rounded-[10px] border border-[#e9e5f7] bg-white px-0.5 text-center text-[#211d3a] transition peer-checked:border-[#5b3df5] peer-checked:text-[#5535fc] hover:border-[#c9befa]">
+										<img src="{{ $mock('pf-' . ['PlayStation'=>'ps','Xbox'=>'xbox','Nintendo'=>'nintendo','Steam'=>'steam','Epic Games'=>'epic'][$platform]) }}" alt="" class="h-[26px] w-[26px] select-none" draggable="false">
+										<span class="text-[9.5px] font-bold leading-none">{{ $platform }}</span>
 									</div>
 								</label>
 							@endforeach
@@ -85,76 +67,79 @@
 
 					{{-- 2. Order number --}}
 					<div>
-						<label for="order_number" class="text-sm font-extrabold text-[#0c2750]">2. Order number</label>
-						<div class="relative mt-2">
-							<span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2"><img src="{{ $ico('order') }}" alt="" class="h-5 w-5"></span>
+						<label for="order_number" class="text-[13px] font-extrabold text-[#211d3a]">2. Order number</label>
+						<div class="relative mt-1.5">
+							<img src="{{ $mock('ic-order') }}" alt="" class="pointer-events-none absolute left-2.5 top-1/2 h-[22px] w-[22px] -translate-y-1/2 select-none">
 							<input id="order_number" name="order_number" value="{{ old('order_number') }}" autocomplete="off" required
 								placeholder="Enter your order number"
-								class="h-[54px] w-full rounded-xl border border-[#e4ddf6] bg-white pl-12 pr-4 text-sm text-[#071632] outline-none transition focus:border-[#5b3df5] focus:ring-2 focus:ring-[#5b3df5]/15">
+								class="h-[38px] w-full rounded-[10px] border border-[#e9e5f7] bg-white pl-10 pr-3 text-[13px] text-[#17142b] outline-none transition placeholder:text-[#b2b3c8] focus:border-[#5b3df5] focus:ring-2 focus:ring-[#5b3df5]/12">
 						</div>
 						@error('order_number') <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>
-						@else <p class="mt-1.5 text-xs text-[#63769a]">You can find it in your order confirmation email</p> @enderror
+						@else <p class="ml-6 mt-1 text-[11px] text-[#9a94c0]">You can find it in your order confirmation email</p> @enderror
 					</div>
 
 					{{-- 3. Email --}}
 					<div>
-						<label for="email" class="text-sm font-extrabold text-[#0c2750]">3. Email address</label>
-						<div class="relative mt-2">
-							<span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2"><img src="{{ $ico('mail') }}" alt="" class="h-5 w-5"></span>
+						<label for="email" class="text-[13px] font-extrabold text-[#211d3a]">3. Email address</label>
+						<div class="relative mt-1.5">
+							<img src="{{ $mock('ic-mail') }}" alt="" class="pointer-events-none absolute left-2.5 top-1/2 h-[22px] w-[22px] -translate-y-1/2 select-none">
 							<input id="email" name="email" type="email" value="{{ old('email') }}" autocomplete="email" required
 								placeholder="Enter your email address"
-								class="h-[54px] w-full rounded-xl border border-[#e4ddf6] bg-white pl-12 pr-4 text-sm text-[#071632] outline-none transition focus:border-[#5b3df5] focus:ring-2 focus:ring-[#5b3df5]/15">
+								class="h-[38px] w-full rounded-[10px] border border-[#e9e5f7] bg-white pl-10 pr-3 text-[13px] text-[#17142b] outline-none transition placeholder:text-[#b2b3c8] focus:border-[#5b3df5] focus:ring-2 focus:ring-[#5b3df5]/12">
 						</div>
 						@error('email') <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>
-						@else <p class="mt-1.5 text-xs text-[#63769a]">The email you used when placing the order</p> @enderror
+						@else <p class="mt-1 text-center text-[11px] text-[#9a94c0]">The email you used when placing the order</p> @enderror
 					</div>
 
 					<button type="submit" id="submitBtn"
-						class="flex h-[56px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#7c5cff] to-[#4627ee] text-[16px] font-extrabold text-white shadow-[0_14px_28px_rgba(91,61,245,.22)] transition hover:opacity-95 active:translate-y-px disabled:opacity-60">
+						class="relative flex h-[40px] w-full items-center justify-center rounded-[10px] bg-[#4627ee] text-[14px] font-extrabold text-white shadow-[0_10px_24px_rgba(70,39,238,.28)] transition hover:bg-[#3b1fd6] active:translate-y-px disabled:opacity-60">
 						<span class="btn-label">Track order</span>
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="h-4 w-4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="absolute right-4 h-4 w-4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
 					</button>
 
-					<div class="flex items-center gap-3 text-[13px] font-bold text-[#7b8aaa]"><span class="h-px flex-1 bg-[#e4ddf6]"></span>or<span class="h-px flex-1 bg-[#e4ddf6]"></span></div>
+					<div class="text-center text-[12px] font-semibold text-[#9a94c0]">or</div>
 
-					<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="flex h-[54px] w-full items-center justify-center gap-2 rounded-xl border border-[#5b3df5] bg-white text-[15px] font-extrabold text-[#5b3df5] transition hover:bg-[#f3f9ff]">
-						<img src="{{ $ico('order') }}" alt="" class="h-5 w-5"> Browse our store
+					<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener"
+						class="flex h-[40px] w-full items-center justify-center gap-2 rounded-[10px] border border-[#e2dcf6] bg-white text-[13.5px] font-extrabold text-[#4627ee] transition hover:bg-[#faf8ff]">
+						<img src="{{ $mock('ic-store') }}" alt="" class="h-[18px] w-[18px] select-none"> Browse our store
 					</a>
 				</form>
 			</div>
+
+			{{-- Feature cards (under the card, like the mockup) --}}
+			<div class="mt-4 grid grid-cols-3 gap-3">
+				@php
+					$features = [
+						['feat-secure', 'Secure Delivery', 'Your account is protected'],
+						['feat-time', '5 – 30 min', 'Estimated delivery time'],
+						['feat-support', 'Live Support', 'We are here to help'],
+					];
+				@endphp
+				@foreach($features as [$icon, $b, $small])
+					<div class="flex flex-col items-center gap-1.5 rounded-2xl border border-[#e9e5f7] bg-white/80 px-2 py-5 text-center">
+						<img src="{{ $mock($icon) }}" alt="" class="h-11 w-11 select-none" draggable="false">
+						<b class="text-[13.5px] leading-tight text-[#17142b]">{{ $b }}</b>
+						<small class="text-[11.5px] leading-snug text-[#8a86a8]">{{ $small }}</small>
+					</div>
+				@endforeach
+			</div>
 		</div>
 	</div>
 
-	{{-- Feature cards (3, like the mockup) --}}
-	<div class="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-3">
-		@php
-			$features = [
-				['feat-secure', 'Secure Delivery', 'Your account is protected'],
-				['feat-time', '5 – 30 min', 'Estimated delivery time'],
-				['feat-support', 'Live Support', 'We are here to help'],
-			];
-		@endphp
-		@foreach($features as [$icon, $b, $small])
-			<div class="flex flex-col items-center gap-2 rounded-[18px] border border-[#e4ddf6] bg-white/90 px-5 py-6 text-center shadow-[0_18px_60px_rgba(8,31,74,.08)]">
-				<img src="{{ asset('site/mock/' . $icon . '.webp') }}" alt="" class="h-11 w-11 select-none" draggable="false">
-				<b class="mt-1 text-[16px] text-[#071632]">{{ $b }}</b>
-				<small class="text-[13px] text-[#29466f]">{{ $small }}</small>
-			</div>
-		@endforeach
-	</div>
-
-	{{-- Join community banner (full width, like the mockup) --}}
-	<div class="mt-5 flex flex-col items-center justify-between gap-5 rounded-[18px] border border-[#e4ddf6] bg-white/90 p-6 shadow-[0_18px_60px_rgba(8,31,74,.08)] sm:flex-row">
+	{{-- Join community bar (full width) --}}
+	<div class="mt-6 flex flex-col items-center justify-between gap-5 rounded-2xl border border-[#e9e5f7] bg-[#f7f6fc] px-6 py-5 sm:flex-row">
 		<div class="flex items-center gap-4">
-			<img src="{{ asset('site/mock/gift.webp') }}" alt="" class="h-12 w-12 shrink-0 select-none" draggable="false">
+			<img src="{{ $mock('gift') }}" alt="" class="h-[52px] w-[52px] shrink-0 select-none" draggable="false">
 			<div>
-				<h3 class="text-[18px] font-extrabold">Join our community</h3>
-				<p class="mt-1 text-sm leading-[1.5] text-[#29466f]">Get exclusive discounts, news and promo codes by joining our Telegram channel.</p>
+				<h3 class="text-[16px] font-extrabold text-[#17142b]">Join our community</h3>
+				<p class="mt-0.5 text-[12.5px] leading-[1.5] text-[#6d6a86]">Get exclusive discounts, news and promo codes<br class="hidden sm:block"> by joining our Telegram channel.</p>
 			</div>
 		</div>
-		<div class="flex shrink-0 items-center gap-4">
-			<a href="#" class="inline-flex items-center gap-2 rounded-[10px] bg-[#5b3df5] px-5 py-3 text-sm font-extrabold text-white"><svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M21.5 4.5 2.5 12l5.5 1.8L18 7l-7.5 8 .3 4 2.7-3 4.5 3.2z"/></svg> Join Telegram</a>
-			<span class="rounded-full bg-[#efe9fc] px-4 py-2.5 text-sm font-extrabold text-[#5b3df5]">10 – 30% OFF</span>
+		<div class="flex shrink-0 items-center gap-3">
+			<a href="#" class="inline-flex items-center gap-2 rounded-[10px] border border-[#e2dcf6] bg-white px-4 py-2.5 text-[13px] font-extrabold text-[#211d3a] transition hover:border-[#c9befa]">
+				<svg viewBox="0 0 24 24" fill="#5b3df5" class="h-4 w-4"><path d="M21.5 4.5 2.5 12l5.5 1.8L18 7l-7.5 8 .3 4 2.7-3 4.5 3.2z"/></svg> Join Telegram
+			</a>
+			<span class="rounded-[10px] bg-[#eceafe] px-4 py-2.5 text-[13px] font-extrabold text-[#3a3654]">10 – 30% OFF</span>
 		</div>
 	</div>
 
