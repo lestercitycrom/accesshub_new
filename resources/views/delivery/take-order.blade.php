@@ -24,7 +24,9 @@
 				</p>
 			</div>
 			<img src="{{ $mock('hero') }}" alt="Game delivery"
-				class="w-full select-none lg:mt-0" loading="eager" draggable="false">
+				class="w-full select-none lg:mt-0"
+				style="mask-image:linear-gradient(to right,black 96%,transparent 100%);-webkit-mask-image:linear-gradient(to right,black 96%,transparent 100%);"
+				loading="eager" draggable="false">
 		</div>
 
 		{{-- Right column: Track card + three feature cards --}}

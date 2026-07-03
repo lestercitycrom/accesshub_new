@@ -150,7 +150,8 @@
 				<div class="relative z-10 mt-3.5 max-w-[75%] text-[13px] leading-[1.7] text-[#4c4964]" id="instructionBlock">
 					<p class="text-[#9a94c0]">Instructions will appear here when delivery starts.</p>
 				</div>
-				<img id="instrArt" src="{{ $mock('art-gamepad') }}" alt="" class="pointer-events-none absolute -bottom-2 -right-2 hidden w-[150px] select-none sm:block" draggable="false">
+				<img id="instrArt" src="{{ $mock('art-gamepad') }}" alt="" class="pointer-events-none absolute -bottom-2 -right-2 hidden w-[150px] select-none sm:block"
+					style="mask-image:linear-gradient(135deg,transparent 2%,black 30%);-webkit-mask-image:linear-gradient(135deg,transparent 2%,black 30%);" draggable="false">
 			</div>
 
 			{{-- D) What's next? (delivered) --}}
@@ -162,7 +163,7 @@
 					<li class="flex items-start gap-3"><img src="{{ $mock('todo-game') }}" alt="" class="mt-0.5 h-[26px] w-[26px] shrink-0 select-none rounded-[8px]"><span><b class="block text-[13px] font-extrabold text-[#17142b]">Leave a review</b>Share your experience and help other players.</span></li>
 				</ul>
 				<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener" class="mt-4 flex h-[40px] w-full items-center justify-center gap-2 rounded-[10px] bg-[#4627ee] text-[13.5px] font-extrabold text-white shadow-[0_10px_24px_rgba(70,39,238,.28)] hover:bg-[#3b1fd6]">
-				<img src="{{ $mock('ic-headset') }}" alt="" class="h-4 w-4 brightness-[6]"> Contact support</a>
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg> Contact support</a>
 			</div>
 		</div>
 
