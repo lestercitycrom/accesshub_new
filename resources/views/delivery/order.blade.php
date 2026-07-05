@@ -137,7 +137,7 @@
 			<div id="todoCard" class="rounded-2xl border border-[#e9e5f7] bg-white p-6 shadow-[0_8px_24px_rgba(38,24,98,.05)]">
 				<h2 class="text-[16px] font-extrabold text-[#17142b]">What to do next</h2>
 				<ul class="mt-4 space-y-3.5 text-[13px] font-semibold text-[#211d3a]">
-					<li class="flex items-center gap-3"><img src="{{ $mock('todo-password') }}" alt="" class="h-[26px] w-[26px] shrink-0 select-none rounded-[8px]"> Change the password as soon as possible</li>
+					<li class="flex items-center gap-3"><img src="{{ $mock('todo-doc') }}" alt="" class="h-[26px] w-[26px] shrink-0 select-none rounded-[8px]"> Before you start playing, be sure to read the instructions</li>
 					<li class="flex items-center gap-3"><img src="{{ $mock('todo-security') }}" alt="" class="h-[26px] w-[26px] shrink-0 select-none rounded-[8px]"> Do not change email or security settings</li>
 					<li class="flex items-center gap-3"><img src="{{ $mock('todo-doc') }}" alt="" class="h-[26px] w-[26px] shrink-0 select-none rounded-[8px]"> Follow the instructions below carefully</li>
 					<li class="flex items-center gap-3"><img src="{{ $mock('todo-game') }}" alt="" class="h-[26px] w-[26px] shrink-0 select-none rounded-[8px]"> Enjoy your game!</li>

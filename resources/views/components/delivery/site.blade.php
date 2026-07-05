@@ -23,7 +23,7 @@
 
 	{{-- Header (like the mockup) --}}
 	<header class="sticky top-0 z-40 border-b border-[#e9e5f7]/70 bg-[#f6f4fc]/80 backdrop-blur-xl">
-		<div class="mx-auto flex h-[68px] max-w-[1280px] items-center justify-between gap-5 px-5 sm:px-8">
+		<div class="mx-auto flex h-[62px] max-w-[1280px] items-center justify-between gap-5 px-5 sm:px-8">
 			<a href="{{ route('delivery.take-order') }}" class="flex shrink-0 items-center gap-2.5">
 				<img src="{{ asset('site/mock/logo.webp') }}" alt="" class="h-10 w-10 rounded-[12px] select-none" draggable="false">
 				<span class="leading-none">
@@ -44,9 +44,9 @@
 					<span id="hoursDot" class="h-2 w-2 rounded-full bg-[#22c55e]"></span>
 					<span id="hoursStatus">Online</span>
 				</span>
-				<span class="hidden items-center gap-1.5 text-[14px] font-bold text-[#6d63b0] md:inline-flex">
+				<span class="hidden items-center gap-1.5 text-[14px] font-bold tabular-nums text-[#6d63b0] md:inline-flex">
 					<img src="{{ asset('site/mock/ic-clock.webp') }}" alt="" class="h-[20px] w-[20px] select-none">
-					<span id="hoursTime">—</span>
+					<span id="hoursTime" class="inline-block min-w-[104px]">—</span>
 				</span>
 				<span class="hidden items-center gap-2 lg:inline-flex">
 					<img src="{{ asset('site/mock/ic-headset.webp') }}" alt="" class="h-[24px] w-[24px] select-none">
@@ -56,11 +56,11 @@
 		</div>
 	</header>
 
-	<main class="mx-auto max-w-[1280px] px-5 py-6 sm:px-8 sm:py-7">
+	<main class="mx-auto max-w-[1280px] px-5 py-3 sm:px-8 sm:py-3">
 		{{ $slot }}
 	</main>
 
-	<footer class="mx-auto max-w-[1280px] px-5 pb-8 pt-2 sm:px-8">
+	<footer class="mx-auto max-w-[1280px] px-5 pb-3.5 pt-1 sm:px-8">
 		<div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[11.5px] text-[#8a86a8]">
 			<span>© {{ date('Y') }} GlobalGames. All rights reserved.</span>
 			<a href="{{ route('delivery.how-it-works') }}" class="hover:text-[#5535fc]">Terms of Service</a>
