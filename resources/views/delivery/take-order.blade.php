@@ -165,6 +165,11 @@
 				if (notice) { notice.classList.toggle('hidden', !closed); notice.classList.toggle('flex', closed); }
 				if (closed && noticeText) noticeText.textContent = `Orders are accepted during support hours (${rangeText}). Please come back later.`;
 				if (!btn.dataset.loading) btn.disabled = closed;
+				// keep the page one-screen even with the night notice: shrink the hero cap
+				const hero = document.querySelector('img[src*="mock/hero"]');
+				if (hero && window.matchMedia('(min-width: 1024px)').matches) {
+					hero.style.maxHeight = closed ? 'calc(100vh - 295px)' : '';
+				}
 			}
 			document.addEventListener('delivery-hours-tick', applyHours);
 			applyHours();
