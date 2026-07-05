@@ -79,7 +79,7 @@
 								class="h-[34px] w-full rounded-[10px] border border-[#e9e5f7] bg-white pl-10 pr-3 text-[13px] text-[#17142b] outline-none transition placeholder:text-[#b2b3c8] focus:border-[#5b3df5] focus:ring-2 focus:ring-[#5b3df5]/12">
 						</div>
 						@error('order_number') <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>
-						@else <p class="ml-6 mt-0.5 text-[10.5px] text-[#9a94c0]">You can find it in your order confirmation email</p> @enderror
+						@else <p data-hide-closed class="ml-6 mt-0.5 text-[10.5px] text-[#9a94c0]">You can find it in your order confirmation email</p> @enderror
 					</div>
 
 					{{-- 3. Email --}}
@@ -92,7 +92,7 @@
 								class="h-[34px] w-full rounded-[10px] border border-[#e9e5f7] bg-white pl-10 pr-3 text-[13px] text-[#17142b] outline-none transition placeholder:text-[#b2b3c8] focus:border-[#5b3df5] focus:ring-2 focus:ring-[#5b3df5]/12">
 						</div>
 						@error('email') <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>
-						@else <p class="mt-0.5 text-center text-[10.5px] text-[#9a94c0]">The email you used when placing the order</p> @enderror
+						@else <p data-hide-closed class="mt-0.5 text-center text-[10.5px] text-[#9a94c0]">The email you used when placing the order</p> @enderror
 					</div>
 
 					<button type="submit" id="submitBtn"
@@ -101,7 +101,7 @@
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="absolute right-4 h-4 w-4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
 					</button>
 
-					<div class="text-center text-[12px] font-semibold text-[#9a94c0]">or</div>
+					<div data-hide-closed class="text-center text-[12px] font-semibold text-[#9a94c0]">or</div>
 
 					<a href="https://difmark.com/en/profile/GlobalGames" target="_blank" rel="noopener"
 						class="flex h-[34px] w-full items-center justify-center gap-2 rounded-[10px] border border-[#e2dcf6] bg-white text-[13.5px] font-extrabold text-[#4627ee] transition hover:bg-[#faf8ff]">
@@ -165,11 +165,9 @@
 				if (notice) { notice.classList.toggle('hidden', !closed); notice.classList.toggle('flex', closed); }
 				if (closed && noticeText) noticeText.textContent = `Orders are accepted during support hours (${rangeText}). Please come back later.`;
 				if (!btn.dataset.loading) btn.disabled = closed;
-				// keep the page one-screen even with the night notice: shrink the hero cap
-				const hero = document.querySelector('img[src*="mock/hero"]');
-				if (hero && window.matchMedia('(min-width: 1024px)').matches) {
-					hero.style.maxHeight = closed ? 'calc(100vh - 295px)' : '';
-				}
+				// keep the page one-screen when the night notice is shown:
+				// hide secondary hints so the card does not grow taller
+				document.querySelectorAll('[data-hide-closed]').forEach((e) => e.classList.toggle('hidden', closed));
 			}
 			document.addEventListener('delivery-hours-tick', applyHours);
 			applyHours();
