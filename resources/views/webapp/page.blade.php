@@ -449,6 +449,18 @@
 			}
 		}
 
+		// Wrap a dynamically created select into the searchable widget
+		// (type-to-filter dropdown, same as on the issue tab).
+		function wrapSearchable(select) {
+			const wrapper = document.createElement('div');
+			wrapper.className = 'searchable-select-wrapper mb-2';
+			select.classList.add('searchable-select');
+			select.classList.remove('mb-2');
+			wrapper.appendChild(select);
+			attachSearchableSelect(select, true);
+			return wrapper;
+		}
+
 		function fillAccountSelect(select, accounts, selectedValue = '') {
 			if (!select) return;
 			select.innerHTML = '';
@@ -563,7 +575,7 @@
 			});
 
 			wrap.appendChild(platformSelect);
-			wrap.appendChild(gameSelect);
+			wrap.appendChild(wrapSearchable(gameSelect));
 			wrap.appendChild(accountSelect);
 			wrap.appendChild(assignBtn);
 
@@ -715,7 +727,7 @@
 			});
 
 			wrap.appendChild(platformSelect);
-			wrap.appendChild(gameSelect);
+			wrap.appendChild(wrapSearchable(gameSelect));
 			wrap.appendChild(accountSelect);
 			wrap.appendChild(addBtn);
 			return wrap;
@@ -1454,7 +1466,11 @@
 		});
 
 		function initSearchableSelect(selectId, showSearch = true) {
-			const select = document.getElementById(selectId);
+			attachSearchableSelect(document.getElementById(selectId), showSearch);
+		}
+
+		// Same widget for dynamically created selects (delivery order cards).
+		function attachSearchableSelect(select, showSearch = true) {
 			if (!select) return;
 
 			const wrapper = select.closest('.searchable-select-wrapper');
@@ -1516,6 +1532,21 @@
 					opt.element = optionEl;
 					optionsContainer.appendChild(optionEl);
 				});
+
+				// Keep the trigger label in sync with the select value: dynamic
+				// cards start with a value selected, and a platform change
+				// resets the game select back to the placeholder.
+				const triggerText = trigger.querySelector('.trigger-text');
+				if (triggerText) {
+					const current = options.find((o) => o.value === currentValue && o.value !== '');
+					if (current) {
+						triggerText.textContent = current.text;
+						triggerText.classList.remove('trigger-placeholder');
+					} else {
+						triggerText.textContent = select.options[0]?.text || 'Выберите...';
+						triggerText.classList.add('trigger-placeholder');
+					}
+				}
 
 				filterOptions('');
 			}
