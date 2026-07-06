@@ -48,13 +48,17 @@ final class WorkingHours
 		}
 
 		$hour = (int) $now->format('G');
+		$start = $this->start();
+		$end = $this->end();
 
-		// end == 24 means "open until midnight".
-		if ($this->end() >= 24) {
-			return $hour >= $this->start();
+		// Same-day window (start < end), incl. end == 24 for "open until midnight".
+		if ($start < $end) {
+			return $hour >= $start && $hour < $end;
 		}
 
-		return $hour >= $this->start() && $hour < $this->end();
+		// Overnight window that wraps past midnight (e.g. 09:00 → 03:00):
+		// open from start until midnight, then from midnight until end.
+		return $hour >= $start || $hour < $end;
 	}
 
 	/**

@@ -48,7 +48,7 @@
 		<div class="mt-4 space-y-3">
 			@php
 				$faq = [
-					['How long does delivery take?', 'Usually 5–30 minutes during support hours (09:00–23:00 EET). Outside these hours your order is delivered when support is back online.'],
+					['How long does delivery take?', 'Usually 5–30 minutes during support hours (09:00–03:00 EET). Outside these hours your order is delivered when support is back online.'],
 					['I submitted my order — what happens next?', 'An operator verifies your purchase and prepares your account. Keep the order page open: it refreshes automatically and shows your account details when ready.'],
 					['Can I change the account login or password?', 'No. Changing the credentials will break access to the game and the order cannot be restored. Keep them as delivered.'],
 					['My console asks for a connection code — what do I do?', 'For console platforms, enter the code shown on your console screen on the order page. An operator will then finish the connection.'],

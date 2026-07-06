@@ -50,7 +50,7 @@
 				</span>
 				<span class="hidden items-center gap-2 lg:inline-flex">
 					<img src="{{ asset('site/mock/ic-headset.webp') }}" alt="" class="h-[24px] w-[24px] select-none">
-					<span class="leading-tight"><span class="block text-[11px] font-semibold text-[#7d7a96]">Support Hours</span><b id="hoursRange" class="block text-[13px] font-extrabold text-[#17142b]">09:00 – 23:00 EET</b></span>
+					<span class="leading-tight"><span class="block text-[11px] font-semibold text-[#7d7a96]">Support Hours</span><b id="hoursRange" class="block text-[13px] font-extrabold text-[#17142b]">09:00 – 03:00 EET</b></span>
 				</span>
 			</div>
 		</div>
@@ -78,7 +78,9 @@
 			const label = cfg.label || 'EET';
 			const pad = (n) => String(n).padStart(2, '0');
 			const nowTz = () => { try { return new Date(new Date().toLocaleString('en-US', { timeZone: tz })); } catch (e) { return new Date(); } };
-			const isOpen = () => { const h = nowTz().getHours(); return end >= 24 ? h >= start : (h >= start && h < end); };
+			// start < end: same-day window (incl. end==24). Otherwise the window
+			// wraps past midnight (e.g. 09:00 → 03:00): open >= start OR < end.
+			const isOpen = () => { const h = nowTz().getHours(); return start < end ? (h >= start && h < end) : (h >= start || h < end); };
 			window.deliveryHoursIsOpen = isOpen;
 			window.deliveryHoursEnforced = () => !!cfg.enforce;
 

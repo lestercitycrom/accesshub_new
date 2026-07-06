@@ -48,6 +48,45 @@ it('accepts orders during support hours when enforced', function (): void {
 	expect(DeliveryOrder::query()->where('order_number', 'DAY-OK-1')->exists())->toBeTrue();
 });
 
+it('accepts orders after midnight for an overnight window (09:00 -> 03:00)', function (): void {
+	config([
+		'delivery.working_hours.enforce' => true,
+		'delivery.working_hours.start' => 9,
+		'delivery.working_hours.end' => 3,
+		'delivery.working_hours.timezone' => 'Europe/Kyiv',
+	]);
+	CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-06-18 02:00', 'Europe/Kiev'));
+
+	$this->post(route('delivery.take-order.store'), [
+		'order_number' => 'NIGHT-OK-1',
+		'email' => 'client@example.com',
+		'platform' => 'Xbox',
+	])->assertRedirect();
+
+	expect(DeliveryOrder::query()->where('order_number', 'NIGHT-OK-1')->exists())->toBeTrue();
+});
+
+it('blocks orders after the overnight window closes (09:00 -> 03:00, at 05:00)', function (): void {
+	config([
+		'delivery.working_hours.enforce' => true,
+		'delivery.working_hours.start' => 9,
+		'delivery.working_hours.end' => 3,
+		'delivery.working_hours.timezone' => 'Europe/Kyiv',
+	]);
+	CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-06-18 05:00', 'Europe/Kiev'));
+
+	$this->from(route('delivery.take-order'))
+		->post(route('delivery.take-order.store'), [
+			'order_number' => 'NIGHT-BLOCK-2',
+			'email' => 'client@example.com',
+			'platform' => 'Xbox',
+		])
+		->assertRedirect(route('delivery.take-order'))
+		->assertSessionHas('error');
+
+	expect(DeliveryOrder::query()->where('order_number', 'NIGHT-BLOCK-2')->exists())->toBeFalse();
+});
+
 it('does not block when working hours are not enforced (default)', function (): void {
 	config(['delivery.working_hours.enforce' => false]);
 	CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-06-18 03:00', 'Europe/Kiev'));
