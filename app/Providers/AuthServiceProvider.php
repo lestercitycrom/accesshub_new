@@ -21,6 +21,13 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Gate::define('admin', static fn ($user): bool => (bool) $user->is_admin === true);
+        // Legacy alias — still used by config-only components (settings, telegram
+        // users, server) and the EnsureAdmin middleware. Equivalent to hub-manage.
+        Gate::define('admin', static fn ($user): bool => $user->isAdmin());
+
+        // Capability tiers (view ⊂ operate ⊂ manage).
+        Gate::define('hub-view', static fn ($user): bool => $user->canAccessHub());
+        Gate::define('hub-operate', static fn ($user): bool => $user->canOperate());
+        Gate::define('hub-manage', static fn ($user): bool => $user->isAdmin());
     }
 }

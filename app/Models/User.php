@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -23,6 +24,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -47,7 +49,52 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
+            'role' => UserRole::class,
         ];
+    }
+
+    /**
+     * Keep `role` and the legacy `is_admin` flag consistent no matter which one
+     * a caller sets (factories/seeders still set is_admin; the users screen sets
+     * role). `role` is the source of truth when present.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (self $user): void {
+            if ($user->role !== null) {
+                $user->is_admin = $user->role === UserRole::ADMIN;
+            } elseif ($user->is_admin) {
+                $user->role = UserRole::ADMIN;
+            }
+        });
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === UserRole::ADMIN;
+    }
+
+    public function isOperator(): bool
+    {
+        return $this->role === UserRole::OPERATOR;
+    }
+
+    public function isViewer(): bool
+    {
+        return $this->role === UserRole::VIEWER;
+    }
+
+    /** Any assigned role may enter the Hub; null = no access. */
+    public function canAccessHub(): bool
+    {
+        return $this->role !== null;
+    }
+
+    /** Admin or operator — may perform operational mutations. */
+    public function canOperate(): bool
+    {
+        return $this->role?->canOperate() === true;
     }
 
     /**

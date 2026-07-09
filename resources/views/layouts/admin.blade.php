@@ -15,6 +15,23 @@
 	<style>[x-cloak]{display:none !important;}</style>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+	@php
+		// Hide nav items the current user's role can't access. Items may carry a
+		// `can` gate; children are filtered too. Security is enforced by route
+		// middleware — this is UX so operators/viewers don't see dead links.
+		$navAllowed = static fn ($item): bool => empty($item['can']) || (bool) (auth()->user()?->can($item['can']));
+		$navItems = [];
+		foreach ((array) config('admin-kit.nav', []) as $navItem) {
+			if (!$navAllowed($navItem)) {
+				continue;
+			}
+			if (!empty($navItem['children'])) {
+				$navItem['children'] = array_values(array_filter($navItem['children'], $navAllowed));
+			}
+			$navItems[] = $navItem;
+		}
+		$userMenuItems = array_values(array_filter((array) config('admin-kit.user_menu', []), $navAllowed));
+	@endphp
 	<header class="sticky top-0 z-40 bg-gradient-to-r from-slate-900 to-slate-800 text-slate-100 border-b border-white/10">
 		<div class="mx-auto {{ config('admin-kit.layout.container', 'max-w-7xl') }} px-4">
 			<div class="h-16 flex min-w-0 items-center justify-between gap-4">
@@ -49,7 +66,7 @@
 				@endif
 
 				<nav class="hidden min-w-0 flex-1 items-center gap-1 md:flex">
-					@foreach((array) config('admin-kit.nav', []) as $item)
+					@foreach($navItems as $item)
 						<x-admin.nav-item :item="$item" />
 					@endforeach
 				</nav>
@@ -106,7 +123,7 @@
 						<div x-show="open" x-cloak x-transition.origin.top.right
 							class="absolute right-0 mt-2 w-60 rounded-2xl border border-white/10 bg-slate-900/95 backdrop-blur shadow-lg overflow-hidden z-50">
 							<div class="p-2">
-								@foreach((array) config('admin-kit.user_menu', []) as $mi)
+								@foreach($userMenuItems as $mi)
 									@php
 										$mr = (string) ($mi['route'] ?? '');
 										$mhref = $mr === 'admin.server.errors' ? url('/admin/server') : (($mr !== '' && \Illuminate\Support\Facades\Route::has($mr)) ? route($mr) : null);
@@ -146,7 +163,7 @@
 			{{-- Mobile nav (same dropdowns; open on tap) --}}
 			<div class="md:hidden pb-3">
 				<div class="flex flex-wrap gap-1">
-					@foreach((array) config('admin-kit.nav', []) as $item)
+					@foreach($navItems as $item)
 						<x-admin.nav-item :item="$item" />
 					@endforeach
 				</div>

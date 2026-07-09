@@ -15,6 +15,8 @@ return [
 	/**
 	 * Top navigation (max 2 levels). An item may have `children` → renders as a
 	 * hover/tap dropdown. Keep it shallow; add items/groups here to extend.
+	 * An item may carry a `can` gate (hub-view / hub-operate / hub-manage); the
+	 * layout hides items the current user's role can't access.
 	 */
 	'nav' => [
 		['label' => 'Аккаунты', 'route' => 'admin.accounts.index', 'icon' => 'users', 'children' => [
@@ -23,7 +25,7 @@ return [
 		]],
 		['label' => 'Доставки', 'route' => 'admin.delivery-orders.index', 'icon' => 'list', 'children' => [
 			['label' => 'Заказы', 'route' => 'admin.delivery-orders.index', 'icon' => 'list'],
-			['label' => 'Инструкции', 'route' => 'admin.delivery-instructions.index', 'icon' => 'file-text'],
+			['label' => 'Инструкции', 'route' => 'admin.delivery-instructions.index', 'icon' => 'file-text', 'can' => 'hub-operate'],
 		]],
 		['label' => 'Ссылки', 'route' => 'admin.delivery-links.index', 'icon' => 'link'],
 	],
@@ -32,10 +34,11 @@ return [
 	 * Items shown under the "Admin User" dropdown on the right.
 	 */
 	'user_menu' => [
-		['label' => 'Настройки', 'route' => 'admin.settings.index', 'icon' => 'settings'],
-		['label' => 'Сервер', 'route' => 'admin.server.errors', 'icon' => 'alert-triangle'],
+		['label' => 'Пользователи', 'route' => 'admin.users.index', 'icon' => 'users', 'can' => 'hub-manage'],
+		['label' => 'Настройки', 'route' => 'admin.settings.index', 'icon' => 'settings', 'can' => 'hub-manage'],
+		['label' => 'Сервер', 'route' => 'admin.server.errors', 'icon' => 'alert-triangle', 'can' => 'hub-manage'],
 		['label' => 'Логи', 'route' => 'admin.issuances.index', 'icon' => 'file-text'],
-		['label' => 'Telegram пользователи', 'route' => 'admin.telegram-users.index', 'icon' => 'message-circle'],
+		['label' => 'Telegram пользователи', 'route' => 'admin.telegram-users.index', 'icon' => 'message-circle', 'can' => 'hub-manage'],
 	],
 ];
 

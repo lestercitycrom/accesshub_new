@@ -28,7 +28,7 @@ final class AccountsIndex extends Component
 
 	public function mount(): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-view');
 	}
 
 	public function updatingQ(): void
@@ -58,7 +58,7 @@ final class AccountsIndex extends Component
 
 	public function setStatus(string $status): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-operate');
 
 		$validStatuses = array_map(fn($s) => $s->value, AccountStatus::cases());
 		if (!in_array($status, $validStatuses, true)) {
@@ -97,7 +97,7 @@ final class AccountsIndex extends Component
 
 	public function deleteAccount(int $accountId): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-operate');
 
 		$account = Account::query()->find($accountId);
 		if ($account === null) {

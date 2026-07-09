@@ -34,7 +34,7 @@ final class DeliveryOrderShow extends Component
 
 	public function mount(DeliveryOrder $deliveryOrder): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-operate');
 
 		$this->deliveryOrder = $deliveryOrder;
 		$this->refreshOrder();
@@ -60,7 +60,7 @@ final class DeliveryOrderShow extends Component
 
 	public function assignAccount(DeliveryOrderService $orders): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-operate');
 
 		$telegramId = $this->selectedOperatorTelegramId();
 		if ($telegramId === null) {
@@ -95,7 +95,7 @@ final class DeliveryOrderShow extends Component
 
 	public function addGame(DeliveryOrderService $orders): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-operate');
 
 		$telegramId = $this->selectedOperatorTelegramId();
 		if ($telegramId === null) {
@@ -474,7 +474,7 @@ final class DeliveryOrderShow extends Component
 
 	private function withOperator(callable $callback): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-operate');
 
 		$telegramId = $this->selectedOperatorTelegramId();
 		if ($telegramId === null) {

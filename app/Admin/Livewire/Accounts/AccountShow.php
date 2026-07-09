@@ -20,14 +20,14 @@ final class AccountShow extends Component
 
 	public function mount(Account $account): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-view');
 
 		$this->account = $account->load('assignedOperator');
 	}
 
 	public function applyStatus(AccountStatusService $statusService): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-operate');
 
 		if ($this->setStatus === '') {
 			return;
@@ -52,7 +52,7 @@ final class AccountShow extends Component
 
 	public function releaseToPool(AccountStatusService $statusService): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-operate');
 
 		$statusService->releaseToPool($this->account->id, null);
 
@@ -63,7 +63,7 @@ final class AccountShow extends Component
 
 	public function updatePassword(AccountStatusService $statusService): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-operate');
 
 		if (empty(trim($this->newPassword))) {
 			return;
