@@ -63,20 +63,20 @@ Route::withoutMiddleware(['auth', 'admin'])->group(function () {
 require __DIR__.'/settings.php';
 
 // Admin routes. Access is tiered by role capability:
-//   can:hub-view    → any assigned role (admin/operator/viewer) — read access
-//   can:hub-operate → admin + operator — operational mutations
+//   can:hub-view    → any role (admin/manager/operator) — read + fulfillment (orders/issuance/problems)
+//   can:hub-supply  → admin + manager — add accounts, create links, edit instructions, export
 //   can:hub-manage  → admin only — system config & user management
 Route::middleware(['auth', 'can:hub-view'])->prefix('admin')->name('admin.')->group(function (): void {
 	Route::get('/', fn () => redirect()->route('admin.accounts.index'))->name('index');
 
-	// ---- Operate tier (admin + operator): operational mutations & exports ----
+	// ---- Supply tier (admin + manager): add to base / catalog / export ----
 	// Registered before the "{account}" catch-all so create/edit resolve first.
-	Route::middleware('can:hub-operate')->group(function (): void {
+	Route::middleware('can:hub-supply')->group(function (): void {
 		Route::post('/accounts/import', App\Admin\Http\Controllers\Import\AccountsSimpleImportController::class)->name('accounts.import');
 		Route::get('/accounts/create', App\Admin\Livewire\Accounts\AccountForm::class)->name('accounts.create');
 		Route::get('/accounts/{account}/edit', App\Admin\Livewire\Accounts\AccountForm::class)->name('accounts.edit');
 
-		Route::get('/delivery-orders/{deliveryOrder}', App\Admin\Livewire\DeliveryOrders\DeliveryOrderShow::class)->name('delivery-orders.show');
+		Route::get('/delivery-links', App\Admin\Livewire\DeliveryLinks\DeliveryLinksIndex::class)->name('delivery-links.index');
 		Route::get('/delivery-instructions', App\Admin\Livewire\DeliveryInstructions\DeliveryInstructionsIndex::class)->name('delivery-instructions.index');
 
 		Route::get('/export/accounts.csv', App\Admin\Http\Controllers\Export\ExportAccountsCsvController::class)->name('export.accounts.csv');
@@ -84,13 +84,14 @@ Route::middleware(['auth', 'can:hub-view'])->prefix('admin')->name('admin.')->gr
 		Route::get('/export/delivery-links.csv', App\Admin\Http\Controllers\Export\ExportDeliveryLinksCsvController::class)->name('export.delivery-links.csv');
 	});
 
-	// ---- View tier (all roles): read access ----
+	// ---- View + fulfillment tier (all roles) ----
+	// Operators work delivery orders / issuance / problems here.
 	Route::get('/accounts', App\Admin\Livewire\Accounts\AccountsIndex::class)->name('accounts.index');
 	Route::get('/accounts/{account}', App\Admin\Livewire\Accounts\AccountShow::class)->name('accounts.show');
 	Route::get('/account-lookup', App\Admin\Livewire\Accounts\AccountLookup::class)->name('account-lookup');
 
 	Route::get('/delivery-orders', App\Admin\Livewire\DeliveryOrders\DeliveryOrdersIndex::class)->name('delivery-orders.index');
-	Route::get('/delivery-links', App\Admin\Livewire\DeliveryLinks\DeliveryLinksIndex::class)->name('delivery-links.index');
+	Route::get('/delivery-orders/{deliveryOrder}', App\Admin\Livewire\DeliveryOrders\DeliveryOrderShow::class)->name('delivery-orders.show');
 
 	Route::get('/issuances', App\Admin\Livewire\Logs\IssuancesIndex::class)->name('issuances.index');
 	Route::get('/events', App\Admin\Livewire\Logs\AccountEventsIndex::class)->name('events.index');

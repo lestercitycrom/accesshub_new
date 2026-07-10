@@ -14,10 +14,12 @@ it('derives role from the legacy is_admin flag', function (): void {
 });
 
 it('keeps is_admin in sync when a role is assigned', function (): void {
+	$manager = User::factory()->create(['role' => UserRole::MANAGER]);
 	$operator = User::factory()->create(['role' => UserRole::OPERATOR]);
 	$admin = User::factory()->create(['role' => UserRole::ADMIN]);
 
-	expect((bool) $operator->fresh()->is_admin)->toBeFalse()
+	expect((bool) $manager->fresh()->is_admin)->toBeFalse()
+		->and((bool) $operator->fresh()->is_admin)->toBeFalse()
 		->and((bool) $admin->fresh()->is_admin)->toBeTrue();
 });
 
@@ -31,34 +33,51 @@ it('lets an admin reach every tier', function (): void {
 	$admin = User::factory()->admin()->create();
 
 	$this->actingAs($admin)->get(route('admin.accounts.index'))->assertOk();          // view
-	$this->actingAs($admin)->get(route('admin.accounts.create'))->assertOk();         // operate
-	$this->actingAs($admin)->get(route('admin.delivery-instructions.index'))->assertOk(); // operate
+	$this->actingAs($admin)->get(route('admin.accounts.create'))->assertOk();         // supply
+	$this->actingAs($admin)->get(route('admin.delivery-links.index'))->assertOk();    // supply
 	$this->actingAs($admin)->get(route('admin.settings.index'))->assertOk();          // manage
 	$this->actingAs($admin)->get(route('admin.users.index'))->assertOk();             // manage
 });
 
-it('lets an operator view and operate but not manage', function (): void {
-	$operator = User::factory()->operator()->create();
+it('lets a manager view + supply but not system config', function (): void {
+	$manager = User::factory()->manager()->create();
 
-	$this->actingAs($operator)->get(route('admin.accounts.index'))->assertOk();          // view
-	$this->actingAs($operator)->get(route('admin.accounts.create'))->assertOk();         // operate
-	$this->actingAs($operator)->get(route('admin.delivery-instructions.index'))->assertOk(); // operate
+	$this->actingAs($manager)->get(route('admin.accounts.index'))->assertOk();          // view
+	$this->actingAs($manager)->get(route('admin.delivery-orders.index'))->assertOk();   // view/fulfil
+	$this->actingAs($manager)->get(route('admin.accounts.create'))->assertOk();         // supply: add accounts
+	$this->actingAs($manager)->get(route('admin.delivery-links.index'))->assertOk();    // supply: create links
+	$this->actingAs($manager)->get(route('admin.delivery-instructions.index'))->assertOk(); // supply
+	$this->actingAs($manager)->get(route('admin.export.accounts.csv'))->assertOk();     // supply: export
 
-	$this->actingAs($operator)->get(route('admin.settings.index'))->assertForbidden();   // manage
-	$this->actingAs($operator)->get(route('admin.users.index'))->assertForbidden();      // manage
-	$this->actingAs($operator)->get(route('admin.telegram-users.index'))->assertForbidden();
+	$this->actingAs($manager)->get(route('admin.settings.index'))->assertForbidden();   // manage
+	$this->actingAs($manager)->get(route('admin.users.index'))->assertForbidden();      // manage
+	$this->actingAs($manager)->get(route('admin.telegram-users.index'))->assertForbidden();
 });
 
-it('lets a viewer view but not operate or manage', function (): void {
-	$viewer = User::factory()->viewer()->create();
+it('lets an operator fulfil orders but not supply or manage', function (): void {
+	$operator = User::factory()->operator()->create();
 
-	$this->actingAs($viewer)->get(route('admin.accounts.index'))->assertOk();        // view
-	$this->actingAs($viewer)->get(route('admin.delivery-orders.index'))->assertOk(); // view
+	// Fulfillment + read (operator's job): orders, issuances log, problems, accounts view.
+	$this->actingAs($operator)->get(route('admin.delivery-orders.index'))->assertOk();
+	$this->actingAs($operator)->get(route('admin.issuances.index'))->assertOk();
+	$this->actingAs($operator)->get(route('admin.problems.index'))->assertOk();
+	$this->actingAs($operator)->get(route('admin.accounts.index'))->assertOk();
 
-	$this->actingAs($viewer)->get(route('admin.accounts.create'))->assertForbidden();          // operate
-	$this->actingAs($viewer)->get(route('admin.delivery-instructions.index'))->assertForbidden(); // operate
-	$this->actingAs($viewer)->get(route('admin.settings.index'))->assertForbidden();           // manage
-	$this->actingAs($viewer)->get(route('admin.users.index'))->assertForbidden();              // manage
+	// Supply is forbidden: adding accounts, creating links, instructions, export.
+	$this->actingAs($operator)->get(route('admin.accounts.create'))->assertForbidden();
+	$this->actingAs($operator)->get(route('admin.delivery-links.index'))->assertForbidden();
+	$this->actingAs($operator)->get(route('admin.delivery-instructions.index'))->assertForbidden();
+	$this->actingAs($operator)->get(route('admin.export.accounts.csv'))->assertForbidden();
+
+	// System is forbidden.
+	$this->actingAs($operator)->get(route('admin.settings.index'))->assertForbidden();
+	$this->actingAs($operator)->get(route('admin.users.index'))->assertForbidden();
+});
+
+it('exposes capability helpers per role', function (): void {
+	expect(User::factory()->admin()->create()->canSupply())->toBeTrue()
+		->and(User::factory()->manager()->create()->canSupply())->toBeTrue()
+		->and(User::factory()->operator()->create()->canSupply())->toBeFalse();
 });
 
 it('changes a user role and syncs the legacy flag via the users screen', function (): void {
@@ -67,9 +86,9 @@ it('changes a user role and syncs the legacy flag via the users screen', functio
 
 	Livewire::actingAs($admin)
 		->test(UsersIndex::class)
-		->call('setRole', $target->id, UserRole::OPERATOR->value);
+		->call('setRole', $target->id, UserRole::MANAGER->value);
 
-	expect($target->fresh()->role)->toBe(UserRole::OPERATOR)
+	expect($target->fresh()->role)->toBe(UserRole::MANAGER)
 		->and((bool) $target->fresh()->is_admin)->toBeFalse();
 });
 
@@ -93,14 +112,13 @@ it('refuses to remove the last admin', function (): void {
 		->call('setRole', $admin->id, UserRole::OPERATOR->value)
 		->assertHasNoErrors();
 
-	// Still an admin — the guard blocked the self-demotion.
 	expect($admin->fresh()->role)->toBe(UserRole::ADMIN);
 });
 
 it('forbids a non-admin from mounting the users screen', function (): void {
-	$operator = User::factory()->operator()->create();
+	$manager = User::factory()->manager()->create();
 
-	Livewire::actingAs($operator)
+	Livewire::actingAs($manager)
 		->test(UsersIndex::class)
 		->assertForbidden();
 });

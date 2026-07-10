@@ -63,13 +63,13 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => ['role' => UserRole::ADMIN]);
     }
 
+    public function manager(): static
+    {
+        return $this->state(fn (array $attributes) => ['role' => UserRole::MANAGER]);
+    }
+
     public function operator(): static
     {
         return $this->state(fn (array $attributes) => ['role' => UserRole::OPERATOR]);
-    }
-
-    public function viewer(): static
-    {
-        return $this->state(fn (array $attributes) => ['role' => UserRole::VIEWER]);
     }
 }

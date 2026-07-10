@@ -27,12 +27,12 @@ final class DeliveryLinksIndex extends Component
 
 	public function mount(): void
 	{
-		Gate::authorize('hub-view');
+		Gate::authorize('hub-supply');
 	}
 
 	public function generate(): void
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		$data = $this->validate([
 			'count' => ['required', 'integer', 'min:1', 'max:' . self::MAX_PER_BATCH],
@@ -71,7 +71,7 @@ final class DeliveryLinksIndex extends Component
 
 	public function deleteUnused(string $batch): void
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		// Only ever remove links nobody has redeemed — keep the audit trail intact.
 		DeliveryLink::query()

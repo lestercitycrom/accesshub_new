@@ -8,33 +8,36 @@ namespace App\Enums;
  * Web (Hub) user roles. `null` role = no panel access at all — this preserves
  * the previous behaviour where only is_admin users could enter the panel.
  *
- * Capability tiers: view ⊂ operate ⊂ manage.
- *  - viewer   → read-only (view)
- *  - operator → read + operational mutations (operate)
- *  - admin    → everything incl. system config & user management (manage)
+ * Capability tiers (each role adds to the one below):
+ *  - operator → fulfillment: work delivery orders / issuance / problem accounts,
+ *               plus read access. NOT: adding accounts, creating links, exports,
+ *               system config.
+ *  - manager  → operator + supply: add/edit accounts, create delivery links,
+ *               edit instructions, export. NOT system config / user management.
+ *  - admin    → everything, incl. settings, server, telegram users, web users.
  */
 enum UserRole: string
 {
 	case ADMIN = 'admin';
+	case MANAGER = 'manager';
 	case OPERATOR = 'operator';
-	case VIEWER = 'viewer';
 
 	public function label(): string
 	{
 		return match ($this) {
 			self::ADMIN => 'Администратор',
+			self::MANAGER => 'Менеджер',
 			self::OPERATOR => 'Оператор',
-			self::VIEWER => 'Наблюдатель',
 		};
 	}
 
-	/** Can perform operational mutations (assign, generate, edit accounts, …). */
-	public function canOperate(): bool
+	/** May add/edit accounts, create links, edit instructions, export (admin+manager). */
+	public function canSupply(): bool
 	{
-		return $this === self::ADMIN || $this === self::OPERATOR;
+		return $this === self::ADMIN || $this === self::MANAGER;
 	}
 
-	/** Can manage system config and users (admin-only areas). */
+	/** May manage system config and users (admin only). */
 	public function canManage(): bool
 	{
 		return $this === self::ADMIN;

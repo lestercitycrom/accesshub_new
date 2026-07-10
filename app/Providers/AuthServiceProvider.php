@@ -25,9 +25,12 @@ class AuthServiceProvider extends ServiceProvider
         // users, server) and the EnsureAdmin middleware. Equivalent to hub-manage.
         Gate::define('admin', static fn ($user): bool => $user->isAdmin());
 
-        // Capability tiers (view ⊂ operate ⊂ manage).
+        // Capability tiers:
+        //  hub-view   — panel access + read + fulfillment (orders/issuance/problems). All roles.
+        //  hub-supply — add/edit accounts, create links, edit instructions, export. Admin + manager.
+        //  hub-manage — system config & user management. Admin only.
         Gate::define('hub-view', static fn ($user): bool => $user->canAccessHub());
-        Gate::define('hub-operate', static fn ($user): bool => $user->canOperate());
+        Gate::define('hub-supply', static fn ($user): bool => $user->canSupply());
         Gate::define('hub-manage', static fn ($user): bool => $user->isAdmin());
     }
 }

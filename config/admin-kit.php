@@ -15,7 +15,7 @@ return [
 	/**
 	 * Top navigation (max 2 levels). An item may have `children` → renders as a
 	 * hover/tap dropdown. Keep it shallow; add items/groups here to extend.
-	 * An item may carry a `can` gate (hub-view / hub-operate / hub-manage); the
+	 * An item may carry a `can` gate (hub-view / hub-supply / hub-manage); the
 	 * layout hides items the current user's role can't access.
 	 */
 	'nav' => [
@@ -25,9 +25,9 @@ return [
 		]],
 		['label' => 'Доставки', 'route' => 'admin.delivery-orders.index', 'icon' => 'list', 'children' => [
 			['label' => 'Заказы', 'route' => 'admin.delivery-orders.index', 'icon' => 'list'],
-			['label' => 'Инструкции', 'route' => 'admin.delivery-instructions.index', 'icon' => 'file-text', 'can' => 'hub-operate'],
+			['label' => 'Инструкции', 'route' => 'admin.delivery-instructions.index', 'icon' => 'file-text', 'can' => 'hub-supply'],
 		]],
-		['label' => 'Ссылки', 'route' => 'admin.delivery-links.index', 'icon' => 'link'],
+		['label' => 'Ссылки', 'route' => 'admin.delivery-links.index', 'icon' => 'link', 'can' => 'hub-supply'],
 	],
 
 	/**

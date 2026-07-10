@@ -19,14 +19,14 @@ final class DeliveryInstructionsIndex extends Component
 
 	public function mount(): void
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		$this->selectPlatform((string) ($this->platformOptions[0] ?? ''));
 	}
 
 	public function selectPlatform(string $platform): void
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		if (!in_array($platform, $this->platformOptions, true)) {
 			return;
@@ -45,7 +45,7 @@ final class DeliveryInstructionsIndex extends Component
 
 	public function save(): void
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		$data = $this->validate([
 			'platform' => ['required', 'string', Rule::in($this->platformOptions)],
@@ -68,7 +68,7 @@ final class DeliveryInstructionsIndex extends Component
 
 	public function toggleActive(string $platform): void
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		$instruction = DeliveryPlatformInstruction::query()
 			->where('platform', $platform)

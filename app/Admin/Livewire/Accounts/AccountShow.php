@@ -27,7 +27,7 @@ final class AccountShow extends Component
 
 	public function applyStatus(AccountStatusService $statusService): void
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		if ($this->setStatus === '') {
 			return;
@@ -52,7 +52,7 @@ final class AccountShow extends Component
 
 	public function releaseToPool(AccountStatusService $statusService): void
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		$statusService->releaseToPool($this->account->id, null);
 
@@ -63,7 +63,7 @@ final class AccountShow extends Component
 
 	public function updatePassword(AccountStatusService $statusService): void
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		if (empty(trim($this->newPassword))) {
 			return;

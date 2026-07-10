@@ -18,7 +18,7 @@ final class ExportDeliveryLinksCsvController
 {
 	public function __invoke(Request $request): StreamedResponse|Response
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		$batch = trim((string) $request->query('batch', ''));
 		$only = (string) $request->query('only', 'unused'); // unused|all

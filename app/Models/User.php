@@ -75,14 +75,14 @@ class User extends Authenticatable
         return $this->role === UserRole::ADMIN;
     }
 
+    public function isManager(): bool
+    {
+        return $this->role === UserRole::MANAGER;
+    }
+
     public function isOperator(): bool
     {
         return $this->role === UserRole::OPERATOR;
-    }
-
-    public function isViewer(): bool
-    {
-        return $this->role === UserRole::VIEWER;
     }
 
     /** Any assigned role may enter the Hub; null = no access. */
@@ -91,10 +91,10 @@ class User extends Authenticatable
         return $this->role !== null;
     }
 
-    /** Admin or operator — may perform operational mutations. */
-    public function canOperate(): bool
+    /** Admin or manager — may add accounts, create links, export (supply tier). */
+    public function canSupply(): bool
     {
-        return $this->role?->canOperate() === true;
+        return $this->role?->canSupply() === true;
     }
 
     /**

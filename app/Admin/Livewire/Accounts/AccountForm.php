@@ -35,7 +35,7 @@ final class AccountForm extends Component
 
 	public function mount(?Account $account = null): void
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		$this->account = $account;
 
@@ -69,7 +69,7 @@ final class AccountForm extends Component
 
 	public function save(): void
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		// Normalize empty strings to null so nullable validation passes
 		$statusDeadlineAt = trim((string) $this->statusDeadlineAt) !== '' ? $this->statusDeadlineAt : null;

@@ -58,7 +58,7 @@ final class AccountsIndex extends Component
 
 	public function setStatus(string $status): void
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		$validStatuses = array_map(fn($s) => $s->value, AccountStatus::cases());
 		if (!in_array($status, $validStatuses, true)) {
@@ -97,7 +97,7 @@ final class AccountsIndex extends Component
 
 	public function deleteAccount(int $accountId): void
 	{
-		Gate::authorize('hub-operate');
+		Gate::authorize('hub-supply');
 
 		$account = Account::query()->find($accountId);
 		if ($account === null) {
