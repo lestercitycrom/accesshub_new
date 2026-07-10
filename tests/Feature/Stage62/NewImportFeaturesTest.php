@@ -66,7 +66,8 @@ it('imports accounts with new fields', function (): void {
 	expect($account1->mail_account_login)->toBe('mail1@test.com');
 	expect($account1->mail_account_password)->toBe('mailpass1');
 	expect($account1->comment)->toBe('Test comment');
-	expect($account1->two_fa_mail_account_date->format('Y-m-d'))->toBe('2024-01-15');
+	// Stored as a normalized 'Y-m-d' string (the column is a string, not a date).
+	expect($account1->two_fa_mail_account_date)->toBe('2024-01-15');
 	expect($account1->recover_code)->toBe('recover123');
 	expect($account1->platform)->toBe(['PS4']);
 
@@ -300,18 +301,21 @@ it('includes comment in telegram message when present', function (): void {
 	expect($message)->toContain('Important note: Check email first');
 })->group('Stage62');
 
-it('deletes all accounts when deleteAllAccounts is called', function (): void {
-	$admin = createAdminUser();
+it('deletes all accounts from settings when confirmed with the password', function (): void {
+	$admin = createAdminUser(); // UserFactory default password is "password"
 	$this->actingAs($admin);
 
 	Account::factory()->count(5)->create();
 
 	expect(Account::query()->count())->toBe(5);
 
+	// "Delete all accounts" is a password-confirmed action on the Settings screen.
 	Livewire::actingAs($admin)
-		->test(\App\Admin\Livewire\Accounts\AccountsIndex::class)
+		->test(\App\Admin\Livewire\Settings\SettingsIndex::class)
+		->set('confirmPassword', 'password')
 		->call('deleteAllAccounts')
-		->assertSet('alertMessage', 'Удалено аккаунтов: 5.');
+		->assertHasNoErrors()
+		->assertSet('successMessage', 'Все аккаунты удалены.');
 
 	expect(Account::query()->count())->toBe(0);
 })->group('Stage62');
@@ -392,5 +396,6 @@ it('parses date field correctly', function (): void {
 
 	$account = Account::query()->where('login', 'user1@test.com')->first();
 	expect($account->two_fa_mail_account_date)->not->toBeNull();
-	expect($account->two_fa_mail_account_date->format('Y-m-d'))->toBe('2024-01-15');
+	// The importer normalizes to a 'Y-m-d' string (the column is a string).
+	expect($account->two_fa_mail_account_date)->toBe('2024-01-15');
 })->group('Stage62');
