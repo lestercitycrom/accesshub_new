@@ -66,7 +66,7 @@ require __DIR__.'/settings.php';
 //   can:hub-view    → any role (admin/manager/operator) — read + fulfillment (orders/issuance/problems)
 //   can:hub-supply  → admin + manager — add accounts, create links, edit instructions, export
 //   can:hub-manage  → admin only — system config & user management
-Route::middleware(['auth', 'can:hub-view'])->prefix('admin')->name('admin.')->group(function (): void {
+Route::middleware(['auth', 'can:hub-view', '2fa'])->prefix('admin')->name('admin.')->group(function (): void {
 	Route::get('/', fn () => redirect()->route('admin.accounts.index'))->name('index');
 
 	// ---- Supply tier (admin + manager): add to base / catalog / export ----
