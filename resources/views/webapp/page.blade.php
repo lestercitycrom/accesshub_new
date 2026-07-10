@@ -772,7 +772,7 @@
 
 			items.forEach((order) => {
 				const card = document.createElement('div');
-				card.className = 'list-card';
+				card.className = 'list-card order-card';
 				if (focusedDeliveryOrderId && String(order.id) === String(focusedDeliveryOrderId)) {
 					card.style.border = '1px solid rgba(36,129,201,.7)';
 				}
