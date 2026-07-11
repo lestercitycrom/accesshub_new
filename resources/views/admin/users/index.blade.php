@@ -4,6 +4,12 @@
 		subtitle="Веб-пользователи панели и их роли. Роль определяет доступ к разделам."
 	>
 		<x-admin.page-actions>
+			<x-admin.button variant="primary" size="sm" wire:click="toggleCreate">
+				<span class="inline-flex items-center gap-2">
+					<x-admin.icon name="user-plus" class="h-4 w-4" />
+					Добавить пользователя
+				</span>
+			</x-admin.button>
 			<x-admin.button variant="secondary" size="sm" wire:click="$refresh">
 				<span class="inline-flex items-center gap-2">
 					<x-admin.icon name="refresh" class="h-4 w-4" />
@@ -18,6 +24,34 @@
 	@endif
 	@if(session('error'))
 		<x-admin.alert variant="danger" :message="session('error')" />
+	@endif
+
+	@if($showCreate)
+		<x-admin.card title="Новый пользователь">
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+				<x-admin.input label="Имя" wire:model="newName" :error="$errors->first('newName')" />
+				<x-admin.input label="Email" type="email" wire:model="newEmail" :error="$errors->first('newEmail')" />
+				<x-admin.input label="Пароль" type="text" placeholder="минимум 8 символов" wire:model="newPassword" :error="$errors->first('newPassword')" />
+				<div>
+					<label class="mb-1 block text-sm font-medium text-slate-700">Роль</label>
+					<select wire:model="newRole" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+						@foreach($roleOptions as $option)
+							<option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+						@endforeach
+					</select>
+					@if($errors->first('newRole'))<p class="mt-1 text-xs text-rose-600">{{ $errors->first('newRole') }}</p>@endif
+				</div>
+			</div>
+
+			<div class="mt-4 flex items-center gap-2">
+				<x-admin.button variant="primary" wire:click="createUser" wire:loading.attr="disabled">
+					<span wire:loading.remove wire:target="createUser">Создать</span>
+					<span wire:loading wire:target="createUser">Создаю...</span>
+				</x-admin.button>
+				<x-admin.button variant="ghost" wire:click="toggleCreate">Отмена</x-admin.button>
+				<span class="text-xs text-slate-500">При первом входе пользователь настроит 2FA.</span>
+			</div>
+		</x-admin.card>
 	@endif
 
 	<x-admin.filters-bar>

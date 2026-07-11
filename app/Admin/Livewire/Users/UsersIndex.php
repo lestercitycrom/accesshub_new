@@ -24,9 +24,60 @@ final class UsersIndex extends Component
 	public string $sortBy = 'id';
 	public string $sortDirection = 'desc';
 
+	// Create-user form
+	public bool $showCreate = false;
+	public string $newName = '';
+	public string $newEmail = '';
+	public string $newPassword = '';
+	public string $newRole = 'operator';
+
 	public function mount(): void
 	{
 		Gate::authorize('hub-manage');
+	}
+
+	public function toggleCreate(): void
+	{
+		$this->showCreate = !$this->showCreate;
+		$this->resetValidation();
+		if (!$this->showCreate) {
+			$this->reset(['newName', 'newEmail', 'newPassword']);
+			$this->newRole = 'operator';
+		}
+	}
+
+	/**
+	 * Create a new web (panel) user with a role. The password is set by the
+	 * admin; on first login the user is forced to set up 2FA.
+	 */
+	public function createUser(): void
+	{
+		Gate::authorize('hub-manage');
+
+		$data = $this->validate([
+			'newName' => ['required', 'string', 'max:255'],
+			'newEmail' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+			'newPassword' => ['required', 'string', 'min:8'],
+			'newRole' => ['required', 'in:admin,manager,operator'],
+		], [], [
+			'newName' => 'имя',
+			'newEmail' => 'email',
+			'newPassword' => 'пароль',
+			'newRole' => 'роль',
+		]);
+
+		User::create([
+			'name' => $data['newName'],
+			'email' => $data['newEmail'],
+			'password' => $data['newPassword'], // hashed by the model cast
+			'role' => UserRole::from($data['newRole']),
+		]);
+
+		$this->reset(['newName', 'newEmail', 'newPassword']);
+		$this->newRole = 'operator';
+		$this->showCreate = false;
+
+		session()->flash('message', 'Пользователь создан: ' . $data['newEmail'] . '. При первом входе он настроит 2FA.');
 	}
 
 	public function updatingQ(): void

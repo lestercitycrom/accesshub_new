@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Admin\Livewire\Users\UsersIndex;
 use App\Enums\UserRole;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
 
 it('derives role from the legacy is_admin flag', function (): void {
@@ -121,4 +122,51 @@ it('forbids a non-admin from mounting the users screen', function (): void {
 	Livewire::actingAs($manager)
 		->test(UsersIndex::class)
 		->assertForbidden();
+});
+
+it('creates a new web user with a role (password hashed, is_admin synced)', function (): void {
+	$admin = User::factory()->admin()->create();
+
+	Livewire::actingAs($admin)
+		->test(UsersIndex::class)
+		->set('newName', 'New Manager')
+		->set('newEmail', 'newmanager@example.com')
+		->set('newPassword', 'secret123')
+		->set('newRole', UserRole::MANAGER->value)
+		->call('createUser')
+		->assertHasNoErrors();
+
+	$user = User::query()->where('email', 'newmanager@example.com')->first();
+
+	expect($user)->not->toBeNull()
+		->and($user->role)->toBe(UserRole::MANAGER)
+		->and((bool) $user->is_admin)->toBeFalse()
+		->and(Hash::check('secret123', $user->password))->toBeTrue();
+});
+
+it('renders the create-user form when opened', function (): void {
+	$admin = User::factory()->admin()->create();
+
+	Livewire::actingAs($admin)
+		->test(UsersIndex::class)
+		->assertSee('Добавить пользователя')
+		->call('toggleCreate')
+		->assertSet('showCreate', true)
+		->assertSee('Новый пользователь');
+});
+
+it('validates the new-user form (required, unique email, min password)', function (): void {
+	$admin = User::factory()->admin()->create();
+	User::factory()->create(['email' => 'taken@example.com']);
+
+	Livewire::actingAs($admin)
+		->test(UsersIndex::class)
+		->set('newName', '')
+		->set('newEmail', 'taken@example.com')
+		->set('newPassword', 'short')
+		->set('newRole', UserRole::OPERATOR->value)
+		->call('createUser')
+		->assertHasErrors(['newName', 'newEmail', 'newPassword']);
+
+	expect(User::query()->where('email', 'taken@example.com')->count())->toBe(1);
 });
