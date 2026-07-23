@@ -20,7 +20,7 @@ final class AccountShow extends Component
 
 	public function mount(Account $account): void
 	{
-		Gate::authorize('hub-view');
+		Gate::authorize('hub-supply');
 
 		$this->account = $account->load('assignedOperator');
 	}

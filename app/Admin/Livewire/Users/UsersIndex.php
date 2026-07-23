@@ -85,6 +85,16 @@ final class UsersIndex extends Component
 		$this->resetPage();
 	}
 
+	/**
+	 * Re-query the list. Livewire re-renders anyway; the flash gives the visible
+	 * confirmation the plain `$refresh` action lacked (looked like it did nothing).
+	 */
+	public function refreshList(): void
+	{
+		$this->resetPage();
+		session()->flash('message', 'Список обновлён.');
+	}
+
 	public function sort(string $field): void
 	{
 		if (!in_array($field, ['id', 'name', 'email', 'role'], true)) {

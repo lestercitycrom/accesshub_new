@@ -9,31 +9,36 @@
 
 	<x-admin.page-header
 		title="Аккаунты"
-		subtitle="Поиск, фильтры, быстрый доступ к карточке и экспорт."
+		:subtitle="auth()->user()?->canSupply() ? 'Поиск, фильтры, быстрый доступ к карточке и экспорт.' : 'Аккаунты на кулдауне — вернутся в пул автоматически.'"
 	>
-		<x-admin.page-actions primaryLabel="Создать" primaryIcon="database" :primaryHref="route('admin.accounts.create')">
-			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
-				href="{{ route('admin.account-lookup') }}">
-				Поиск
-			</a>
-
-			@if(isset($exportUrl))
+		@can('hub-supply')
+			<x-admin.page-actions primaryLabel="Создать" primaryIcon="database" :primaryHref="route('admin.accounts.create')">
 				<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
-					href="{{ $exportUrl }}">
-					Экспорт CSV
+					href="{{ route('admin.account-lookup') }}">
+					Поиск
 				</a>
-			@endif
 
-			<form method="POST" action="{{ route('admin.accounts.import') }}" enctype="multipart/form-data" class="inline-flex items-center gap-2">
-				@csrf
-				<input id="accountsImportFile" name="file" type="file" accept=".csv,.txt" class="hidden"
-					onchange="this.form.submit()">
+				{{-- Import / export — admin only (accessed through the 2FA-protected panel) --}}
+				@can('hub-manage')
+					@if(isset($exportUrl))
+						<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
+							href="{{ $exportUrl }}">
+							Экспорт CSV
+						</a>
+					@endif
 
-				<label for="accountsImportFile" class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer">
-					Import CSV
-				</label>
-			</form>
-		</x-admin.page-actions>
+					<form method="POST" action="{{ route('admin.accounts.import') }}" enctype="multipart/form-data" class="inline-flex items-center gap-2">
+						@csrf
+						<input id="accountsImportFile" name="file" type="file" accept=".csv,.txt" class="hidden"
+							onchange="this.form.submit()">
+
+						<label for="accountsImportFile" class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer">
+							Import CSV
+						</label>
+					</form>
+				@endcan
+			</x-admin.page-actions>
+		@endcan
 
 		<x-slot:breadcrumbs>
 			<span class="text-slate-500">Админ</span>
@@ -78,7 +83,11 @@
 					@php $daysLeft = (int) now()->diffInDays($ca->next_release_at, false); @endphp
 					<tr class="hover:bg-slate-50/70">
 						<x-admin.td>
-							<a href="{{ route('admin.accounts.show', $ca) }}" class="font-semibold text-blue-600 hover:underline">#{{ $ca->id }}</a>
+							@can('hub-supply')
+								<a href="{{ route('admin.accounts.show', $ca) }}" class="font-semibold text-blue-600 hover:underline">#{{ $ca->id }}</a>
+							@else
+								<span class="font-semibold text-slate-700">#{{ $ca->id }}</span>
+							@endcan
 						</x-admin.td>
 						<x-admin.td>{{ $ca->game }}</x-admin.td>
 						<x-admin.td>
@@ -105,6 +114,9 @@
 		@endif
 	</x-admin.card>
 
+	{{-- Account base (list, filters, actions) — supply roles only. Operators see
+	     only the cooldown block above. --}}
+	@can('hub-supply')
 	<x-admin.filters-bar>
 		<div class="lg:col-span-3">
 			<x-admin.filter-input
@@ -254,10 +266,11 @@
 		</table>
 	</div>
 
-	@if(method_exists($rows, 'links'))
+	@if($rows && method_exists($rows, 'links'))
 		<div class="pt-1">
 			{{ $rows->links() }}
 		</div>
 	@endif
+	@endcan
 
 </div>

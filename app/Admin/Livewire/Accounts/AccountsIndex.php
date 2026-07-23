@@ -210,6 +210,10 @@ final class AccountsIndex extends Component
 
 	public function render()
 	{
+		// Operators only see the cooldown block; skip the base query & filter
+		// options entirely for them (the view is supply-gated anyway).
+		$canSupply = Gate::allows('hub-supply');
+
 		$exportParams = array_filter([
 			'q' => trim($this->q) !== '' ? $this->q : null,
 			'status' => trim($this->statusFilter) !== '' ? $this->statusFilter : null,
@@ -218,11 +222,11 @@ final class AccountsIndex extends Component
 		], static fn ($v): bool => $v !== null);
 
 		return view('admin.accounts.index', [
-			'rows' => $this->rows,
-			'statusOptions' => $this->statusOptions,
-			'gameOptions' => $this->gameOptions,
-			'platformOptions' => $this->platformOptions,
-			'exportUrl' => route('admin.export.accounts.csv', $exportParams),
+			'rows' => $canSupply ? $this->rows : null,
+			'statusOptions' => $canSupply ? $this->statusOptions : [],
+			'gameOptions' => $canSupply ? $this->gameOptions : [],
+			'platformOptions' => $canSupply ? $this->platformOptions : [],
+			'exportUrl' => $canSupply ? route('admin.export.accounts.csv', $exportParams) : null,
 			'cooldownAccounts' => $this->cooldownAccounts,
 		])->layout('layouts.admin');
 	}

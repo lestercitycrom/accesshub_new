@@ -20,7 +20,8 @@ return [
 	 */
 	'nav' => [
 		['label' => 'Аккаунты', 'route' => 'admin.accounts.index', 'icon' => 'users', 'children' => [
-			['label' => 'Все аккаунты', 'route' => 'admin.accounts.index', 'icon' => 'users'],
+			['label' => 'Все аккаунты', 'route' => 'admin.accounts.index', 'icon' => 'users', 'can' => 'hub-supply'],
+			['label' => 'На кулдауне', 'route' => 'admin.accounts.index', 'icon' => 'clock'],
 			['label' => 'Проблемные', 'route' => 'admin.problems.index', 'icon' => 'alert-triangle'],
 		]],
 		['label' => 'Доставки', 'route' => 'admin.delivery-orders.index', 'icon' => 'list', 'children' => [
@@ -37,7 +38,7 @@ return [
 		['label' => 'Пользователи', 'route' => 'admin.users.index', 'icon' => 'users', 'can' => 'hub-manage'],
 		['label' => 'Настройки', 'route' => 'admin.settings.index', 'icon' => 'settings', 'can' => 'hub-manage'],
 		['label' => 'Сервер', 'route' => 'admin.server.errors', 'icon' => 'alert-triangle', 'can' => 'hub-manage'],
-		['label' => 'Логи', 'route' => 'admin.issuances.index', 'icon' => 'file-text'],
+		['label' => 'Логи', 'route' => 'admin.issuances.index', 'icon' => 'file-text', 'can' => 'hub-supply'],
 		['label' => 'Telegram пользователи', 'route' => 'admin.telegram-users.index', 'icon' => 'message-circle', 'can' => 'hub-manage'],
 	],
 ];

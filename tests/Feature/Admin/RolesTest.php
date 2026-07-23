@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Admin\Livewire\Accounts\AccountsIndex;
 use App\Admin\Livewire\Users\UsersIndex;
 use App\Enums\UserRole;
 use App\Models\User;
@@ -36,43 +37,104 @@ it('lets an admin reach every tier', function (): void {
 	$this->actingAs($admin)->get(route('admin.accounts.index'))->assertOk();          // view
 	$this->actingAs($admin)->get(route('admin.accounts.create'))->assertOk();         // supply
 	$this->actingAs($admin)->get(route('admin.delivery-links.index'))->assertOk();    // supply
+	$this->actingAs($admin)->get(route('admin.issuances.index'))->assertOk();         // supply: logs
+	$this->actingAs($admin)->get(route('admin.export.accounts.csv'))->assertOk();     // manage: export
 	$this->actingAs($admin)->get(route('admin.settings.index'))->assertOk();          // manage
 	$this->actingAs($admin)->get(route('admin.users.index'))->assertOk();             // manage
 });
 
-it('lets a manager view + supply but not system config', function (): void {
+it('lets a manager use the account base + logs but not import/export or system', function (): void {
 	$manager = User::factory()->manager()->create();
 
 	$this->actingAs($manager)->get(route('admin.accounts.index'))->assertOk();          // view
 	$this->actingAs($manager)->get(route('admin.delivery-orders.index'))->assertOk();   // view/fulfil
 	$this->actingAs($manager)->get(route('admin.accounts.create'))->assertOk();         // supply: add accounts
+	$this->actingAs($manager)->get(route('admin.account-lookup'))->assertOk();          // supply: search base
 	$this->actingAs($manager)->get(route('admin.delivery-links.index'))->assertOk();    // supply: create links
 	$this->actingAs($manager)->get(route('admin.delivery-instructions.index'))->assertOk(); // supply
-	$this->actingAs($manager)->get(route('admin.export.accounts.csv'))->assertOk();     // supply: export
+	$this->actingAs($manager)->get(route('admin.issuances.index'))->assertOk();         // supply: logs
 
+	$this->actingAs($manager)->get(route('admin.export.accounts.csv'))->assertForbidden(); // admin only now
 	$this->actingAs($manager)->get(route('admin.settings.index'))->assertForbidden();   // manage
 	$this->actingAs($manager)->get(route('admin.users.index'))->assertForbidden();      // manage
 	$this->actingAs($manager)->get(route('admin.telegram-users.index'))->assertForbidden();
 });
 
-it('lets an operator fulfil orders but not supply or manage', function (): void {
+it('limits an operator to delivery, problems and the cooldown accounts view', function (): void {
 	$operator = User::factory()->operator()->create();
 
-	// Fulfillment + read (operator's job): orders, issuances log, problems, accounts view.
+	// Allowed: delivery orders, problems, and /accounts (cooldown block only).
 	$this->actingAs($operator)->get(route('admin.delivery-orders.index'))->assertOk();
-	$this->actingAs($operator)->get(route('admin.issuances.index'))->assertOk();
 	$this->actingAs($operator)->get(route('admin.problems.index'))->assertOk();
 	$this->actingAs($operator)->get(route('admin.accounts.index'))->assertOk();
 
-	// Supply is forbidden: adding accounts, creating links, instructions, export.
+	// Base search + logs are now hidden from operators.
+	$this->actingAs($operator)->get(route('admin.account-lookup'))->assertForbidden();
+	$this->actingAs($operator)->get(route('admin.issuances.index'))->assertForbidden();
+	$this->actingAs($operator)->get(route('admin.events.index'))->assertForbidden();
+
+	// Supply, import/export and system all forbidden.
 	$this->actingAs($operator)->get(route('admin.accounts.create'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.delivery-links.index'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.delivery-instructions.index'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.export.accounts.csv'))->assertForbidden();
-
-	// System is forbidden.
 	$this->actingAs($operator)->get(route('admin.settings.index'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.users.index'))->assertForbidden();
+});
+
+it('makes import/export admin-only', function (): void {
+	$admin = User::factory()->admin()->create();
+	$manager = User::factory()->manager()->create();
+	$operator = User::factory()->operator()->create();
+
+	$this->actingAs($admin)->get(route('admin.export.accounts.csv'))->assertOk();
+	$this->actingAs($admin)->get(route('admin.export.delivery-links.csv'))->assertOk();
+	$this->actingAs($admin)->get(route('admin.export.issuances.csv'))->assertOk();
+
+	foreach ([$manager, $operator] as $user) {
+		$this->actingAs($user)->get(route('admin.export.accounts.csv'))->assertForbidden();
+		$this->actingAs($user)->get(route('admin.export.delivery-links.csv'))->assertForbidden();
+	}
+});
+
+it('gates the account card (show) to supply roles', function (): void {
+	$account = App\Domain\Accounts\Models\Account::factory()->create();
+
+	$this->actingAs(User::factory()->admin()->create())->get(route('admin.accounts.show', $account))->assertOk();
+	$this->actingAs(User::factory()->manager()->create())->get(route('admin.accounts.show', $account))->assertOk();
+	$this->actingAs(User::factory()->operator()->create())->get(route('admin.accounts.show', $account))->assertForbidden();
+});
+
+it('shows an operator only the cooldown block on the accounts page', function (): void {
+	Livewire::actingAs(User::factory()->operator()->create())
+		->test(AccountsIndex::class)
+		->assertSee('кулдауне')      // cooldown widget heading
+		->assertDontSee('Создать')   // no create button
+		->assertDontSee('Import CSV') // no import
+		->assertDontSee('Экспорт CSV'); // no export
+});
+
+it('shows a manager the base + create but not import/export', function (): void {
+	Livewire::actingAs(User::factory()->manager()->create())
+		->test(AccountsIndex::class)
+		->assertSee('Создать')        // supply: create button
+		->assertDontSee('Import CSV')  // admin only
+		->assertDontSee('Экспорт CSV');
+});
+
+it('shows an admin import and export on the accounts page', function (): void {
+	Livewire::actingAs(User::factory()->admin()->create())
+		->test(AccountsIndex::class)
+		->assertSee('Import CSV')
+		->assertSee('Экспорт CSV');
+});
+
+it('gives visible feedback when the users list is refreshed', function (): void {
+	Livewire::actingAs(User::factory()->admin()->create())
+		->test(UsersIndex::class)
+		->call('refreshList')
+		->assertHasNoErrors()
+		->assertSee('Список обновлён');
 });
 
 it('exposes capability helpers per role', function (): void {

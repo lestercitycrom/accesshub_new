@@ -10,10 +10,13 @@
 					Добавить пользователя
 				</span>
 			</x-admin.button>
-			<x-admin.button variant="secondary" size="sm" wire:click="$refresh">
-				<span class="inline-flex items-center gap-2">
+			<x-admin.button variant="secondary" size="sm" wire:click="refreshList">
+				<span class="inline-flex items-center gap-2" wire:loading.remove wire:target="refreshList">
 					<x-admin.icon name="refresh" class="h-4 w-4" />
 					Обновить
+				</span>
+				<span class="inline-flex items-center gap-2" wire:loading wire:target="refreshList">
+					Обновляю...
 				</span>
 			</x-admin.button>
 		</x-admin.page-actions>
@@ -65,9 +68,9 @@
 	</x-admin.filters-bar>
 
 	<p class="-mt-2 px-1 text-xs text-slate-500">
-		<b>Администратор</b> — всё, включая настройки и пользователей ·
-		<b>Менеджер</b> — аккаунты, ссылки, инструкции, экспорт (без системных) ·
-		<b>Оператор</b> — только заказы/выдача · <b>Без доступа</b> — вход закрыт
+		<b>Администратор</b> — всё, включая настройки, пользователей, импорт/экспорт ·
+		<b>Менеджер</b> — аккаунты, ссылки, инструкции, логи (без системных и импорта/экспорта) ·
+		<b>Оператор</b> — заказы/выдача, проблемные, кулдаун · <b>Без доступа</b> — вход закрыт
 	</p>
 
 	<x-admin.card>
