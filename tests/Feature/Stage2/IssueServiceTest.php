@@ -233,7 +233,9 @@ it('does not issue account when next_release_at is in the future and available_u
 	$result = $service->issue(111, 'ORD-FUTURE', 'cs2', 'steam', 1);
 
 	expect($result->ok())->toBeFalse();
-	expect($result->message())->toBe('Нет доступных аккаунтов сейчас. Попробуйте позже.');
+	// When a cooldown release time is known, the message names it.
+	expect($result->message())->toContain('Ближайший освободится')
+		->and($result->message())->toContain($future->format('d.m.Y'));
 })->group('Stage2');
 
 it('sets next_release_at when available_uses reaches zero', function (): void {

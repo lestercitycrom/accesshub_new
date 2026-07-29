@@ -9,31 +9,36 @@
 
 	<x-admin.page-header
 		title="Аккаунты"
-		subtitle="Поиск, фильтры, быстрый доступ к карточке и экспорт."
+		:subtitle="auth()->user()?->canSupply() ? 'Поиск, фильтры, быстрый доступ к карточке и экспорт.' : 'Аккаунты на кулдауне — вернутся в пул автоматически.'"
 	>
-		<x-admin.page-actions primaryLabel="Создать" primaryIcon="database" :primaryHref="route('admin.accounts.create')">
-			<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
-				href="{{ route('admin.account-lookup') }}">
-				Поиск
-			</a>
-
-			@if(isset($exportUrl))
+		@can('hub-supply')
+			<x-admin.page-actions primaryLabel="Создать" primaryIcon="database" :primaryHref="route('admin.accounts.create')">
 				<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
-					href="{{ $exportUrl }}">
-					Экспорт CSV
+					href="{{ route('admin.account-lookup') }}">
+					Поиск
 				</a>
-			@endif
 
-			<form method="POST" action="{{ route('admin.accounts.import') }}" enctype="multipart/form-data" class="inline-flex items-center gap-2">
-				@csrf
-				<input id="accountsImportFile" name="file" type="file" accept=".csv,.txt" class="hidden"
-					onchange="this.form.submit()">
+				{{-- Import / export — admin only (accessed through the 2FA-protected panel) --}}
+				@can('hub-manage')
+					@if(isset($exportUrl))
+						<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
+							href="{{ $exportUrl }}">
+							Экспорт CSV
+						</a>
+					@endif
 
-				<label for="accountsImportFile" class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer">
-					Import CSV
-				</label>
-			</form>
-		</x-admin.page-actions>
+					<form method="POST" action="{{ route('admin.accounts.import') }}" enctype="multipart/form-data" class="inline-flex items-center gap-2">
+						@csrf
+						<input id="accountsImportFile" name="file" type="file" accept=".csv,.txt" class="hidden"
+							onchange="this.form.submit()">
+
+						<label for="accountsImportFile" class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer">
+							Import CSV
+						</label>
+					</form>
+				@endcan
+			</x-admin.page-actions>
+		@endcan
 
 		<x-slot:breadcrumbs>
 			<span class="text-slate-500">Админ</span>
@@ -78,7 +83,11 @@
 					@php $daysLeft = (int) now()->diffInDays($ca->next_release_at, false); @endphp
 					<tr class="hover:bg-slate-50/70">
 						<x-admin.td>
-							<a href="{{ route('admin.accounts.show', $ca) }}" class="font-semibold text-blue-600 hover:underline">#{{ $ca->id }}</a>
+							@can('hub-supply')
+								<a href="{{ route('admin.accounts.show', $ca) }}" class="font-semibold text-blue-600 hover:underline">#{{ $ca->id }}</a>
+							@else
+								<span class="font-semibold text-slate-700">#{{ $ca->id }}</span>
+							@endcan
 						</x-admin.td>
 						<x-admin.td>{{ $ca->game }}</x-admin.td>
 						<x-admin.td>
@@ -105,11 +114,14 @@
 		@endif
 	</x-admin.card>
 
+	{{-- Account base (list, filters, actions) — supply roles only. Operators see
+	     only the cooldown block above. --}}
+	@can('hub-supply')
 	<x-admin.filters-bar>
 		<div class="lg:col-span-3">
 			<x-admin.filter-input
-				label="Поиск по ID"
-				placeholder="Введите ID аккаунта..."
+				label="Поиск"
+				placeholder="игра / логин / почта / ID..."
 				icon="search"
 				wire:model.live="q"
 			/>
@@ -148,101 +160,117 @@
 		</div>
 	</x-admin.filters-bar>
 
-	<x-admin.card title="Аккаунты">
-		<div class="text-xs text-slate-500 mb-3">
-			Назначен — Telegram ID оператора, к которому закреплён аккаунт (обычно при «Украден»).
-			Дедлайн — срок статуса «Украден»; продлевается кнопкой «Перенести на 1 день».
+	<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+		<div class="border-b border-slate-200 px-3 py-2 text-[11px] text-slate-500">
+			Назначен — Telegram ID оператора (обычно при «Украден»). Дедлайн — срок статуса «Украден» (продлевается «Перенести на 1 день»).
 		</div>
-		<x-admin.table density="normal" :sticky="true" :zebra="true">
-			<x-slot:head>
-				<tr>
-					<x-admin.th sortable :sorted="$sortBy === 'id'" :direction="$sortBy === 'id' ? $sortDirection : null" sortField="id">ID</x-admin.th>
-					<x-admin.th sortable :sorted="$sortBy === 'game'" :direction="$sortBy === 'game' ? $sortDirection : null" sortField="game">Игра</x-admin.th>
-					<x-admin.th sortable :sorted="$sortBy === 'platform'" :direction="$sortBy === 'platform' ? $sortDirection : null" sortField="platform">Платформа</x-admin.th>
-					<x-admin.th sortable :sorted="$sortBy === 'login'" :direction="$sortBy === 'login' ? $sortDirection : null" sortField="login">Логин</x-admin.th>
-					<x-admin.th sortable :sorted="$sortBy === 'status'" :direction="$sortBy === 'status' ? $sortDirection : null" sortField="status">Статус</x-admin.th>
-					<x-admin.th sortable :sorted="$sortBy === 'assigned_to_telegram_id'" :direction="$sortBy === 'assigned_to_telegram_id' ? $sortDirection : null" sortField="assigned_to_telegram_id">Назначен</x-admin.th>
-					<x-admin.th sortable :sorted="$sortBy === 'status_deadline_at'" :direction="$sortBy === 'status_deadline_at' ? $sortDirection : null" sortField="status_deadline_at">Дедлайн</x-admin.th>
-					<x-admin.th align="right">Действия</x-admin.th>
-				</tr>
-			</x-slot:head>
 
-			@forelse($rows as $row)
-				<tr class="hover:bg-slate-50/70">
-					<x-admin.td class="font-semibold text-slate-900">{{ $row->id }}</x-admin.td>
-					<x-admin.td>{{ $row->game }}</x-admin.td>
-					<x-admin.td>
-						@if(is_array($row->platform))
-							<div class="flex flex-wrap gap-1">
-								@foreach($row->platform as $p)
-									<x-admin.badge variant="blue" class="text-xs">{{ $p }}</x-admin.badge>
-								@endforeach
+		<table class="w-full table-fixed text-[13px]">
+			<thead class="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+				<tr>
+					<th class="w-[6%] px-3 py-2 text-left">
+						<button type="button" wire:click="sort('id')" class="inline-flex items-center gap-1 hover:text-slate-900">ID @if($sortBy==='id')<span>{{ $sortDirection==='asc'?'↑':'↓' }}</span>@endif</button>
+					</th>
+					<th class="w-[29%] px-3 py-2 text-left">
+						<button type="button" wire:click="sort('game')" class="inline-flex items-center gap-1 hover:text-slate-900">Игра / платформа @if($sortBy==='game')<span>{{ $sortDirection==='asc'?'↑':'↓' }}</span>@endif</button>
+					</th>
+					<th class="w-[24%] px-3 py-2 text-left">
+						<button type="button" wire:click="sort('login')" class="inline-flex items-center gap-1 hover:text-slate-900">Логин @if($sortBy==='login')<span>{{ $sortDirection==='asc'?'↑':'↓' }}</span>@endif</button>
+					</th>
+					<th class="w-[13%] px-3 py-2 text-left">
+						<button type="button" wire:click="sort('status')" class="inline-flex items-center gap-1 hover:text-slate-900">Статус @if($sortBy==='status')<span>{{ $sortDirection==='asc'?'↑':'↓' }}</span>@endif</button>
+					</th>
+					<th class="w-[12%] px-3 py-2 text-left">Назначен</th>
+					<th class="w-[10%] px-3 py-2 text-left">
+						<button type="button" wire:click="sort('status_deadline_at')" class="inline-flex items-center gap-1 hover:text-slate-900">Дедлайн @if($sortBy==='status_deadline_at')<span>{{ $sortDirection==='asc'?'↑':'↓' }}</span>@endif</button>
+					</th>
+					<th class="w-[6%] px-3 py-2 text-right"></th>
+				</tr>
+			</thead>
+			<tbody class="divide-y divide-slate-100">
+				@forelse($rows as $row)
+					@php $isOnCooldown = $row->next_release_at && $row->next_release_at->isFuture(); @endphp
+					<tr class="align-middle odd:bg-white even:bg-slate-50/45 hover:bg-slate-100/70">
+						<td class="px-3 py-2 font-semibold text-slate-900">{{ $row->id }}</td>
+
+						<td class="px-3 py-2">
+							<div class="flex min-w-0 items-center gap-2">
+								<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-[11px] font-semibold text-white">
+									{{ mb_strtoupper(mb_substr((string) ($row->game ?: 'A'), 0, 1)) }}
+								</div>
+								<div class="min-w-0">
+									<div class="truncate font-semibold text-slate-900" title="{{ $row->game }}">{{ $row->game ?: '—' }}</div>
+									<div class="mt-0.5 flex flex-wrap gap-1">
+										@foreach((is_array($row->platform) ? $row->platform : [$row->platform]) as $p)
+											@if($p)<span class="rounded-full border border-sky-200 bg-sky-50 px-1.5 py-0 text-[10px] text-sky-700">{{ $p }}</span>@endif
+										@endforeach
+									</div>
+								</div>
 							</div>
-						@else
-							{{ $row->platform }}
-						@endif
-					</x-admin.td>
+						</td>
 
-					<x-admin.td>
-						<div class="font-semibold text-slate-900">{{ $row->login }}</div>
-						@if(is_array($row->meta) && isset($row->meta['email_login']))
-							<div class="text-xs text-slate-500">{{ $row->meta['email_login'] }}</div>
-						@endif
-					</x-admin.td>
+						<td class="px-3 py-2">
+							<div class="truncate font-semibold text-slate-900" title="{{ $row->login }}">{{ $row->login }}</div>
+							@php $mail = $row->mail_account_login ?: (is_array($row->meta) ? ($row->meta['email_login'] ?? null) : null); @endphp
+							@if($mail)
+								<div class="truncate text-[11px] text-slate-500" title="{{ $mail }}">{{ $mail }}</div>
+							@endif
+						</td>
 
-					<x-admin.td>
-						@php $isOnCooldown = $row->next_release_at && $row->next_release_at->isFuture(); @endphp
-						<x-admin.status-badge :status="$isOnCooldown ? 'COOLDOWN' : $row->status->value" />
-						@if($isOnCooldown)
-							<div class="text-xs text-slate-500 mt-0.5">до {{ $row->next_release_at->format('d.m.Y') }}</div>
-						@endif
-					</x-admin.td>
+						<td class="px-3 py-2">
+							<x-admin.status-badge :status="$isOnCooldown ? 'COOLDOWN' : $row->status->value" />
+							@if($isOnCooldown)
+								<div class="mt-0.5 text-[11px] text-slate-500">до {{ $row->next_release_at->format('d.m.Y') }}</div>
+							@endif
+						</td>
 
-					<x-admin.td>
-						@if($row->assignedOperator)
-							<x-admin.badge variant="violet">{{ $row->assignedOperator->username ?: $row->assignedOperator->first_name }}</x-admin.badge>
-						@elseif($row->assigned_to_telegram_id)
-							<x-admin.badge variant="violet">{{ $row->assigned_to_telegram_id }}</x-admin.badge>
-						@else
-							<span class="text-slate-400">—</span>
-						@endif
-					</x-admin.td>
+						<td class="px-3 py-2">
+							@if($row->assignedOperator)
+								<span class="truncate text-slate-700" title="{{ $row->assignedOperator->username ?: $row->assignedOperator->first_name }}">{{ $row->assignedOperator->username ?: $row->assignedOperator->first_name }}</span>
+							@elseif($row->assigned_to_telegram_id)
+								<span class="text-slate-700">{{ $row->assigned_to_telegram_id }}</span>
+							@else
+								<span class="text-slate-400">—</span>
+							@endif
+						</td>
 
-					<x-admin.td>
-						@if($row->status_deadline_at)
-							<span class="font-medium text-slate-900">{{ $row->status_deadline_at->format('Y-m-d H:i') }}</span>
-						@else
-							<span class="text-slate-400">—</span>
-						@endif
-					</x-admin.td>
+						<td class="px-3 py-2 text-slate-600">
+							@if($row->status_deadline_at)
+								<div class="leading-tight">{{ $row->status_deadline_at->format('d.m.Y') }}</div>
+								<div class="text-[11px] text-slate-500">{{ $row->status_deadline_at->format('H:i') }}</div>
+							@else
+								<span class="text-slate-400">—</span>
+							@endif
+						</td>
 
-					<x-admin.td align="right" class="w-28">
-						<x-admin.table-actions
-							:viewHref="route('admin.accounts.show', $row)"
-							:editHref="route('admin.accounts.edit', $row)"
-						>
-							<x-admin.icon-button
-								icon="trash"
-								title="Удалить"
-								variant="danger"
-								wire:click="deleteAccount({{ $row->id }})"
-								onclick="if(!confirm('Удалить аккаунт #{{ $row->id }}?')){event.preventDefault();event.stopImmediatePropagation();}"
-							/>
-						</x-admin.table-actions>
-					</x-admin.td>
-				</tr>
-			@empty
-				<tr>
-					<td class="px-4 py-10 text-center text-slate-500" colspan="8">Аккаунты не найдены</td>
-				</tr>
-			@endforelse
-		</x-admin.table>
+						<td class="px-3 py-2">
+							<div class="flex items-center justify-end gap-1">
+								<x-admin.icon-button icon="eye" title="Открыть" :href="route('admin.accounts.show', $row)" />
+								<x-admin.icon-button icon="pencil" title="Редактировать" :href="route('admin.accounts.edit', $row)" />
+								<x-admin.icon-button
+									icon="trash"
+									title="Удалить"
+									variant="danger"
+									wire:click="deleteAccount({{ $row->id }})"
+									onclick="if(!confirm('Удалить аккаунт #{{ $row->id }}?')){event.preventDefault();event.stopImmediatePropagation();}"
+								/>
+							</div>
+						</td>
+					</tr>
+				@empty
+					<tr>
+						<td colspan="7" class="px-3 py-10 text-center text-slate-500">Аккаунты не найдены</td>
+					</tr>
+				@endforelse
+			</tbody>
+		</table>
+	</div>
 
-		@if(method_exists($rows, 'links'))
-			<div class="pt-3">
-				{{ $rows->links() }}
-			</div>
-		@endif
-	</x-admin.card>
+	@if($rows && method_exists($rows, 'links'))
+		<div class="pt-1">
+			{{ $rows->links() }}
+		</div>
+	@endif
+	@endcan
 
 </div>

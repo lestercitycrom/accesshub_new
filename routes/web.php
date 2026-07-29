@@ -15,9 +15,10 @@ Route::get('/', function () {
 		return redirect()->route('admin.accounts.index');
 	}
 
-	// Public face of the site is the delivery client form (download-games.info).
-	// Operators/admins reach the panel directly via /login.
-	return redirect()->route('delivery.take-order');
+	// On the live domain nginx serves the legacy site at "/", so this only runs
+	// on bare app hosts. Send guests to the login page (not the public take-order
+	// form) — operators expect the panel, not the client flow.
+	return redirect()->route('login');
 })->name('home');
 
 // WebApp routes (no auth required)
@@ -61,38 +62,56 @@ Route::withoutMiddleware(['auth', 'admin'])->group(function () {
 
 require __DIR__.'/settings.php';
 
-// Admin routes
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
+// Admin routes. Access is tiered by role capability:
+//   can:hub-view    → any role (admin/manager/operator). Operators here get only
+//                     delivery orders, problems, and the cooldown block on /accounts.
+//   can:hub-supply  → admin + manager — account base (list/show/search/create/edit),
+//                     links, instructions, logs.
+//   can:hub-manage  → admin only — system config, users, AND import/export.
+Route::middleware(['auth', 'can:hub-view', '2fa'])->prefix('admin')->name('admin.')->group(function (): void {
 	Route::get('/', fn () => redirect()->route('admin.accounts.index'))->name('index');
 
-	Route::get('/telegram-users', App\Admin\Livewire\TelegramUsers\TelegramUsersIndex::class)->name('telegram-users.index');
-	Route::get('/telegram-users/create', App\Admin\Livewire\TelegramUsers\TelegramUserForm::class)->name('telegram-users.create');
-	Route::get('/telegram-users/{telegramUser}/edit', App\Admin\Livewire\TelegramUsers\TelegramUserForm::class)->name('telegram-users.edit');
+	// ---- Supply tier (admin + manager): the account base, catalog, logs ----
+	// Registered before the "{account}" catch-all so create/edit resolve first.
+	Route::middleware('can:hub-supply')->group(function (): void {
+		Route::get('/accounts/create', App\Admin\Livewire\Accounts\AccountForm::class)->name('accounts.create');
+		Route::get('/accounts/{account}/edit', App\Admin\Livewire\Accounts\AccountForm::class)->name('accounts.edit');
+		Route::get('/accounts/{account}', App\Admin\Livewire\Accounts\AccountShow::class)->name('accounts.show');
+		Route::get('/account-lookup', App\Admin\Livewire\Accounts\AccountLookup::class)->name('account-lookup');
 
+		Route::get('/delivery-links', App\Admin\Livewire\DeliveryLinks\DeliveryLinksIndex::class)->name('delivery-links.index');
+		Route::get('/delivery-instructions', App\Admin\Livewire\DeliveryInstructions\DeliveryInstructionsIndex::class)->name('delivery-instructions.index');
+
+		// Logs — operators don't need these.
+		Route::get('/issuances', App\Admin\Livewire\Logs\IssuancesIndex::class)->name('issuances.index');
+		Route::get('/events', App\Admin\Livewire\Logs\AccountEventsIndex::class)->name('events.index');
+	});
+
+	// ---- View + fulfillment tier (all roles, incl. operator) ----
+	// /accounts renders only the cooldown block for operators (base is supply-gated in the view).
 	Route::get('/accounts', App\Admin\Livewire\Accounts\AccountsIndex::class)->name('accounts.index');
-	Route::post('/accounts/import', App\Admin\Http\Controllers\Import\AccountsSimpleImportController::class)
-		->name('accounts.import');
-	Route::get('/accounts/create', App\Admin\Livewire\Accounts\AccountForm::class)->name('accounts.create');
-	Route::get('/accounts/{account}/edit', App\Admin\Livewire\Accounts\AccountForm::class)->name('accounts.edit');
-	Route::get('/accounts/{account}', App\Admin\Livewire\Accounts\AccountShow::class)->name('accounts.show');
-
-	Route::get('/account-lookup', App\Admin\Livewire\Accounts\AccountLookup::class)->name('account-lookup');
 
 	Route::get('/delivery-orders', App\Admin\Livewire\DeliveryOrders\DeliveryOrdersIndex::class)->name('delivery-orders.index');
 	Route::get('/delivery-orders/{deliveryOrder}', App\Admin\Livewire\DeliveryOrders\DeliveryOrderShow::class)->name('delivery-orders.show');
-	Route::get('/delivery-instructions', App\Admin\Livewire\DeliveryInstructions\DeliveryInstructionsIndex::class)->name('delivery-instructions.index');
-	Route::get('/delivery-links', App\Admin\Livewire\DeliveryLinks\DeliveryLinksIndex::class)->name('delivery-links.index');
-
-	Route::get('/issuances', App\Admin\Livewire\Logs\IssuancesIndex::class)->name('issuances.index');
-	Route::get('/events', App\Admin\Livewire\Logs\AccountEventsIndex::class)->name('events.index');
 
 	Route::get('/problems', App\Admin\Livewire\Problems\ProblemsIndex::class)->name('problems.index');
 
-	Route::get('/settings', App\Admin\Livewire\Settings\SettingsIndex::class)->name('settings.index');
+	// ---- Manage tier (admin only): system config, users, import/export ----
+	Route::middleware('can:hub-manage')->group(function (): void {
+		Route::post('/accounts/import', App\Admin\Http\Controllers\Import\AccountsSimpleImportController::class)->name('accounts.import');
 
-	Route::get('/server', App\Admin\Livewire\Server\ServerErrorsIndex::class)->name('server.errors');
+		Route::get('/export/accounts.csv', App\Admin\Http\Controllers\Export\ExportAccountsCsvController::class)->name('export.accounts.csv');
+		Route::get('/export/issuances.csv', App\Admin\Http\Controllers\Export\ExportIssuancesCsvController::class)->name('export.issuances.csv');
+		Route::get('/export/delivery-links.csv', App\Admin\Http\Controllers\Export\ExportDeliveryLinksCsvController::class)->name('export.delivery-links.csv');
 
-	Route::get('/export/accounts.csv', App\Admin\Http\Controllers\Export\ExportAccountsCsvController::class)->name('export.accounts.csv');
-	Route::get('/export/issuances.csv', App\Admin\Http\Controllers\Export\ExportIssuancesCsvController::class)->name('export.issuances.csv');
-	Route::get('/export/delivery-links.csv', App\Admin\Http\Controllers\Export\ExportDeliveryLinksCsvController::class)->name('export.delivery-links.csv');
+		Route::get('/users', App\Admin\Livewire\Users\UsersIndex::class)->name('users.index');
+
+		Route::get('/telegram-users', App\Admin\Livewire\TelegramUsers\TelegramUsersIndex::class)->name('telegram-users.index');
+		Route::get('/telegram-users/create', App\Admin\Livewire\TelegramUsers\TelegramUserForm::class)->name('telegram-users.create');
+		Route::get('/telegram-users/{telegramUser}/edit', App\Admin\Livewire\TelegramUsers\TelegramUserForm::class)->name('telegram-users.edit');
+
+		Route::get('/settings', App\Admin\Livewire\Settings\SettingsIndex::class)->name('settings.index');
+
+		Route::get('/server', App\Admin\Livewire\Server\ServerErrorsIndex::class)->name('server.errors');
+	});
 });

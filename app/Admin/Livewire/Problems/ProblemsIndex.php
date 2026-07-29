@@ -24,7 +24,7 @@ final class ProblemsIndex extends Component
 
 	public function mount(): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-view');
 	}
 
 	public function updatedTab(): void
@@ -113,7 +113,7 @@ final class ProblemsIndex extends Component
 
 	public function releaseToPool(AccountStatusService $statusService): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-view');
 
 		if (empty($this->selected)) {
 			session()->flash('status', 'Выберите аккаунты (галочки в таблице).');
@@ -130,7 +130,7 @@ final class ProblemsIndex extends Component
 
 	public function extendDeadline(AccountStatusService $statusService): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-view');
 
 		if (empty($this->selected) || $this->extendDays <= 0) {
 			session()->flash('status', 'Выберите аккаунты (галочки в таблице).');
@@ -147,7 +147,7 @@ final class ProblemsIndex extends Component
 
 	public function setStatus(string $status, AccountStatusService $statusService): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-view');
 
 		if (empty($this->selected)) {
 			session()->flash('status', 'Выберите аккаунты (галочки в таблице).');

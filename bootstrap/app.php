@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
+            '2fa' => \App\Http\Middleware\EnsureTwoFactorEnabled::class,
             'no-cache' => \App\Http\Middleware\NoCache::class,
             'log-webapp' => \App\Http\Middleware\LogWebAppRequests::class,
             'capture-server-errors' => \App\Http\Middleware\CaptureServerErrors::class,

@@ -28,7 +28,7 @@ final class AccountsIndex extends Component
 
 	public function mount(): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-view');
 	}
 
 	public function updatingQ(): void
@@ -58,7 +58,7 @@ final class AccountsIndex extends Component
 
 	public function setStatus(string $status): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-supply');
 
 		$validStatuses = array_map(fn($s) => $s->value, AccountStatus::cases());
 		if (!in_array($status, $validStatuses, true)) {
@@ -97,7 +97,7 @@ final class AccountsIndex extends Component
 
 	public function deleteAccount(int $accountId): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-supply');
 
 		$account = Account::query()->find($accountId);
 		if ($account === null) {
@@ -117,8 +117,20 @@ final class AccountsIndex extends Component
 	{
 		return Account::query()
 			->with('assignedOperator')
-			->when($this->q !== '' && is_numeric(trim($this->q)), function ($query): void {
-				$query->where('id', (int) trim($this->q));
+			->when($this->q !== '', function ($query): void {
+				// Search by game name, console login or mail login (and by exact id
+				// when the term is numeric). login/game are plain columns; the
+				// encrypted password fields are intentionally not searchable.
+				$term = trim($this->q);
+				$query->where(function ($inner) use ($term): void {
+					$like = '%' . $term . '%';
+					$inner->where('game', 'like', $like)
+						->orWhere('login', 'like', $like)
+						->orWhere('mail_account_login', 'like', $like);
+					if (is_numeric($term)) {
+						$inner->orWhere('id', (int) $term);
+					}
+				});
 			})
 			->when($this->statusFilter !== '', function ($query): void {
 				$query->where('status', $this->statusFilter);
@@ -198,6 +210,10 @@ final class AccountsIndex extends Component
 
 	public function render()
 	{
+		// Operators only see the cooldown block; skip the base query & filter
+		// options entirely for them (the view is supply-gated anyway).
+		$canSupply = Gate::allows('hub-supply');
+
 		$exportParams = array_filter([
 			'q' => trim($this->q) !== '' ? $this->q : null,
 			'status' => trim($this->statusFilter) !== '' ? $this->statusFilter : null,
@@ -206,11 +222,11 @@ final class AccountsIndex extends Component
 		], static fn ($v): bool => $v !== null);
 
 		return view('admin.accounts.index', [
-			'rows' => $this->rows,
-			'statusOptions' => $this->statusOptions,
-			'gameOptions' => $this->gameOptions,
-			'platformOptions' => $this->platformOptions,
-			'exportUrl' => route('admin.export.accounts.csv', $exportParams),
+			'rows' => $canSupply ? $this->rows : null,
+			'statusOptions' => $canSupply ? $this->statusOptions : [],
+			'gameOptions' => $canSupply ? $this->gameOptions : [],
+			'platformOptions' => $canSupply ? $this->platformOptions : [],
+			'exportUrl' => $canSupply ? route('admin.export.accounts.csv', $exportParams) : null,
 			'cooldownAccounts' => $this->cooldownAccounts,
 		])->layout('layouts.admin');
 	}

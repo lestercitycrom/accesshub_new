@@ -12,8 +12,26 @@
 	<link rel="apple-touch-icon" href="/accesshub_logo_strict_2_plane_lock_128.png">
 
 	<title>@yield('title', config('app.name'))</title>
+	<style>[x-cloak]{display:none !important;}</style>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+	@php
+		// Hide nav items the current user's role can't access. Items may carry a
+		// `can` gate; children are filtered too. Security is enforced by route
+		// middleware — this is UX so operators/viewers don't see dead links.
+		$navAllowed = static fn ($item): bool => empty($item['can']) || (bool) (auth()->user()?->can($item['can']));
+		$navItems = [];
+		foreach ((array) config('admin-kit.nav', []) as $navItem) {
+			if (!$navAllowed($navItem)) {
+				continue;
+			}
+			if (!empty($navItem['children'])) {
+				$navItem['children'] = array_values(array_filter($navItem['children'], $navAllowed));
+			}
+			$navItems[] = $navItem;
+		}
+		$userMenuItems = array_values(array_filter((array) config('admin-kit.user_menu', []), $navAllowed));
+	@endphp
 	<header class="sticky top-0 z-40 bg-gradient-to-r from-slate-900 to-slate-800 text-slate-100 border-b border-white/10">
 		<div class="mx-auto {{ config('admin-kit.layout.container', 'max-w-7xl') }} px-4">
 			<div class="h-16 flex min-w-0 items-center justify-between gap-4">
@@ -47,32 +65,9 @@
 					</form>
 				@endif
 
-				<nav class="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto md:flex [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-					@foreach((array) config('admin-kit.nav', []) as $item)
-						@php
-							$route = (string) ($item['route'] ?? '');
-							$label = (string) ($item['label'] ?? '');
-							$icon = (string) ($item['icon'] ?? '');
-							$isServer = $route === 'admin.server.errors';
-							$hasRoute = !$isServer && $route !== '' && \Illuminate\Support\Facades\Route::has($route);
-						@endphp
-						@if($label !== 'Панель')
-						@if($isServer && $label !== '')
-							@php $isActive = request()->path() === 'admin/server'; @endphp
-							<a href="{{ url('/admin/server') }}"
-								class="shrink-0 rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
-								<x-admin.icon name="alert-triangle" class="h-4 w-4" />
-								<span>{{ $label }}</span>
-							</a>
-						@elseif($route !== '' && $label !== '' && $hasRoute)
-							@php $isActive = request()->routeIs($route); @endphp
-							<a href="{{ route($route) }}"
-								class="shrink-0 rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
-								@if($icon !== '')<x-admin.icon :name="$icon" class="h-4 w-4" />@endif
-								<span>{{ $label }}</span>
-							</a>
-						@endif
-						@endif
+				<nav class="hidden min-w-0 flex-1 items-center gap-1 md:flex">
+					@foreach($navItems as $item)
+						<x-admin.nav-item :item="$item" />
 					@endforeach
 				</nav>
 
@@ -114,57 +109,62 @@
 						</details>
 					@endif
 
-					<a class="hidden xl:flex items-center gap-2 text-sm text-slate-200 hover:text-white"
-						href="{{ route('profile.edit') }}">
-						<span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white font-semibold">
-							{{ strtoupper(substr((string) auth()->user()?->name, 0, 1)) }}
-						</span>
-						<span class="font-medium">{{ auth()->user()?->name }}</span>
-					</a>
+					{{-- Admin User dropdown (settings / server / logs / telegram users + logout) --}}
+					<div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false" @click.outside="open = false">
+						<button type="button" @click="open = true"
+							class="inline-flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm transition hover:bg-white/5">
+							<span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white font-semibold">
+								{{ strtoupper(substr((string) auth()->user()?->name, 0, 1)) }}
+							</span>
+							<span class="hidden sm:block font-medium text-slate-100">{{ auth()->user()?->name }}</span>
+							<span class="text-[10px] text-slate-400" x-text="open ? '▲' : '▼'">▼</span>
+						</button>
 
-					@if(\Illuminate\Support\Facades\Route::has('logout'))
-						<form method="POST" action="{{ route('logout') }}">
-							@csrf
-							<button
-								type="submit"
-								class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold
-									bg-white text-slate-900 hover:bg-slate-100 active:bg-slate-200"
-							>
-								Выйти
-							</button>
-						</form>
-					@endif
+						<div x-show="open" x-cloak x-transition.origin.top.right
+							class="absolute right-0 mt-2 w-60 rounded-2xl border border-white/10 bg-slate-900/95 backdrop-blur shadow-lg overflow-hidden z-50">
+							<div class="p-2">
+								@foreach($userMenuItems as $mi)
+									@php
+										$mr = (string) ($mi['route'] ?? '');
+										$mhref = $mr === 'admin.server.errors' ? url('/admin/server') : (($mr !== '' && \Illuminate\Support\Facades\Route::has($mr)) ? route($mr) : null);
+										$mactive = $mr === 'admin.server.errors' ? (request()->path() === 'admin/server') : ($mr !== '' && \Illuminate\Support\Facades\Route::has($mr) && request()->routeIs($mr));
+									@endphp
+									@if($mhref !== null)
+										<a href="{{ $mhref }}"
+											class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold {{ $mactive ? 'bg-white/10 text-white' : 'text-slate-200 hover:bg-white/10' }}">
+											@if(!empty($mi['icon']))<x-admin.icon :name="$mi['icon']" class="h-4 w-4 text-slate-300" />@endif
+											<span>{{ $mi['label'] ?? '' }}</span>
+										</a>
+									@endif
+								@endforeach
+
+								<div class="my-1 border-t border-white/10"></div>
+
+								<a href="{{ route('profile.edit') }}"
+									class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-white/10">
+									<span>Профиль</span>
+								</a>
+
+								@if(\Illuminate\Support\Facades\Route::has('logout'))
+									<form method="POST" action="{{ route('logout') }}">
+										@csrf
+										<button type="submit"
+											class="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-rose-300 hover:bg-rose-500/10">
+											Выйти
+										</button>
+									</form>
+								@endif
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 
-			{{-- Mobile nav --}}
+			{{-- Mobile nav (same dropdowns; open on tap) --}}
 			<div class="md:hidden pb-3">
 				<div class="flex flex-wrap gap-1">
-					@foreach((array) config('admin-kit.nav', []) as $item)
-						@php
-							$route = (string) ($item['route'] ?? '');
-							$label = (string) ($item['label'] ?? '');
-							$icon = (string) ($item['icon'] ?? '');
-							$isServer = $route === 'admin.server.errors';
-							$hasRoute = !$isServer && $route !== '' && \Illuminate\Support\Facades\Route::has($route);
-						@endphp
-						@if($label !== 'Панель')
-						@if($isServer && $label !== '')
-							@php $isActive = request()->path() === 'admin/server'; @endphp
-							<a href="{{ url('/admin/server') }}"
-								class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
-								<x-admin.icon name="alert-triangle" class="h-4 w-4" />
-								<span>{{ $label }}</span>
-							</a>
-						@elseif($route !== '' && $label !== '' && $hasRoute)
-							@php $isActive = request()->routeIs($route); @endphp
-							<a href="{{ route($route) }}"
-								class="rounded-xl px-3 py-2 text-sm font-semibold transition inline-flex items-center gap-2 {{ $isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
-								@if($icon !== '')<x-admin.icon :name="$icon" class="h-4 w-4" />@endif
-								<span>{{ $label }}</span>
-							</a>
-						@endif
-						@endif
+					@foreach($navItems as $item)
+						<x-admin.nav-item :item="$item" />
 					@endforeach
 				</div>
 

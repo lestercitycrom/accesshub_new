@@ -13,7 +13,7 @@ it('opens the take-order form for an unused unique link', function (): void {
 
 	$this->get(route('delivery.take-order.coded', ['code' => $link->code]))
 		->assertOk()
-		->assertSee('Get your game', false)
+		->assertSee('Track your order', false)
 		->assertSee(route('delivery.take-order.coded.store', ['code' => $link->code]), false);
 });
 

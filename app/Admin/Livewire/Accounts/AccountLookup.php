@@ -26,7 +26,7 @@ final class AccountLookup extends Component
 
 	public function mount(): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-supply');
 	}
 
 	public function updatingQ(): void

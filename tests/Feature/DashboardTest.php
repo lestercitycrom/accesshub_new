@@ -2,9 +2,9 @@
 
 use App\Models\User;
 
-test('guests landing on root are sent to the public delivery form', function () {
+test('guests landing on root are sent to the login page', function () {
     $response = $this->get(route('home'));
-    $response->assertRedirect(route('delivery.take-order'));
+    $response->assertRedirect(route('login'));
 });
 
 test('authenticated users can visit the dashboard', function () {

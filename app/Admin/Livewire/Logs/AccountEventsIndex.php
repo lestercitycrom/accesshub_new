@@ -25,7 +25,7 @@ final class AccountEventsIndex extends Component
 
 	public function mount(): void
 	{
-		Gate::authorize('admin');
+		Gate::authorize('hub-supply');
 	}
 
 	public function updatingAccountId(): void { $this->resetPage(); }

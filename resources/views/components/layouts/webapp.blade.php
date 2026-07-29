@@ -437,6 +437,37 @@
 			padding: 12px;
 		}
 
+		/* Delivery orders list: operators complained cards run together ("слитно").
+		   Bigger gap + a clearly elevated card + a prominent order-number header
+		   so each order reads as its own block. */
+		#deliveryList {
+			gap: 20px;
+		}
+
+		.order-card {
+			background: var(--ah-panel);
+			border-color: rgba(255, 255, 255, .18);
+			box-shadow: 0 8px 22px rgba(0, 0, 0, .40);
+			padding: 14px;
+		}
+
+		.order-card > .list-row:first-child {
+			border-bottom: 1px solid rgba(255, 255, 255, .12);
+			border-radius: 0;
+			padding-bottom: 9px;
+			margin-bottom: 2px;
+		}
+
+		.order-card > .list-row:first-child .list-label {
+			font-weight: 600;
+			color: var(--ah-text);
+		}
+
+		.order-card > .list-row:first-child .list-value {
+			font-size: 15px;
+			font-weight: 700;
+		}
+
 		.list-row {
 			display: flex;
 			justify-content: space-between;
