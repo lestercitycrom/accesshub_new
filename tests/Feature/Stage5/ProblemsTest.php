@@ -35,6 +35,9 @@ it('release to pool clears assignment/deadline/flags and writes event', function
 		'assigned_to_telegram_id' => 999,
 		'status_deadline_at' => now()->addDays(3),
 		'flags' => ['ACTION_REQUIRED' => true, 'PASSWORD_UPDATE_REQUIRED' => true],
+		'max_uses' => 3,
+		'available_uses' => 0,
+		'next_release_at' => now()->addDays(10),
 	]);
 
 	Livewire::test(\App\Admin\Livewire\Problems\ProblemsIndex::class)
@@ -47,6 +50,8 @@ it('release to pool clears assignment/deadline/flags and writes event', function
 	expect($a->assigned_to_telegram_id)->toBeNull();
 	expect($a->status_deadline_at)->toBeNull();
 	expect($a->flags)->toBe([]);
+	expect($a->available_uses)->toBe(1);
+	expect($a->next_release_at)->toBeNull();
 
 	expect(AccountEvent::query()->where('account_id', $a->id)->where('type', 'RELEASE_TO_POOL')->exists())->toBeTrue();
 })->group('Stage5.8');

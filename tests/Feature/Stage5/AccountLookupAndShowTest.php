@@ -112,6 +112,9 @@ it('account show can release to pool and writes RELEASE_TO_POOL', function (): v
 		'assigned_to_telegram_id' => 999,
 		'status_deadline_at' => now()->addDays(2),
 		'flags' => ['ACTION_REQUIRED' => true],
+		'max_uses' => 3,
+		'available_uses' => 0,
+		'next_release_at' => now()->addDays(10),
 	]);
 
 	Livewire::test(\App\Admin\Livewire\Accounts\AccountShow::class, ['account' => $account])
@@ -123,6 +126,8 @@ it('account show can release to pool and writes RELEASE_TO_POOL', function (): v
 	expect($account->assigned_to_telegram_id)->toBeNull();
 	expect($account->status_deadline_at)->toBeNull();
 	expect($account->flags)->toBe([]);
+	expect($account->available_uses)->toBe(1);
+	expect($account->next_release_at)->toBeNull();
 
 	expect(AccountEvent::query()->where('account_id', $account->id)->where('type', 'RELEASE_TO_POOL')->exists())->toBeTrue();
 })->group('Stage5.5');

@@ -184,6 +184,11 @@ final class AccountStatusService
 			$account->status = AccountStatus::ACTIVE;
 			$account->assigned_to_telegram_id = null;
 			$account->status_deadline_at = null;
+			$account->available_uses = min(
+				max((int) $account->available_uses, 1),
+				max((int) $account->max_uses, 1),
+			);
+			$account->next_release_at = null;
 
 			$flags = is_array($account->flags) ? $account->flags : [];
 			unset($flags['ACTION_REQUIRED']);
