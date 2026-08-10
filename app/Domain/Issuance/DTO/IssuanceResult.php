@@ -16,7 +16,7 @@ final class IssuanceResult
 	public const REASON_ALREADY_ISSUED = 'already_issued';  // по этому заказу уже всё выдано
 
 	/**
-	 * @param array<int, array{account_id:int, login:string, password:string}> $items
+	 * @param array<int, array{account_id:int, login:string, password:string, comment?:?string, source_label?:?string}> $items
 	 */
 	private function __construct(
 		private readonly bool $ok,
@@ -32,7 +32,7 @@ final class IssuanceResult
 	/**
 	 * Success result.
 	 *
-	 * @param array<int, array{account_id:int, login:string, password:string}> $items
+	 * @param array<int, array{account_id:int, login:string, password:string, comment?:?string, source_label?:?string}> $items
 	 */
 	public static function success(array $items, ?string $orderId = null, ?string $game = null, ?string $platform = null): self
 	{

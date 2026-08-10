@@ -28,10 +28,12 @@ class AuthServiceProvider extends ServiceProvider
         // Capability tiers:
         //  hub-view   — panel access + read + fulfillment (orders/issuance/problems). All roles.
         //  hub-create-account — add inventory without exposing the account base. All roles.
-        //  hub-supply — inspect/edit accounts, create links, edit instructions. Admin + manager.
+        //  hub-delivery-links — generate/download auto-delivery links. All roles.
+        //  hub-supply — inspect/edit accounts, delete link batches, edit instructions. Admin + manager.
         //  hub-manage — system config & user management. Admin only.
         Gate::define('hub-view', static fn ($user): bool => $user->canAccessHub());
         Gate::define('hub-create-account', static fn ($user): bool => $user->canCreateAccounts());
+        Gate::define('hub-delivery-links', static fn ($user): bool => $user->canManageDeliveryLinks());
         Gate::define('hub-supply', static fn ($user): bool => $user->canSupply());
         Gate::define('hub-manage', static fn ($user): bool => $user->isAdmin());
     }

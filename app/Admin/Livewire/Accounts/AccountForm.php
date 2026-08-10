@@ -192,25 +192,19 @@ final class AccountForm extends Component
 	/** @return list<string> */
 	private function getPlatformList(): array
 	{
-		$list = config('accesshub.platforms', ['Steam', 'PS4', 'PS5', 'Xbox', 'Epic', 'Origin', 'Battle.net', 'GOG', 'Nintendo', 'Другое']);
+		$list = config('accesshub.platforms', \App\Domain\Accounts\Services\PlatformCatalog::OPTIONS);
 
 		return array_values($list);
 	}
 
 	/**
-	 * Config platforms merged with any existing account platforms not in config.
-	 * Ensures editing accounts with legacy/custom platform names never loses them.
+	 * The customer requested a strict catalog. Existing aliases are normalized by
+	 * the data migration, and unknown values cannot be reintroduced by the form.
 	 * @return list<string>
 	 */
 	private function getEffectivePlatformList(): array
 	{
-		$base = $this->getPlatformList();
-
-		if (empty($this->platformSelected)) {
-			return $base;
-		}
-
-		return array_values(array_unique(array_merge($base, $this->platformSelected)));
+		return $this->getPlatformList();
 	}
 
 	/**

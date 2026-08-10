@@ -64,11 +64,13 @@ it('lets a manager use supply workflows but not sensitive import/export or syste
 it('limits an operator to fulfillment views plus account creation', function (): void {
 	$operator = User::factory()->operator()->create();
 
-	// Allowed: delivery orders, problems, /accounts (cooldown block only), and create.
+	// Allowed: delivery orders, problems, /accounts (cooldown block only), create, and delivery links.
 	$this->actingAs($operator)->get(route('admin.delivery-orders.index'))->assertOk();
 	$this->actingAs($operator)->get(route('admin.problems.index'))->assertOk();
 	$this->actingAs($operator)->get(route('admin.accounts.index'))->assertOk();
 	$this->actingAs($operator)->get(route('admin.accounts.create'))->assertOk();
+	$this->actingAs($operator)->get(route('admin.delivery-links.index'))->assertOk();
+	$this->actingAs($operator)->get(route('admin.export.delivery-links.csv'))->assertOk();
 
 	// Base search + logs are now hidden from operators.
 	$this->actingAs($operator)->get(route('admin.account-lookup'))->assertForbidden();
@@ -76,10 +78,8 @@ it('limits an operator to fulfillment views plus account creation', function ():
 	$this->actingAs($operator)->get(route('admin.events.index'))->assertForbidden();
 
 	// Existing-account supply, import/export and system remain forbidden.
-	$this->actingAs($operator)->get(route('admin.delivery-links.index'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.delivery-instructions.index'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.export.accounts.csv'))->assertForbidden();
-	$this->actingAs($operator)->get(route('admin.export.delivery-links.csv'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.settings.index'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.users.index'))->assertForbidden();
 });
@@ -98,7 +98,7 @@ it('keeps sensitive exports admin-only while supply roles can export delivery li
 	$this->actingAs($manager)->get(route('admin.export.issuances.csv'))->assertForbidden();
 
 	$this->actingAs($operator)->get(route('admin.export.accounts.csv'))->assertForbidden();
-	$this->actingAs($operator)->get(route('admin.export.delivery-links.csv'))->assertForbidden();
+	$this->actingAs($operator)->get(route('admin.export.delivery-links.csv'))->assertOk();
 	$this->actingAs($operator)->get(route('admin.export.issuances.csv'))->assertForbidden();
 });
 
@@ -146,7 +146,8 @@ it('exposes capability helpers per role', function (): void {
 	expect(User::factory()->admin()->create()->canSupply())->toBeTrue()
 		->and(User::factory()->manager()->create()->canSupply())->toBeTrue()
 		->and(User::factory()->operator()->create()->canSupply())->toBeFalse()
-		->and(User::factory()->operator()->create()->canCreateAccounts())->toBeTrue();
+		->and(User::factory()->operator()->create()->canCreateAccounts())->toBeTrue()
+		->and(User::factory()->operator()->create()->canManageDeliveryLinks())->toBeTrue();
 });
 
 it('changes a user role and syncs the legacy flag via the users screen', function (): void {

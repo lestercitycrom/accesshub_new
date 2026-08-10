@@ -151,7 +151,7 @@ it('handles CSV with column name synonyms', function (): void {
 	expect(Account::query()->count())->toBe(1);
 	$account = Account::query()->where('login', 'user1@test.com')->first();
 	expect($account->game)->toBe('cs2');
-	expect($account->platform)->toBe(['steam']);
+	expect($account->platform)->toBe(['Steam']);
 })->group('Stage62');
 
 it('reports unrecognized columns', function (): void {

@@ -6,6 +6,7 @@ namespace App\Admin\Http\Controllers\Import;
 
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
+use App\Domain\Accounts\Services\PlatformCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -129,7 +130,12 @@ final class AccountsSimpleImportController
 						$errorsList[] = "Строка {$rowNumber}: платформа не может быть пустой";
 						continue;
 					}
-					$platforms = array_values($platforms); // Re-index array
+					$platforms = PlatformCatalog::normalizeList(array_values($platforms));
+					if ($platforms === null || $platforms === []) {
+						$errors++;
+						$errorsList[] = "Строка {$rowNumber}: неизвестная платформа «{$platformRaw}»";
+						continue;
+					}
 
 					// Extract optional fields (only if column exists in CSV)
 					$mailAccountLogin = isset($columnMap['mail_account_login']) ? trim($row[$columnMap['mail_account_login']] ?? '') : '';

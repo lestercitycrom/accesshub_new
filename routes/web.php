@@ -45,6 +45,7 @@ Route::withoutMiddleware(['auth', 'admin'])->group(function () {
         Route::post('/webapp/api/delivery-orders/{deliveryOrder}/replace', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'replace'])->name('webapp.delivery-orders.replace');
         Route::post('/webapp/api/delivery-orders/{deliveryOrder}/cancel', [App\WebApp\Http\Controllers\DeliveryOrdersController::class, 'cancel'])->name('webapp.delivery-orders.cancel');
         Route::middleware('legacy-webapp')->group(function (): void {
+			Route::get('/webapp/api/available-accounts', App\WebApp\Http\Controllers\AvailableAccountsController::class)->name('webapp.available-accounts');
             Route::get('/webapp/api/history', App\WebApp\Http\Controllers\HistoryController::class)->name('webapp.history');
             Route::get('/webapp/api/stolen', App\WebApp\Http\Controllers\StolenController::class)->name('webapp.stolen');
             Route::get('/webapp/api/order-search', App\WebApp\Http\Controllers\OrderSearchController::class)->name('webapp.order-search');
@@ -66,8 +67,9 @@ require __DIR__.'/settings.php';
 //   can:hub-view    → any role (admin/manager/operator). Operators here get only
 //                     delivery orders, problems, and the cooldown block on /accounts.
 //   can:hub-create-account → any role — create accounts without exposing the base.
+//   can:hub-delivery-links → any role — generate/download auto-delivery links.
 //   can:hub-supply  → admin + manager — account base (list/show/search/edit),
-//                     links, instructions, logs.
+//                     delete link batches, instructions, logs.
 //   can:hub-manage  → admin only — system config, users, AND import/export.
 Route::middleware(['auth', 'can:hub-view', '2fa'])->prefix('admin')->name('admin.')->group(function (): void {
 	Route::get('/', fn () => redirect()->route('admin.accounts.index'))->name('index');
@@ -78,6 +80,13 @@ Route::middleware(['auth', 'can:hub-view', '2fa'])->prefix('admin')->name('admin
 		->middleware('can:hub-create-account')
 		->name('accounts.create');
 
+	// Operators may prepare and download stock links without receiving the
+	// broader supply permissions that expose account records and logs.
+	Route::middleware('can:hub-delivery-links')->group(function (): void {
+		Route::get('/delivery-links', App\Admin\Livewire\DeliveryLinks\DeliveryLinksIndex::class)->name('delivery-links.index');
+		Route::get('/export/delivery-links.csv', App\Admin\Http\Controllers\Export\ExportDeliveryLinksCsvController::class)->name('export.delivery-links.csv');
+	});
+
 	// ---- Supply tier (admin + manager): the account base, catalog, logs ----
 	// Registered before the "{account}" catch-all so create/edit resolve first.
 	Route::middleware('can:hub-supply')->group(function (): void {
@@ -85,8 +94,6 @@ Route::middleware(['auth', 'can:hub-view', '2fa'])->prefix('admin')->name('admin
 		Route::get('/accounts/{account}', App\Admin\Livewire\Accounts\AccountShow::class)->name('accounts.show');
 		Route::get('/account-lookup', App\Admin\Livewire\Accounts\AccountLookup::class)->name('account-lookup');
 
-		Route::get('/delivery-links', App\Admin\Livewire\DeliveryLinks\DeliveryLinksIndex::class)->name('delivery-links.index');
-		Route::get('/export/delivery-links.csv', App\Admin\Http\Controllers\Export\ExportDeliveryLinksCsvController::class)->name('export.delivery-links.csv');
 		Route::get('/delivery-instructions', App\Admin\Livewire\DeliveryInstructions\DeliveryInstructionsIndex::class)->name('delivery-instructions.index');
 
 		// Logs — operators don't need these.

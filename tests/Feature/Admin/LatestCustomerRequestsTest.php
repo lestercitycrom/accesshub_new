@@ -1,0 +1,176 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Admin\Livewire\Accounts\AccountForm;
+use App\Admin\Livewire\DeliveryLinks\DeliveryLinksIndex;
+use App\Delivery\Models\DeliveryLink;
+use App\Domain\Accounts\Enums\AccountStatus;
+use App\Domain\Accounts\Models\Account;
+use App\Domain\Accounts\Services\PlatformCatalog;
+use App\Domain\Issuance\Models\Issuance;
+use App\Domain\Settings\Models\Setting;
+use App\Domain\Telegram\Enums\TelegramRole;
+use App\Domain\Telegram\Models\TelegramUser;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+
+uses(RefreshDatabase::class);
+
+it('lets an operator generate and download delivery links but not delete batches', function (): void {
+	$operator = User::factory()->operator()->create();
+	$link = DeliveryLink::factory()->create(['batch' => 'operator-safe-batch']);
+
+	Livewire::actingAs($operator)
+		->test(DeliveryLinksIndex::class)
+		->assertSee('CSV (unused)')
+		->assertDontSee('Delete unused');
+
+	$this->actingAs($operator)
+		->get(route('admin.export.delivery-links.csv', ['batch' => 'operator-safe-batch']))
+		->assertOk()
+		->assertSee($link->code);
+
+	Livewire::actingAs($operator)
+		->test(DeliveryLinksIndex::class)
+		->call('deleteUnused', 'operator-safe-batch')
+		->assertForbidden();
+
+	expect(DeliveryLink::query()->whereKey($link->id)->exists())->toBeTrue();
+});
+
+it('returns available issue accounts with AllKeyShop visible before issuance', function (): void {
+	$operator = TelegramUser::factory()->create([
+		'telegram_id' => 202608102201,
+		'role' => TelegramRole::OPERATOR,
+		'is_active' => true,
+	]);
+	$tagged = Account::factory()->create([
+		'game' => 'Customer Selection Game',
+		'platform' => ['Steam'],
+		'login' => 'tagged-before-issue@example.test',
+		'source_label' => Account::SOURCE_ALLKEYSHOP,
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+	$alreadyUsed = Account::factory()->create([
+		'game' => 'Customer Selection Game',
+		'platform' => ['Steam'],
+		'login' => 'already-used@example.test',
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+	Issuance::factory()->create([
+		'order_id' => 'CUSTOMER-SELECT-ORDER',
+		'account_id' => $alreadyUsed->id,
+		'telegram_id' => $operator->telegram_id,
+	]);
+
+	$this->withSession(['webapp.telegram_id' => $operator->telegram_id])
+		->getJson('/webapp/api/available-accounts?platform=Steam&game=' . urlencode('Customer Selection Game') . '&order_id=CUSTOMER-SELECT-ORDER')
+		->assertOk()
+		->assertJsonCount(1, 'items')
+		->assertJsonPath('items.0.id', $tagged->id)
+		->assertJsonPath('items.0.login', 'tagged-before-issue@example.test')
+		->assertJsonPath('items.0.source_label', Account::SOURCE_ALLKEYSHOP);
+});
+
+it('issues the exact account selected in the main mini app and returns its label', function (): void {
+	$operator = TelegramUser::factory()->create([
+		'telegram_id' => 202608102202,
+		'role' => TelegramRole::OPERATOR,
+		'is_active' => true,
+	]);
+	Account::factory()->create([
+		'game' => 'Exact Selection Game',
+		'platform' => ['Steam'],
+		'login' => 'automatic-first@example.test',
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 2,
+	]);
+	$selected = Account::factory()->create([
+		'game' => 'Exact Selection Game',
+		'platform' => ['Steam'],
+		'login' => 'selected-allkeyshop@example.test',
+		'source_label' => Account::SOURCE_ALLKEYSHOP,
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+	Setting::query()->create([
+		'key' => 'webapp_issue_delivery',
+		'value' => ['v' => 'webapp'],
+		'updated_by_user_id' => 1,
+	]);
+
+	$response = $this->withSession(['webapp.telegram_id' => $operator->telegram_id])
+		->postJson('/webapp/api/issue', [
+			'order_id' => 'EXACT-SELECTION-ORDER',
+			'game' => 'Exact Selection Game',
+			'platform' => 'Steam',
+			'qty' => 1,
+			'account_id' => $selected->id,
+		]);
+
+	$response->assertOk()
+		->assertJsonPath('items.0.account_id', $selected->id)
+		->assertJsonPath('items.0.login', 'selected-allkeyshop@example.test')
+		->assertJsonPath('items.0.source_label', Account::SOURCE_ALLKEYSHOP);
+
+	expect((string) $response->json('message'))->toContain('ALLKEYSHOP');
+});
+
+it('does not allow one selected account to masquerade as a quantity of two', function (): void {
+	$operator = TelegramUser::factory()->create([
+		'telegram_id' => 202608102203,
+		'role' => TelegramRole::OPERATOR,
+		'is_active' => true,
+	]);
+	$account = Account::factory()->create([
+		'game' => 'Quantity Guard Game',
+		'platform' => ['Steam'],
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 2,
+	]);
+
+	$this->withSession(['webapp.telegram_id' => $operator->telegram_id])
+		->postJson('/webapp/api/issue', [
+			'order_id' => 'QUANTITY-GUARD-ORDER',
+			'game' => 'Quantity Guard Game',
+			'platform' => 'Steam',
+			'qty' => 2,
+			'account_id' => $account->id,
+		])
+		->assertUnprocessable()
+		->assertJsonPath('error', 'Для выбора конкретного аккаунта укажите количество 1.');
+
+	expect(Issuance::query()->where('order_id', 'QUANTITY-GUARD-ORDER')->exists())->toBeFalse();
+});
+
+it('uses only the customer platform catalog and canonicalizes production aliases', function (): void {
+	expect(config('accesshub.platforms'))->toBe(PlatformCatalog::OPTIONS)
+		->and(PlatformCatalog::canonicalize('Epic'))->toBe('Epic Games')
+		->and(PlatformCatalog::canonicalize('Xbox X'))->toBe('Xbox Series X')
+		->and(PlatformCatalog::canonicalize('Xbox One/Xbox X'))->toBe('Xbox One/Series X')
+		->and(PlatformCatalog::normalizeList(['Nintendo Switch 1', '2']))->toBe(['Nintendo Switch 1/2'])
+		->and(PlatformCatalog::normalizeList(['Unknown Console']))->toBeNull();
+
+	Livewire::actingAs(User::factory()->manager()->create())
+		->test(AccountForm::class, ['account' => null])
+		->assertViewHas('platformOptions', PlatformCatalog::OPTIONS);
+});
+
+it('normalizes existing platform aliases through the production data migration', function (): void {
+	$xboxCombined = Account::factory()->create(['platform' => ['Xbox One/Xbox X']]);
+	$xboxSeries = Account::factory()->create(['platform' => ['Xbox X']]);
+	$epic = Account::factory()->create(['platform' => ['Epic']]);
+	$nintendo = Account::factory()->create(['platform' => ['Nintendo Switch 1', '2']]);
+
+	$migration = require database_path('migrations/2026_08_10_000003_normalize_account_platforms.php');
+	$migration->up();
+
+	expect($xboxCombined->fresh()->platform)->toBe(['Xbox One/Series X'])
+		->and($xboxSeries->fresh()->platform)->toBe(['Xbox Series X'])
+		->and($epic->fresh()->platform)->toBe(['Epic Games'])
+		->and($nintendo->fresh()->platform)->toBe(['Nintendo Switch 1/2']);
+});

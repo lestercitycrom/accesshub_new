@@ -121,6 +121,7 @@
 											<x-admin.button variant="ghost" size="sm" :href="route('admin.export.delivery-links.csv', ['batch' => $row->batch, 'only' => 'all'])">
 													CSV (all)
 												</x-admin.button>
+												@can('hub-supply')
 												@if($row->unused > 0)
 													<x-admin.button
 														variant="ghost"
@@ -131,6 +132,7 @@
 														Delete unused
 													</x-admin.button>
 												@endif
+												@endcan
 											@endif
 										</div>
 									</td>

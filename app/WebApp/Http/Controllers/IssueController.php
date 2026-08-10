@@ -46,12 +46,14 @@ final class IssueController
 			$game = trim((string) $request->input('game', ''));
 			$qtyRaw = (int) $request->input('qty', 1);
 			$qty = max(1, min(2, $qtyRaw));
+			$accountId = max(0, (int) $request->input('account_id', 0));
 
 			Log::info('IssueController: Parsed input', [
 				'order_id' => $orderId,
 				'platform' => $platform,
 				'game' => $game,
 				'qty' => $qty,
+				'account_id' => $accountId ?: null,
 			]);
 
 			if ($orderId === '' || $platform === '' || $game === '') {
@@ -63,12 +65,19 @@ final class IssueController
 				return response()->json(['error' => 'Заполните все поля.'], 422);
 			}
 
+			if ($accountId > 0 && $qty !== 1) {
+				return response()->json([
+					'error' => 'Для выбора конкретного аккаунта укажите количество 1.',
+				], 422);
+			}
+
 			Log::info('IssueController: Issuance request', [
 				'telegram_id' => $telegramId,
 				'order_id' => $orderId,
 				'game' => $game,
 				'platform' => $platform,
 				'qty' => $qty,
+				'account_id' => $accountId ?: null,
 			]);
 
 			$result = $this->issueService->issue(
@@ -77,6 +86,7 @@ final class IssueController
 				game: $game,
 				platform: $platform,
 				qty: $qty,
+				accountId: $accountId > 0 ? $accountId : null,
 			);
 
 			if (!$result->ok()) {

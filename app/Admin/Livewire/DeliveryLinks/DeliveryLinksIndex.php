@@ -27,12 +27,12 @@ final class DeliveryLinksIndex extends Component
 
 	public function mount(): void
 	{
-		Gate::authorize('hub-supply');
+		Gate::authorize('hub-delivery-links');
 	}
 
 	public function generate(): void
 	{
-		Gate::authorize('hub-supply');
+		Gate::authorize('hub-delivery-links');
 
 		$data = $this->validate([
 			'count' => ['required', 'integer', 'min:1', 'max:' . self::MAX_PER_BATCH],

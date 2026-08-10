@@ -103,6 +103,12 @@ class User extends Authenticatable
         return $this->canAccessHub();
     }
 
+    /** Any Hub role may generate and download auto-delivery links. */
+    public function canManageDeliveryLinks(): bool
+    {
+        return $this->canAccessHub();
+    }
+
     /**
      * Get the user's initials
      */

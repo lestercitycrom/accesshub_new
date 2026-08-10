@@ -23,7 +23,7 @@ final class SchemaController
 			->toArray();
 
 		// Get unique platforms from accounts (extract from JSON arrays)
-		$platforms = Account::query()
+		$availablePlatforms = Account::query()
 			->pluck('platform')
 			->filter()
 			->flatMap(function ($platform) {
@@ -37,9 +37,10 @@ final class SchemaController
 				}
 				return [$platform];
 			})
-			->unique()
-			->sort()
-			->values()
+			->unique();
+
+		$platforms = collect((array) config('accesshub.platforms', []))
+			->filter(fn (string $platform): bool => $availablePlatforms->contains($platform))
 			->map(fn($platform) => ['value' => $platform, 'label' => ucfirst($platform)])
 			->toArray();
 

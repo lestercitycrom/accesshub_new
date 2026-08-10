@@ -30,6 +30,10 @@ final class IssueMessageFormatter
 				"🎮 Логин: <code>{$items[0]['login']}</code>\n" .
 				"🔑 Пароль: <code>{$items[0]['password']}</code>\n";
 
+			if (($items[0]['source_label'] ?? null) === 'allkeyshop') {
+				$message .= "🏷 ALLKEYSHOP\n";
+			}
+
 			if (!empty($items[0]['comment'])) {
 				$message .= "\n💬 Комментарий: {$items[0]['comment']}\n";
 			}
@@ -46,6 +50,10 @@ final class IssueMessageFormatter
 				"🎮 Логин: <code>{$item['login']}</code>\n",
 				"🔑 Пароль: <code>{$item['password']}</code>\n",
 			];
+
+			if (($item['source_label'] ?? null) === 'allkeyshop') {
+				$itemLines[] = "🏷 ALLKEYSHOP\n";
+			}
 			
 			if (!empty($item['comment'])) {
 				$itemLines[] = "💬 Комментарий: {$item['comment']}\n";

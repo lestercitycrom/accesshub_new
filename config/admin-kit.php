@@ -28,7 +28,7 @@ return [
 			['label' => 'Заказы', 'route' => 'admin.delivery-orders.index', 'icon' => 'list'],
 			['label' => 'Инструкции', 'route' => 'admin.delivery-instructions.index', 'icon' => 'file-text', 'can' => 'hub-supply'],
 		]],
-		['label' => 'Ссылки', 'route' => 'admin.delivery-links.index', 'icon' => 'link', 'can' => 'hub-supply'],
+		['label' => 'Ссылки', 'route' => 'admin.delivery-links.index', 'icon' => 'link', 'can' => 'hub-delivery-links'],
 	],
 
 	/**
@@ -42,6 +42,5 @@ return [
 		['label' => 'Telegram пользователи', 'route' => 'admin.telegram-users.index', 'icon' => 'message-circle', 'can' => 'hub-manage'],
 	],
 ];
-
 
 

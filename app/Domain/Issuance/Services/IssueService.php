@@ -7,6 +7,7 @@ namespace App\Domain\Issuance\Services;
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
 use App\Domain\Accounts\Models\AccountEvent;
+use App\Domain\Accounts\Services\PlatformCatalog;
 use App\Domain\Issuance\DTO\IssuanceResult;
 use App\Domain\Issuance\Models\Issuance;
 use App\Domain\Settings\Services\SettingsService;
@@ -38,6 +39,10 @@ final class IssueService
 		$orderId = trim($orderId);
 		$game = trim($game);
 		$platform = trim($platform);
+		$platformCandidates = array_values(array_unique(array_filter([
+			$platform,
+			PlatformCatalog::canonicalize($platform),
+		])));
 
 		if ($orderId === '' || $game === '' || $platform === '') {
 			return IssuanceResult::fail('Неверные данные.');
@@ -61,7 +66,7 @@ final class IssueService
 		);
 		$now = CarbonImmutable::now();
 
-		return DB::transaction(function () use ($telegramId, $orderId, $game, $platform, $qty, $cooldownDays, $now, $accountId): IssuanceResult {
+		return DB::transaction(function () use ($telegramId, $orderId, $game, $platform, $platformCandidates, $qty, $cooldownDays, $now, $accountId): IssuanceResult {
 			try {
 				$alreadyIssuedAccountIds = Issuance::query()
 					->where('order_id', $orderId)
@@ -73,7 +78,12 @@ final class IssueService
 				$baseQuery = Account::query()
 					->where('game', $game)
 					->where('status', AccountStatus::ACTIVE)
-					->whereJsonContains('platform', $platform)
+					->where(static function ($query) use ($platformCandidates): void {
+						foreach ($platformCandidates as $index => $candidate) {
+							$method = $index === 0 ? 'whereJsonContains' : 'orWhereJsonContains';
+							$query->{$method}('platform', $candidate);
+						}
+					})
 					->when($accountId !== null, static function ($q) use ($accountId): void {
 						$q->where('id', $accountId);
 					});
@@ -102,7 +112,12 @@ final class IssueService
 			$query = Account::query()
 				->where('game', $game)
 				->where('status', AccountStatus::ACTIVE)
-				->whereJsonContains('platform', $platform)
+				->where(static function ($query) use ($platformCandidates): void {
+					foreach ($platformCandidates as $index => $candidate) {
+						$method = $index === 0 ? 'whereJsonContains' : 'orWhereJsonContains';
+						$query->{$method}('platform', $candidate);
+					}
+				})
 				->when($accountId !== null, static function ($q) use ($accountId): void {
 					$q->where('id', $accountId);
 				})
@@ -154,7 +169,12 @@ final class IssueService
 					$stolenAccounts = Account::query()
 						->where('game', $game)
 						->where('status', AccountStatus::STOLEN)
-						->whereJsonContains('platform', $platform)
+						->where(static function ($query) use ($platformCandidates): void {
+							foreach ($platformCandidates as $index => $candidate) {
+								$method = $index === 0 ? 'whereJsonContains' : 'orWhereJsonContains';
+								$query->{$method}('platform', $candidate);
+							}
+						})
 						->with('assignedOperator')
 						->limit(5)
 						->get();
@@ -181,7 +201,12 @@ final class IssueService
 					$earliest = Account::query()
 						->where('game', $game)
 						->where('status', AccountStatus::ACTIVE)
-						->whereJsonContains('platform', $platform)
+						->where(static function ($query) use ($platformCandidates): void {
+							foreach ($platformCandidates as $index => $candidate) {
+								$method = $index === 0 ? 'whereJsonContains' : 'orWhereJsonContains';
+								$query->{$method}('platform', $candidate);
+							}
+						})
 						->whereNotNull('next_release_at')
 						->orderBy('next_release_at')
 						->value('next_release_at');
@@ -258,6 +283,7 @@ final class IssueService
 					'login' => (string) $account->login,
 					'password' => (string) $account->password,
 					'comment' => $account->comment ? (string) $account->comment : null,
+					'source_label' => $account->source_label,
 				];
 			}
 

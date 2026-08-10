@@ -61,6 +61,13 @@
 								</select>
 							</div>
 						</div>
+						<div class="col-12">
+							<label class="form-label" for="issueAccount">Доступный аккаунт</label>
+							<select id="issueAccount" class="form-select" disabled>
+								<option value="">Сначала выберите платформу и игру</option>
+							</select>
+							<div id="issueAccountHint" class="small text-muted mt-1">До выдачи можно увидеть логин и метку AllKeyShop.</div>
+						</div>
 					</div>
 
 					<div class="d-flex flex-wrap gap-2 mt-3">
@@ -165,6 +172,8 @@
 		const issueBtn = document.getElementById('issueBtn');
 		const issueResult = document.getElementById('issueResult');
 		const issueResultText = document.getElementById('issueResultText');
+		const issueAccountSelect = document.getElementById('issueAccount');
+		const issueAccountHint = document.getElementById('issueAccountHint');
 		const moderationNotice = document.getElementById('moderationNotice');
 		const tabIssue = document.getElementById('tabIssue');
 		const tabHistory = document.getElementById('tabHistory');
@@ -200,6 +209,7 @@
 		let historyPage = 1;
 		let historyPageLimit = 20;
 		let historyTotal = 0;
+		let issueAccountsRequest = 0;
 		const initialParams = new URLSearchParams(window.location.search);
 		const focusedDeliveryOrderId = initialParams.get('delivery_order') || initialParams.get('id') || '';
 		if (historyLimit) {
@@ -946,11 +956,76 @@
 				return;
 			}
 			if (items.length === 1) {
-				issueResultText.textContent = `Логин: ${items[0].login}\nПароль: ${items[0].password}`;
+				const sourceLabel = items[0].source_label === 'allkeyshop' ? '\nМетка: ALLKEYSHOP' : '';
+				issueResultText.textContent = `Логин: ${items[0].login}\nПароль: ${items[0].password}${sourceLabel}`;
 				return;
 			}
-			const lines = items.map((item, index) => `#${index + 1}\nЛогин: ${item.login}\nПароль: ${item.password}`);
+			const lines = items.map((item, index) => {
+				const sourceLabel = item.source_label === 'allkeyshop' ? '\nМетка: ALLKEYSHOP' : '';
+				return `#${index + 1}\nЛогин: ${item.login}\nПароль: ${item.password}${sourceLabel}`;
+			});
 			issueResultText.textContent = lines.join('\n\n');
+		}
+
+		function resetIssueAccounts(message = 'Сначала выберите платформу и игру') {
+			if (!issueAccountSelect) return;
+			issueAccountSelect.innerHTML = '';
+			const option = document.createElement('option');
+			option.value = '';
+			option.textContent = message;
+			issueAccountSelect.appendChild(option);
+			issueAccountSelect.disabled = true;
+		}
+
+		async function loadIssueAccounts() {
+			if (!issueAccountSelect) return;
+
+			const platform = document.getElementById('platform')?.value.trim() || '';
+			const game = document.getElementById('game')?.value.trim() || '';
+			const orderId = document.getElementById('orderId')?.value.trim() || '';
+			const requestId = ++issueAccountsRequest;
+
+			if (!platform || !game) {
+				resetIssueAccounts();
+				if (issueAccountHint) issueAccountHint.textContent = 'До выдачи можно увидеть логин и метку AllKeyShop.';
+				return;
+			}
+
+			resetIssueAccounts('Загрузка доступных аккаунтов...');
+			const params = new URLSearchParams({ platform, game });
+			if (orderId) params.set('order_id', orderId);
+			const resp = await apiGet(`/webapp/api/available-accounts?${params.toString()}`);
+
+			if (requestId !== issueAccountsRequest) return;
+
+			if (resp.status !== 200 || !Array.isArray(resp.data?.items)) {
+				resetIssueAccounts('Не удалось загрузить аккаунты');
+				return;
+			}
+
+			issueAccountSelect.innerHTML = '';
+			const automatic = document.createElement('option');
+			automatic.value = '';
+			automatic.textContent = 'Автоматический выбор';
+			issueAccountSelect.appendChild(automatic);
+
+			resp.data.items.forEach((account) => {
+				const option = document.createElement('option');
+				option.value = String(account.id);
+				const sourceLabel = account.source_label === 'allkeyshop' ? ' · ALLKEYSHOP' : '';
+				option.textContent = `${account.login}${sourceLabel}`;
+				issueAccountSelect.appendChild(option);
+			});
+
+			issueAccountSelect.disabled = resp.data.items.length === 0;
+			if (resp.data.items.length === 0) {
+				automatic.textContent = 'Нет доступных аккаунтов';
+			}
+			if (issueAccountHint) {
+				issueAccountHint.textContent = resp.data.items.length > 0
+					? `Доступно: ${resp.data.items.length}. Выберите логин или оставьте автоматический выбор.`
+					: 'Для выбранной игры и платформы сейчас нет доступных аккаунтов.';
+			}
 		}
 
 		issueBtn.addEventListener('click', async () => {
@@ -968,6 +1043,7 @@
 			const game = gameSelect ? gameSelect.value.trim() : '';
 			const qtyRaw = document.getElementById('qty').value.trim();
 			const qty = qtyRaw === '' ? 0 : Math.max(1, Math.min(2, parseInt(qtyRaw, 10)));
+			const accountId = parseInt(issueAccountSelect?.value || '0', 10) || 0;
 
 			console.log('Issue request data:', {
 				orderId,
@@ -989,6 +1065,12 @@
 				return;
 			}
 
+			if (accountId > 0 && qty !== 1) {
+				issueResult.classList.remove('d-none');
+				issueResultText.textContent = 'Для выбора конкретного аккаунта укажите количество 1.';
+				return;
+			}
+
 			issueResult.classList.remove('d-none');
 			issueResultText.textContent = 'Отправка запроса...';
 			setButtonLoading(issueBtn, true);
@@ -998,6 +1080,7 @@
 				platform,
 				game,
 				qty,
+				...(accountId > 0 ? { account_id: accountId } : {}),
 			};
 			console.log('Sending request:', requestPayload);
 
@@ -1010,6 +1093,7 @@
 				} else {
 					issueResultText.textContent = resp.data?.message || 'Отправлено в чат.';
 				}
+				loadIssueAccounts();
 				setButtonLoading(issueBtn, false);
 				return;
 			}
@@ -1748,11 +1832,20 @@
 								? platformGames[selectedPlatform]
 								: allGames;
 							populateGameSelect(games);
+							loadIssueAccounts();
 						});
 					}
 
 					// Заполняем игры (изначально все)
 					populateGameSelect(allGames);
+					document.getElementById('game')?.addEventListener('change', loadIssueAccounts);
+					document.getElementById('orderId')?.addEventListener('change', loadIssueAccounts);
+					document.getElementById('qty')?.addEventListener('change', () => {
+						if ((parseInt(document.getElementById('qty')?.value || '1', 10) || 1) > 1 && issueAccountSelect?.value) {
+							issueAccountSelect.value = '';
+							if (issueAccountHint) issueAccountHint.textContent = 'При количестве 2 используется автоматический выбор двух аккаунтов.';
+						}
+					});
 				}
 			} catch (e) {
 				console.error('Failed to load platforms:', e);

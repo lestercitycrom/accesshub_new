@@ -31,16 +31,5 @@ return [
 	],
 
 	/** Список платформ для выбора при создании/редактировании аккаунта */
-	'platforms' => [
-		'Steam',
-		'PS4',
-		'PS5',
-		'Xbox',
-		'Epic',
-		'Origin',
-		'Battle.net',
-		'GOG',
-		'Nintendo',
-		'Другое',
-	],
+	'platforms' => \App\Domain\Accounts\Services\PlatformCatalog::OPTIONS,
 ];
