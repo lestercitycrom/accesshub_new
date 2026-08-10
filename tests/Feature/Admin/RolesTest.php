@@ -60,21 +60,21 @@ it('lets a manager use the account base + logs but not import/export or system',
 	$this->actingAs($manager)->get(route('admin.telegram-users.index'))->assertForbidden();
 });
 
-it('limits an operator to delivery, problems and the cooldown accounts view', function (): void {
+it('limits an operator to fulfillment views plus account creation', function (): void {
 	$operator = User::factory()->operator()->create();
 
-	// Allowed: delivery orders, problems, and /accounts (cooldown block only).
+	// Allowed: delivery orders, problems, /accounts (cooldown block only), and create.
 	$this->actingAs($operator)->get(route('admin.delivery-orders.index'))->assertOk();
 	$this->actingAs($operator)->get(route('admin.problems.index'))->assertOk();
 	$this->actingAs($operator)->get(route('admin.accounts.index'))->assertOk();
+	$this->actingAs($operator)->get(route('admin.accounts.create'))->assertOk();
 
 	// Base search + logs are now hidden from operators.
 	$this->actingAs($operator)->get(route('admin.account-lookup'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.issuances.index'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.events.index'))->assertForbidden();
 
-	// Supply, import/export and system all forbidden.
-	$this->actingAs($operator)->get(route('admin.accounts.create'))->assertForbidden();
+	// Existing-account supply, import/export and system remain forbidden.
 	$this->actingAs($operator)->get(route('admin.delivery-links.index'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.delivery-instructions.index'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.export.accounts.csv'))->assertForbidden();
@@ -109,7 +109,7 @@ it('shows an operator only the cooldown block on the accounts page', function ()
 	Livewire::actingAs(User::factory()->operator()->create())
 		->test(AccountsIndex::class)
 		->assertSee('кулдауне')      // cooldown widget heading
-		->assertDontSee('Создать')   // no create button
+		->assertSee('Создать')       // may add inventory
 		->assertDontSee('Import CSV') // no import
 		->assertDontSee('Экспорт CSV'); // no export
 });
@@ -140,7 +140,8 @@ it('gives visible feedback when the users list is refreshed', function (): void 
 it('exposes capability helpers per role', function (): void {
 	expect(User::factory()->admin()->create()->canSupply())->toBeTrue()
 		->and(User::factory()->manager()->create()->canSupply())->toBeTrue()
-		->and(User::factory()->operator()->create()->canSupply())->toBeFalse();
+		->and(User::factory()->operator()->create()->canSupply())->toBeFalse()
+		->and(User::factory()->operator()->create()->canCreateAccounts())->toBeTrue();
 });
 
 it('changes a user role and syncs the legacy flag via the users screen', function (): void {

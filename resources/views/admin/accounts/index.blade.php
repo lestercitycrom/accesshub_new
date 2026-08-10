@@ -5,14 +5,16 @@
 		$activeFilters += !empty($gameFilter) ? 1 : 0;
 		$activeFilters += !empty($platformFilter) ? 1 : 0;
 		$activeFilters += !empty($statusFilter) ? 1 : 0;
+		$activeFilters += !empty($duplicatesOnly) ? 1 : 0;
 	@endphp
 
 	<x-admin.page-header
 		title="Аккаунты"
 		:subtitle="auth()->user()?->canSupply() ? 'Поиск, фильтры, быстрый доступ к карточке и экспорт.' : 'Аккаунты на кулдауне — вернутся в пул автоматически.'"
 	>
-		@can('hub-supply')
+		@can('hub-create-account')
 			<x-admin.page-actions primaryLabel="Создать" primaryIcon="database" :primaryHref="route('admin.accounts.create')">
+				@can('hub-supply')
 				<a class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50"
 					href="{{ route('admin.account-lookup') }}">
 					Поиск
@@ -36,6 +38,7 @@
 							Import CSV
 						</label>
 					</form>
+				@endcan
 				@endcan
 			</x-admin.page-actions>
 		@endcan
@@ -156,6 +159,9 @@
 		</div>
 
 		<div class="lg:col-span-3 flex items-end gap-2">
+			<x-admin.button :variant="$duplicatesOnly ? 'primary' : 'secondary'" size="sm" wire:click="toggleDuplicates">
+				{{ $duplicatesOnly ? 'Дубли показаны' : 'Показать дубли' }}
+			</x-admin.button>
 			<x-admin.button variant="secondary" size="sm" wire:click="clearFilters">Сброс</x-admin.button>
 		</div>
 	</x-admin.filters-bar>

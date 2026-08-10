@@ -20,6 +20,7 @@ final class AccountsIndex extends Component
 	public string $statusFilter = '';
 	public string $gameFilter = '';
 	public string $platformFilter = '';
+	public bool $duplicatesOnly = false;
 	public array $selected = [];
 	public string $density = 'normal';
 	public ?string $alertMessage = null;
@@ -48,6 +49,13 @@ final class AccountsIndex extends Component
 
 	public function updatingPlatformFilter(): void
 	{
+		$this->resetPage();
+	}
+
+	public function toggleDuplicates(): void
+	{
+		$this->duplicatesOnly = !$this->duplicatesOnly;
+		$this->selected = [];
 		$this->resetPage();
 	}
 
@@ -89,6 +97,7 @@ final class AccountsIndex extends Component
 		$this->statusFilter = '';
 		$this->gameFilter = '';
 		$this->platformFilter = '';
+		$this->duplicatesOnly = false;
 		$this->alertMessage = null;
 		$this->sortBy = 'id';
 		$this->sortDirection = 'desc';
@@ -141,6 +150,29 @@ final class AccountsIndex extends Component
 			->when($this->platformFilter !== '', function ($query): void {
 				// Search in platform array using JSON contains
 				$query->whereJsonContains('platform', $this->platformFilter);
+			})
+			->when($this->duplicatesOnly, function ($query): void {
+				// Potential duplicates share the effective mail/account login and at
+				// least one platform. The game title is intentionally not part of the
+				// key: production contains the same title both with and without a
+				// trailing platform label. This is a review filter, never auto-delete.
+				$query->whereExists(function ($duplicates): void {
+					$duplicates->selectRaw('1')
+						->from('accounts as duplicate_accounts')
+						->whereColumn('duplicate_accounts.id', '<>', 'accounts.id');
+
+					if ($duplicates->getConnection()->getDriverName() === 'sqlite') {
+						// Test database stores canonical JSON arrays; exact comparison keeps
+						// this branch portable while MySQL uses true set overlap below.
+						$duplicates
+							->whereRaw("LOWER(COALESCE(NULLIF(TRIM(duplicate_accounts.mail_account_login), ''), TRIM(duplicate_accounts.login))) = LOWER(COALESCE(NULLIF(TRIM(accounts.mail_account_login), ''), TRIM(accounts.login)))")
+							->whereRaw('CAST(duplicate_accounts.platform AS CHAR) = CAST(accounts.platform AS CHAR)');
+					} else {
+						$duplicates
+							->whereColumn('duplicate_accounts.duplicate_identity', 'accounts.duplicate_identity')
+							->whereRaw('JSON_OVERLAPS(duplicate_accounts.platform, accounts.platform)');
+					}
+				});
 			})
 			->when($this->sortBy === 'platform', function ($query): void {
 				// For JSON columns, we need special handling

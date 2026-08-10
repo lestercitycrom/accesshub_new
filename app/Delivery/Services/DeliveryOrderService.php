@@ -18,6 +18,7 @@ use App\Domain\Accounts\Models\AccountEvent;
 use App\Domain\Issuance\DTO\IssuanceResult;
 use App\Domain\Issuance\Models\Issuance;
 use App\Domain\Issuance\Services\IssueService;
+use App\Domain\Settings\Services\SettingsService;
 use App\Domain\Telegram\Enums\TelegramRole;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +31,7 @@ final class DeliveryOrderService
 	public function __construct(
 		private readonly IssueService $issueService,
 		private readonly FakePasswordFactory $fakePasswordFactory,
+		private readonly SettingsService $settings,
 	) {}
 
 	public function createFromCustomerInput(string $orderNumber, string $customerEmail, string $platform, ?string $game = null): DeliveryOrder
@@ -379,9 +381,12 @@ final class DeliveryOrderService
 			}
 
 			$replacement->available_uses -= 1;
-			$cooldownDays = (int) config('accesshub.issuance.operator_cooldown_days', (int) config('accesshub.issuance.cooldown_days', 14));
+			$cooldownDays = $this->settings->getInt(
+				'cooldown_days',
+				(int) config('accesshub.issuance.operator_cooldown_days', (int) config('accesshub.issuance.cooldown_days', 14)),
+			);
 			if ($replacement->available_uses === 0) {
-				$replacement->next_release_at = $now->addDays($cooldownDays);
+				$replacement->next_release_at = $now->addDays($replacement->cooldownDays($cooldownDays));
 			}
 			$replacement->save();
 

@@ -100,6 +100,10 @@
 
 					<x-admin.field label="Доступно выдач">{{ $account->available_uses }}</x-admin.field>
 
+					<x-admin.field label="Повторная выдача">
+						{{ $account->cooldown_days !== null ? $account->cooldown_days.' дн.' : 'Системный срок' }}
+					</x-admin.field>
+
 					@if($account->assigned_to_telegram_id)
 						<x-admin.field label="Назначен оператор" class="sm:col-span-2">
 							@if($account->assignedOperator)

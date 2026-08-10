@@ -177,11 +177,18 @@ final class AccountsSimpleImportController
 						$recoverCode = substr($recoverCode, 0, $maxLength);
 					}
 
-					// Check if account exists (by game + login, as platform is now array)
+					// Same login may represent separate accounts on different platforms.
+					// Re-import updates a platform-overlapping account (for example PS4
+					// expanded to PS4+PS5), while a disjoint platform creates a new row.
+					$normalizedPlatforms = $this->normalizedPlatforms($platforms);
 					$existingAccount = Account::query()
 						->where('game', $game)
 						->where('login', $login)
-						->first();
+						->get()
+						->first(fn (Account $account): bool => array_intersect(
+							$this->normalizedPlatforms($account->platform ?? []),
+							$normalizedPlatforms,
+						) !== []);
 
 					$accountData = [
 						'game' => $game,
@@ -250,5 +257,21 @@ final class AccountsSimpleImportController
 			]);
 			return redirect()->back()->with('status', 'Ошибка импорта: ' . $e->getMessage());
 		}
+	}
+
+	/**
+	 * @param array<int, string>|string $platforms
+	 * @return list<string>
+	 */
+	private function normalizedPlatforms(array|string $platforms): array
+	{
+		$values = is_array($platforms) ? $platforms : [$platforms];
+		$values = array_values(array_unique(array_filter(array_map(
+			static fn ($platform): string => mb_strtolower(trim((string) $platform)),
+			$values,
+		), static fn (string $platform): bool => $platform !== '')));
+		sort($values, SORT_STRING);
+
+		return $values;
 	}
 }

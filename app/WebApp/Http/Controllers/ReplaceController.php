@@ -90,7 +90,7 @@ final class ReplaceController
                 (int) config('accesshub.issuance.cooldown_days', 14)
             );
             if ($replacement->available_uses === 0) {
-                $replacement->next_release_at = $now->addDays($cooldownDays);
+                $replacement->next_release_at = $now->addDays($replacement->cooldownDays($cooldownDays));
             }
             $replacement->save();
 

@@ -86,6 +86,16 @@
 					hint="Текущий остаток. Меняй вручную при необходимости."
 				/>
 
+				<x-admin.input
+					label="Повторная выдача через, дней"
+					type="number"
+					placeholder="{{ $defaultCooldownDays }}"
+					name="cooldownDays"
+					wire:model="cooldownDays"
+					:error="$errors->first('cooldownDays')"
+					hint="Оставьте пустым, чтобы использовать системный срок: {{ $defaultCooldownDays }} дн."
+				/>
+
 				<div class="sm:col-span-2">
 						<x-admin.input
 							label="Логин"
@@ -166,6 +176,7 @@
 
 		<!-- Side -->
 		<div class="space-y-6">
+			@if($canSupply)
 			<x-admin.card title="Статус">
 				<div class="space-y-3">
 					<div class="space-y-1">
@@ -223,6 +234,7 @@
 					</p>
 				</div>
 			</x-admin.card>
+			@endif
 
 			<x-admin.card title="Сохранение">
 				<div class="flex items-center gap-2">

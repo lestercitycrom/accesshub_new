@@ -25,6 +25,7 @@ final class AccountFactory extends Factory
 			'status' => AccountStatus::ACTIVE,
 			'max_uses' => 3,
 			'available_uses' => 3,
+			'cooldown_days' => null,
 			'next_release_at' => null,
 			'assigned_to_telegram_id' => null,
 			'status_deadline_at' => null,

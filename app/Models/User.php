@@ -91,10 +91,16 @@ class User extends Authenticatable
         return $this->role !== null;
     }
 
-    /** Admin or manager — may add accounts, create links, export (supply tier). */
+    /** Admin or manager — may inspect/edit inventory and manage supply flows. */
     public function canSupply(): bool
     {
         return $this->role?->canSupply() === true;
+    }
+
+    /** Any Hub role may add inventory; only supply roles may inspect or edit it. */
+    public function canCreateAccounts(): bool
+    {
+        return $this->canAccessHub();
     }
 
     /**

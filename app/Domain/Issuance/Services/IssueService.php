@@ -217,7 +217,7 @@ final class IssueService
 				$account->available_uses -= 1;
 
 				if ($account->available_uses === 0) {
-					$account->next_release_at = $now->addDays($cooldownDays);
+					$account->next_release_at = $now->addDays($account->cooldownDays($cooldownDays));
 				}
 
 				$account->save();

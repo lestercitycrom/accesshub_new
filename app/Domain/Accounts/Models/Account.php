@@ -18,6 +18,10 @@ final class Account extends Model
 
 	protected $table = 'accounts';
 
+	protected $hidden = [
+		'duplicate_identity',
+	];
+
 	protected $fillable = [
 		'game',
 		'platform',
@@ -26,6 +30,7 @@ final class Account extends Model
 		'status',
 		'max_uses',
 		'available_uses',
+		'cooldown_days',
 		'next_release_at',
 		'assigned_to_telegram_id',
 		'status_deadline_at',
@@ -42,6 +47,7 @@ final class Account extends Model
 		'status' => AccountStatus::class,
 		'max_uses' => 'integer',
 		'available_uses' => 'integer',
+		'cooldown_days' => 'integer',
 		'next_release_at' => 'datetime',
 		'assigned_to_telegram_id' => 'integer',
 		'status_deadline_at' => 'datetime',
@@ -65,5 +71,10 @@ final class Account extends Model
 	public function events(): HasMany
 	{
 		return $this->hasMany(AccountEvent::class, 'account_id');
+	}
+
+	public function cooldownDays(int $default): int
+	{
+		return max(0, $this->cooldown_days ?? $default);
 	}
 }

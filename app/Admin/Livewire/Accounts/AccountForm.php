@@ -6,6 +6,7 @@ namespace App\Admin\Livewire\Accounts;
 
 use App\Domain\Accounts\Enums\AccountStatus;
 use App\Domain\Accounts\Models\Account;
+use App\Domain\Settings\Services\SettingsService;
 use App\Domain\Telegram\Models\TelegramUser;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -23,6 +24,8 @@ final class AccountForm extends Component
 	public string $status = 'ACTIVE';
 	public int $maxUses = 3;
 	public int $availableUses = 3;
+	public string $cooldownDays = '';
+	public int $defaultCooldownDays = 30;
 	public ?string $assignedToTelegramId = null;
 	public ?string $statusDeadlineAt = null;
 	public bool $flagActionRequired = false;
@@ -35,9 +38,13 @@ final class AccountForm extends Component
 
 	public function mount(?Account $account = null): void
 	{
-		Gate::authorize('hub-supply');
+		Gate::authorize($account === null ? 'hub-create-account' : 'hub-supply');
 
 		$this->account = $account;
+		$this->defaultCooldownDays = app(SettingsService::class)->getInt(
+			'cooldown_days',
+			(int) config('accesshub.issuance.operator_cooldown_days', (int) config('accesshub.issuance.cooldown_days', 14)),
+		);
 
 		if ($account !== null) {
 			$this->game = $account->game;
@@ -51,6 +58,7 @@ final class AccountForm extends Component
 			$this->status = $account->status->value;
 			$this->maxUses = (int) ($account->max_uses ?? 1);
 			$this->availableUses = (int) ($account->available_uses ?? 1);
+			$this->cooldownDays = $account->cooldown_days !== null ? (string) $account->cooldown_days : '';
 			$this->assignedToTelegramId = $account->assigned_to_telegram_id ? (string) $account->assigned_to_telegram_id : null;
 			$this->statusDeadlineAt = $account->status_deadline_at?->format('Y-m-d\TH:i');
 
@@ -69,11 +77,13 @@ final class AccountForm extends Component
 
 	public function save(): void
 	{
-		Gate::authorize('hub-supply');
+		$canSupply = Gate::allows('hub-supply');
+		Gate::authorize($this->account === null ? 'hub-create-account' : 'hub-supply');
 
 		// Normalize empty strings to null so nullable validation passes
 		$statusDeadlineAt = trim((string) $this->statusDeadlineAt) !== '' ? $this->statusDeadlineAt : null;
 		$twoFaMailAccountDate = trim((string) $this->twoFaMailAccountDate) !== '' ? $this->twoFaMailAccountDate : null;
+		$cooldownDays = trim($this->cooldownDays) !== '' ? (int) $this->cooldownDays : null;
 
 		$platformList = $this->getEffectivePlatformList();
 		$this->normalizePlatformSelected($platformList);
@@ -87,6 +97,7 @@ final class AccountForm extends Component
 			'status' => ['required', 'in:' . implode(',', array_map(fn($s) => $s->value, AccountStatus::cases()))],
 			'maxUses' => ['required', 'integer', 'min:0'],
 			'availableUses' => ['required', 'integer', 'min:0'],
+			'cooldownDays' => ['nullable', 'integer', 'min:0', 'max:3650'],
 			'assignedToTelegramId' => ['nullable', 'string'],
 			'mailAccountLogin' => ['nullable', 'string'],
 			'mailAccountPassword' => ['nullable', 'string'],
@@ -124,6 +135,7 @@ final class AccountForm extends Component
 			'status' => $this->status,
 			'max_uses' => $this->maxUses,
 			'available_uses' => $this->availableUses,
+			'cooldown_days' => $cooldownDays,
 			'assigned_to_telegram_id' => ($this->assignedToTelegramId !== null && $this->assignedToTelegramId !== '') ? (int) $this->assignedToTelegramId : null,
 			'status_deadline_at' => $statusDeadlineAt,
 			'flags' => !empty($flags) ? $flags : null,
@@ -132,6 +144,15 @@ final class AccountForm extends Component
 			'two_fa_mail_account_date' => $twoFaMailAccountDate,
 			'recover_code' => trim((string) ($this->recoverCode ?? '')) ?: null,
 		];
+
+		// Operators may add inventory, but may not smuggle supply-level state
+		// changes through Livewire payloads.
+		if (!$canSupply) {
+			$data['status'] = AccountStatus::ACTIVE->value;
+			$data['assigned_to_telegram_id'] = null;
+			$data['status_deadline_at'] = null;
+			$data['flags'] = null;
+		}
 
 		if (trim((string) ($this->password ?? '')) !== '') {
 			$data['password'] = $this->password;
@@ -145,6 +166,7 @@ final class AccountForm extends Component
 			$this->account->update($data);
 		} else {
 			Account::query()->create($data);
+			session()->flash('status', 'Аккаунт создан.');
 		}
 
 		$this->redirect(route('admin.accounts.index'), navigate: true);
@@ -215,12 +237,15 @@ final class AccountForm extends Component
 
 	public function render()
 	{
+		$canSupply = Gate::allows('hub-supply');
+
 		return view('admin.accounts.form', [
 			'isEdit' => $this->account !== null,
 			'account' => $this->account,
 			'statuses' => $this->statusOptions,
-			'operators' => $this->operators,
+			'operators' => $canSupply ? $this->operators : collect(),
 			'platformOptions' => $this->platformOptions,
+			'canSupply' => $canSupply,
 		])->layout('layouts.admin');
 	}
 }

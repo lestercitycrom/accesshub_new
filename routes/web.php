@@ -65,16 +65,22 @@ require __DIR__.'/settings.php';
 // Admin routes. Access is tiered by role capability:
 //   can:hub-view    → any role (admin/manager/operator). Operators here get only
 //                     delivery orders, problems, and the cooldown block on /accounts.
-//   can:hub-supply  → admin + manager — account base (list/show/search/create/edit),
+//   can:hub-create-account → any role — create accounts without exposing the base.
+//   can:hub-supply  → admin + manager — account base (list/show/search/edit),
 //                     links, instructions, logs.
 //   can:hub-manage  → admin only — system config, users, AND import/export.
 Route::middleware(['auth', 'can:hub-view', '2fa'])->prefix('admin')->name('admin.')->group(function (): void {
 	Route::get('/', fn () => redirect()->route('admin.accounts.index'))->name('index');
 
+	// Any panel role may add inventory. The component separately prevents an
+	// operator from editing an existing account through a forged Livewire payload.
+	Route::get('/accounts/create', App\Admin\Livewire\Accounts\AccountForm::class)
+		->middleware('can:hub-create-account')
+		->name('accounts.create');
+
 	// ---- Supply tier (admin + manager): the account base, catalog, logs ----
 	// Registered before the "{account}" catch-all so create/edit resolve first.
 	Route::middleware('can:hub-supply')->group(function (): void {
-		Route::get('/accounts/create', App\Admin\Livewire\Accounts\AccountForm::class)->name('accounts.create');
 		Route::get('/accounts/{account}/edit', App\Admin\Livewire\Accounts\AccountForm::class)->name('accounts.edit');
 		Route::get('/accounts/{account}', App\Admin\Livewire\Accounts\AccountShow::class)->name('accounts.show');
 		Route::get('/account-lookup', App\Admin\Livewire\Accounts\AccountLookup::class)->name('account-lookup');
