@@ -210,11 +210,15 @@
 		let historyPageLimit = 20;
 		let historyTotal = 0;
 		let issueAccountsRequest = 0;
+		let selectedIssueAccountId = 0;
 		const initialParams = new URLSearchParams(window.location.search);
 		const focusedDeliveryOrderId = initialParams.get('delivery_order') || initialParams.get('id') || '';
 		if (historyLimit) {
 			historyPageLimit = parseInt(historyLimit.value, 10) || 20;
 		}
+		issueAccountSelect?.addEventListener('change', () => {
+			selectedIssueAccountId = parseInt(issueAccountSelect.value || '0', 10) || 0;
+		});
 
 		function switchTab(tab) {
 			issueSection.style.display = 'none';
@@ -967,8 +971,9 @@
 			issueResultText.textContent = lines.join('\n\n');
 		}
 
-		function resetIssueAccounts(message = 'Сначала выберите платформу и игру') {
+		function resetIssueAccounts(message = 'Сначала выберите платформу и игру', clearSelection = true) {
 			if (!issueAccountSelect) return;
+			if (clearSelection) selectedIssueAccountId = 0;
 			issueAccountSelect.innerHTML = '';
 			const option = document.createElement('option');
 			option.value = '';
@@ -977,8 +982,11 @@
 			issueAccountSelect.disabled = true;
 		}
 
-		async function loadIssueAccounts() {
+		async function loadIssueAccounts(preserveSelection = false) {
 			if (!issueAccountSelect) return;
+			const preservedAccountId = preserveSelection
+				? (parseInt(issueAccountSelect.value || '0', 10) || selectedIssueAccountId)
+				: 0;
 
 			const platform = document.getElementById('platform')?.value.trim() || '';
 			const game = document.getElementById('game')?.value.trim() || '';
@@ -991,7 +999,7 @@
 				return;
 			}
 
-			resetIssueAccounts('Загрузка доступных аккаунтов...');
+			resetIssueAccounts('Загрузка доступных аккаунтов...', !preserveSelection);
 			const params = new URLSearchParams({ platform, game });
 			if (orderId) params.set('order_id', orderId);
 			const resp = await apiGet(`/webapp/api/available-accounts?${params.toString()}`);
@@ -1016,6 +1024,14 @@
 				option.textContent = `${account.login}${sourceLabel}`;
 				issueAccountSelect.appendChild(option);
 			});
+			const preservedOptionExists = preservedAccountId > 0
+				&& Array.from(issueAccountSelect.options).some((option) => option.value === String(preservedAccountId));
+			if (preservedOptionExists) {
+				issueAccountSelect.value = String(preservedAccountId);
+				selectedIssueAccountId = preservedAccountId;
+			} else {
+				selectedIssueAccountId = 0;
+			}
 
 			issueAccountSelect.disabled = resp.data.items.length === 0;
 			if (resp.data.items.length === 0) {
@@ -1043,7 +1059,7 @@
 			const game = gameSelect ? gameSelect.value.trim() : '';
 			const qtyRaw = document.getElementById('qty').value.trim();
 			const qty = qtyRaw === '' ? 0 : Math.max(1, Math.min(2, parseInt(qtyRaw, 10)));
-			const accountId = parseInt(issueAccountSelect?.value || '0', 10) || 0;
+			const accountId = parseInt(issueAccountSelect?.value || '0', 10) || selectedIssueAccountId;
 
 			console.log('Issue request data:', {
 				orderId,
@@ -1839,14 +1855,11 @@
 					// Заполняем игры (изначально все)
 					populateGameSelect(allGames);
 					document.getElementById('game')?.addEventListener('change', loadIssueAccounts);
-					document.getElementById('orderId')?.addEventListener('change', () => {
-						// A button click can blur this field immediately before its click handler.
-						// Defer the refresh so the currently selected account reaches the request.
-						window.setTimeout(loadIssueAccounts, 0);
-					});
+					document.getElementById('orderId')?.addEventListener('change', () => loadIssueAccounts(true));
 					document.getElementById('qty')?.addEventListener('change', () => {
 						if ((parseInt(document.getElementById('qty')?.value || '1', 10) || 1) > 1 && issueAccountSelect?.value) {
 							issueAccountSelect.value = '';
+							selectedIssueAccountId = 0;
 							if (issueAccountHint) issueAccountHint.textContent = 'При количестве 2 используется автоматический выбор двух аккаунтов.';
 						}
 					});

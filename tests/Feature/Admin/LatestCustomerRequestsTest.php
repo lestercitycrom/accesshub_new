@@ -157,7 +157,8 @@ it('keeps the selected account available when the order field blurs into the iss
 	$this->withSession(['webapp.telegram_id' => $operator->telegram_id])
 		->get('/webapp')
 		->assertOk()
-		->assertSee('window.setTimeout(loadIssueAccounts, 0);', false);
+		->assertSee('let selectedIssueAccountId = 0;', false)
+		->assertSee('loadIssueAccounts(true)', false);
 });
 
 it('uses only the customer platform catalog and canonicalizes production aliases', function (): void {
