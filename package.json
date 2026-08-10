@@ -8,7 +8,8 @@
         "delivery:qa": "npm run delivery:qa:seed && npm run delivery:qa:screenshots",
         "delivery:qa:seed": "php artisan tinker scripts/delivery-qa/seed.php",
         "delivery:qa:screenshots": "node scripts/delivery-qa/screenshots.mjs",
-        "delivery:e2e": "node scripts/delivery-qa/e2e.mjs"
+        "delivery:e2e": "node scripts/delivery-qa/e2e.mjs",
+        "smoke:production": "node scripts/deploy/production-smoke.mjs"
     },
     "dependencies": {
         "@tailwindcss/vite": "^4.1.11",

@@ -9,11 +9,11 @@ namespace App\Enums;
  * the previous behaviour where only is_admin users could enter the panel.
  *
  * Capability tiers (each role adds to the one below):
- *  - operator → fulfillment: work delivery orders / issuance / problem accounts,
- *               plus read access. NOT: adding accounts, creating links, exports,
- *               system config.
- *  - manager  → operator + supply: add/edit accounts, create delivery links,
- *               edit instructions, export. NOT system config / user management.
+ *  - operator → fulfillment plus adding new inventory without access to the
+ *               account base. NOT: inspecting/editing accounts, links, exports,
+ *               or system config.
+ *  - manager  → operator + supply: inspect/add/edit accounts, create delivery
+ *               links, edit instructions. NOT exports, system config, or users.
  *  - admin    → everything, incl. settings, server, telegram users, web users.
  */
 enum UserRole: string
