@@ -153,6 +153,14 @@ URL, два временных 2FA-пользователя и уникальн�
 - Точка до консолидации сохранена локальной веткой `backup/pre-consolidation-2026-08-10`.
 - Целевые тесты: 18 passed / 68 assertions.
 - Полный набор: 263 passed / 1056 assertions / 12 skipped.
-- До следующего production deploy bare `prod/main` остаётся на `cf23e210`, хотя runtime-файл на сервере уже содержит эквивалентный ручной hotfix.
-
-После успешной публикации `64a4f9f3` этот раздел следует обновить, зафиксировав production commit и дату проверки.
+- 10 августа 2026 релиз account review опубликован в production: функциональный
+  commit `5ea5a98d`, Playwright smoke `ca40743b`.
+- Перед релизом создана и проверена точка отката
+  `backup/pre-deploy-20260810T145910Z`; полный и schema-only дампы находятся в
+  `/var/backups/accesshub/20260810T145910Z-cf23e210-predeploy`.
+- Миграция `2026_08_10_000001_add_cooldown_days_to_accounts_table` применена.
+- Production Playwright smoke: 25/25; временные 3 аккаунта и 2 пользователя
+  удалены, независимая проверка остатков вернула ноль.
+- Post-deploy: runtime clean, production/debug=false, nginx config valid,
+  `/up`, `/login`, `/take-order`, `/webapp` вернули HTTP 200; новых
+  `production.ERROR` за 10 августа нет.
