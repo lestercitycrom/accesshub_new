@@ -62,6 +62,7 @@ it('lets an operator create an active account without supply-level mutations', f
 		->set('maxUses', 1)
 		->set('availableUses', 1)
 		->set('cooldownDays', '30')
+		->set('isAllKeyShop', true)
 		->set('status', AccountStatus::TEMP_HOLD->value)
 		->set('flagActionRequired', true)
 		->call('save')
@@ -72,6 +73,7 @@ it('lets an operator create an active account without supply-level mutations', f
 
 	expect($account->status)->toBe(AccountStatus::ACTIVE)
 		->and($account->cooldown_days)->toBe(30)
+		->and($account->source_label)->toBe(Account::SOURCE_ALLKEYSHOP)
 		->and($account->flags)->toBeNull()
 		->and($account->assigned_to_telegram_id)->toBeNull();
 });

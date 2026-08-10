@@ -36,6 +36,7 @@ final class AccountFactory extends Factory
 			'comment' => null,
 			'two_fa_mail_account_date' => null,
 			'recover_code' => null,
+			'source_label' => null,
 		];
 	}
 

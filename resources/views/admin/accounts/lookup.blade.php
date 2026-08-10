@@ -92,7 +92,14 @@
 			@forelse($rows as $account)
 				<tr>
 					<x-admin.td>{{ $account->id }}</x-admin.td>
-					<x-admin.td class="font-semibold text-slate-900">{{ $account->login }}</x-admin.td>
+					<x-admin.td class="font-semibold text-slate-900">
+						<div class="flex flex-wrap items-center gap-1.5">
+							<span>{{ $account->login }}</span>
+							@if($account->isAllKeyShop())
+								<x-admin.badge variant="amber">ALLKEYSHOP</x-admin.badge>
+							@endif
+						</div>
+					</x-admin.td>
 					<x-admin.td>{{ $account->game }}</x-admin.td>
 					<x-admin.td>
 						@if(is_array($account->platform))

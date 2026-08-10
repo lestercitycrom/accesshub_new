@@ -43,6 +43,12 @@ return [
 		'comment' => [
 			'Comment',
 		],
+		'source_label' => [
+			'AllKeyShop',
+			'allkeyshop',
+			'Source Label',
+			'source_label',
+		],
 	],
 
 	/*

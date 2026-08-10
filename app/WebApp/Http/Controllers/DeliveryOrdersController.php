@@ -485,7 +485,7 @@ final class DeliveryOrdersController
 	}
 
 	/**
-	 * @return array<int, array{id: int, login: string, available_uses: int, platforms: array<int, string>}>
+	 * @return array<int, array{id: int, login: string, available_uses: int, platforms: array<int, string>, source_label: ?string}>
 	 */
 	private function availableAccounts(string $platform, string $game): array
 	{
@@ -515,12 +515,13 @@ final class DeliveryOrdersController
 			->orderByDesc('available_uses')
 			->orderBy('id')
 			->limit(100)
-			->get(['id', 'login', 'available_uses', 'platform'])
+			->get(['id', 'login', 'available_uses', 'platform', 'source_label'])
 			->map(fn (Account $account): array => [
 				'id' => (int) $account->id,
 				'login' => (string) $account->login,
 				'available_uses' => (int) $account->available_uses,
 				'platforms' => $this->accountPlatformLabels($account),
+				'source_label' => $account->source_label,
 			])
 			->all();
 	}

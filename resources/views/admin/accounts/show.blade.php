@@ -30,6 +30,10 @@
 				<div class="flex flex-wrap items-center gap-2">
 					<x-admin.status-badge :status="($account->next_release_at && $account->next_release_at->isFuture()) ? 'COOLDOWN' : $account->status->value" />
 
+					@if($account->isAllKeyShop())
+						<x-admin.badge variant="amber">ALLKEYSHOP</x-admin.badge>
+					@endif
+
 					@if($account->next_release_at && $account->next_release_at->isFuture())
 						<x-admin.badge variant="amber">
 							Кулдаун · вернётся {{ $account->next_release_at->format('d.m.Y H:i') }}

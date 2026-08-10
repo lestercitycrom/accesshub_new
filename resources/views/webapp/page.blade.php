@@ -476,7 +476,8 @@
 				const platforms = Array.isArray(account.platforms) && account.platforms.length
 					? ` · ${account.platforms.join(', ')}`
 					: '';
-				option.textContent = `${account.login || ('#' + account.id)}${platforms}`;
+				const sourceLabel = account.source_label === 'allkeyshop' ? ' · ALLKEYSHOP' : '';
+				option.textContent = `${account.login || ('#' + account.id)}${platforms}${sourceLabel}`;
 				if (String(account.id) === String(selectedValue)) option.selected = true;
 				select.appendChild(option);
 			});

@@ -16,6 +16,8 @@ final class Account extends Model
 {
 	use HasFactory;
 
+	public const SOURCE_ALLKEYSHOP = 'allkeyshop';
+
 	protected $table = 'accounts';
 
 	protected $hidden = [
@@ -41,6 +43,7 @@ final class Account extends Model
 		'comment',
 		'two_fa_mail_account_date',
 		'recover_code',
+		'source_label',
 	];
 
 	protected $casts = [
@@ -76,5 +79,10 @@ final class Account extends Model
 	public function cooldownDays(int $default): int
 	{
 		return max(0, $this->cooldown_days ?? $default);
+	}
+
+	public function isAllKeyShop(): bool
+	{
+		return $this->source_label === self::SOURCE_ALLKEYSHOP;
 	}
 }

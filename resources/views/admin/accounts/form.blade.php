@@ -123,6 +123,22 @@
 				</div>
 			</x-admin.card>
 
+			<x-admin.card title="Источник аккаунта">
+				<label class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+					<input
+						type="checkbox"
+						wire:model="isAllKeyShop"
+						data-test="allkeyshop-checkbox"
+						class="mt-0.5 rounded border-amber-300 text-amber-600 focus:ring-amber-300"
+					>
+					<span>
+						<span class="block text-sm font-semibold text-amber-900">AllKeyShop</span>
+						<span class="mt-0.5 block text-xs text-amber-700">Информационная метка для операторов. На автоматическую выдачу аккаунта не влияет.</span>
+					</span>
+				</label>
+				@error('isAllKeyShop') <div class="mt-1 text-xs font-medium text-rose-600">{{ $message }}</div> @enderror
+			</x-admin.card>
+
 			<x-admin.card title="Mail Account">
 				<div class="grid grid-cols-1 gap-4">
 					<x-admin.input

@@ -26,6 +26,7 @@ it('exports accounts csv with filters for admin', function (): void {
 		'game' => 'cs2',
 		'platform' => 'steam',
 		'status' => AccountStatus::DEAD,
+		'source_label' => Account::SOURCE_ALLKEYSHOP,
 	]);
 
 	$response = $this->get('/admin/export/accounts.csv?status=DEAD');
@@ -35,8 +36,9 @@ it('exports accounts csv with filters for admin', function (): void {
 
 	$csv = (string) $response->getContent();
 
-	expect($csv)->toContain("id,game,platform,login,status");
+	expect($csv)->toContain("id,game,platform,login,source_label,status");
 	expect($csv)->toContain('beta_login');
+	expect($csv)->toContain(Account::SOURCE_ALLKEYSHOP);
 	expect($csv)->not->toContain('alpha_login');
 })->group('Stage5.7');
 

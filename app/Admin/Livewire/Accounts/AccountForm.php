@@ -35,6 +35,7 @@ final class AccountForm extends Component
 	public ?string $comment = null;
 	public ?string $twoFaMailAccountDate = null;
 	public ?string $recoverCode = null;
+	public bool $isAllKeyShop = false;
 
 	public function mount(?Account $account = null): void
 	{
@@ -72,6 +73,7 @@ final class AccountForm extends Component
 				? (is_object($account->two_fa_mail_account_date) ? $account->two_fa_mail_account_date->format('Y-m-d') : (string) $account->two_fa_mail_account_date)
 				: null;
 			$this->recoverCode = $account->recover_code;
+			$this->isAllKeyShop = $account->isAllKeyShop();
 		}
 	}
 
@@ -104,6 +106,7 @@ final class AccountForm extends Component
 			'comment' => ['nullable', 'string'],
 			'twoFaMailAccountDate' => ['nullable', 'string'],
 			'recoverCode' => ['nullable', 'string'],
+			'isAllKeyShop' => ['boolean'],
 		]);
 
 		// Re-validate optional date/datetime after normalization
@@ -143,6 +146,7 @@ final class AccountForm extends Component
 			'comment' => trim((string) ($this->comment ?? '')) ?: null,
 			'two_fa_mail_account_date' => $twoFaMailAccountDate,
 			'recover_code' => trim((string) ($this->recoverCode ?? '')) ?: null,
+			'source_label' => $this->isAllKeyShop ? Account::SOURCE_ALLKEYSHOP : null,
 		];
 
 		// Operators may add inventory, but may not smuggle supply-level state

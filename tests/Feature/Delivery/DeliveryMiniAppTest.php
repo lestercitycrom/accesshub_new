@@ -156,6 +156,7 @@ it('assigns a specific account chosen by login from the mini app', function (): 
 		'login' => 'ps5-chosen-login',
 		'status' => AccountStatus::ACTIVE,
 		'available_uses' => 1,
+		'source_label' => Account::SOURCE_ALLKEYSHOP,
 	]);
 
 	$order = DeliveryOrder::factory()->create([
@@ -170,7 +171,8 @@ it('assigns a specific account chosen by login from the mini app', function (): 
 		->assertOk()
 		->assertJsonPath('ok', true)
 		->assertJsonCount(2, 'available_accounts')
-		->assertJsonPath('available_accounts.0.platforms', ['PS5']);
+		->assertJsonPath('available_accounts.0.platforms', ['PS5'])
+		->assertJsonPath('available_accounts.1.source_label', Account::SOURCE_ALLKEYSHOP);
 
 	$this->postJson("/webapp/api/delivery-orders/{$order->id}/assign", [
 		'game' => 'FIFA',

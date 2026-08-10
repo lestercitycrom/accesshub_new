@@ -147,6 +147,11 @@ final class AccountsSimpleImportController
 					$recoverCode = isset($columnMap['recover_code']) ? trim($row[$columnMap['recover_code']] ?? '') : '';
 					$recoverCode = $recoverCode !== '' ? $recoverCode : null;
 
+					$hasSourceLabelColumn = isset($columnMap['source_label']);
+					$sourceLabel = $hasSourceLabelColumn
+						? $this->sourceLabelFromCsv((string) ($row[$columnMap['source_label']] ?? ''))
+						: null;
+
 					// Validate and parse date
 					$twoFaDateParsed = null;
 					if ($twoFaDate !== null && $twoFaDate !== '') {
@@ -202,6 +207,10 @@ final class AccountsSimpleImportController
 						'recover_code' => $recoverCode,
 						'status' => AccountStatus::ACTIVE,
 					];
+
+					if ($hasSourceLabelColumn) {
+						$accountData['source_label'] = $sourceLabel;
+					}
 
 					if ($existingAccount !== null) {
 						// Update existing account
@@ -273,5 +282,15 @@ final class AccountsSimpleImportController
 		sort($values, SORT_STRING);
 
 		return $values;
+	}
+
+	private function sourceLabelFromCsv(string $value): ?string
+	{
+		$normalized = mb_strtolower(trim($value));
+		$normalized = str_replace([' ', '-', '_'], '', $normalized);
+
+		return in_array($normalized, ['1', 'true', 'yes', 'y', 'on', 'да', 'allkeyshop'], true)
+			? Account::SOURCE_ALLKEYSHOP
+			: null;
 	}
 }

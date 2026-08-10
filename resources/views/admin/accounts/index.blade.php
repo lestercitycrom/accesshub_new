@@ -216,7 +216,12 @@
 						</td>
 
 						<td class="px-3 py-2">
-							<div class="truncate font-semibold text-slate-900" title="{{ $row->login }}">{{ $row->login }}</div>
+							<div class="flex min-w-0 flex-wrap items-center gap-1.5">
+								<div class="truncate font-semibold text-slate-900" title="{{ $row->login }}">{{ $row->login }}</div>
+								@if($row->isAllKeyShop())
+									<x-admin.badge variant="amber">ALLKEYSHOP</x-admin.badge>
+								@endif
+							</div>
 							@php $mail = $row->mail_account_login ?: (is_array($row->meta) ? ($row->meta['email_login'] ?? null) : null); @endphp
 							@if($mail)
 								<div class="truncate text-[11px] text-slate-500" title="{{ $mail }}">{{ $mail }}</div>

@@ -50,9 +50,9 @@ it('imports accounts with new fields', function (): void {
 	$this->actingAs($admin);
 
 	$csv = implode("\n", [
-		'Game Name,Game Name .1,Console Account Login,Console Account Password,Mail Account Login,Mail Account Password,Comment,2-fa Mail Account Date,Recover Code',
-		'cs2,PS4,user1@test.com,pass123,mail1@test.com,mailpass1,Test comment,2024-01-15,recover123',
-		'cs2,PS5,user2@test.com,pass456,mail2@test.com,mailpass2,Another comment,2024-01-20,recover456',
+		'Game Name,Game Name .1,Console Account Login,Console Account Password,Mail Account Login,Mail Account Password,Comment,2-fa Mail Account Date,Recover Code,AllKeyShop',
+		'cs2,PS4,user1@test.com,pass123,mail1@test.com,mailpass1,Test comment,2024-01-15,recover123,yes',
+		'cs2,PS5,user2@test.com,pass456,mail2@test.com,mailpass2,Another comment,2024-01-20,recover456,no',
 	]);
 
 	$file = createCsvFile($csv);
@@ -70,10 +70,12 @@ it('imports accounts with new fields', function (): void {
 	expect($account1->two_fa_mail_account_date)->toBe('2024-01-15');
 	expect($account1->recover_code)->toBe('recover123');
 	expect($account1->platform)->toBe(['PS4']);
+	expect($account1->source_label)->toBe(Account::SOURCE_ALLKEYSHOP);
 
 	$account2 = Account::query()->where('login', 'user2@test.com')->first();
 	expect($account2)->not->toBeNull();
 	expect($account2->platform)->toBe(['PS5']);
+	expect($account2->source_label)->toBeNull();
 })->group('Stage62');
 
 it('imports accounts with multiple platforms separated by &', function (): void {
@@ -113,6 +115,7 @@ it('updates existing account on re-import', function (): void {
 
 	expect(Account::query()->count())->toBe(1);
 	$account = Account::query()->where('login', 'user1@test.com')->first();
+	$account->update(['source_label' => Account::SOURCE_ALLKEYSHOP]);
 	expect($account->comment)->toBe('Old comment');
 	expect($account->platform)->toBe(['PS4']);
 
@@ -129,6 +132,7 @@ it('updates existing account on re-import', function (): void {
 	expect($account->comment)->toBe('New comment');
 	expect($account->password)->toBe('newpass456');
 	expect($account->platform)->toBe(['PS4', 'PS5']);
+	expect($account->source_label)->toBe(Account::SOURCE_ALLKEYSHOP);
 })->group('Stage62');
 
 it('handles CSV with column name synonyms', function (): void {
