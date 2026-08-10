@@ -43,7 +43,7 @@ it('lets an admin reach every tier', function (): void {
 	$this->actingAs($admin)->get(route('admin.users.index'))->assertOk();             // manage
 });
 
-it('lets a manager use the account base + logs but not import/export or system', function (): void {
+it('lets a manager use supply workflows but not sensitive import/export or system', function (): void {
 	$manager = User::factory()->manager()->create();
 
 	$this->actingAs($manager)->get(route('admin.accounts.index'))->assertOk();          // view
@@ -53,6 +53,7 @@ it('lets a manager use the account base + logs but not import/export or system',
 	$this->actingAs($manager)->get(route('admin.delivery-links.index'))->assertOk();    // supply: create links
 	$this->actingAs($manager)->get(route('admin.delivery-instructions.index'))->assertOk(); // supply
 	$this->actingAs($manager)->get(route('admin.issuances.index'))->assertOk();         // supply: logs
+	$this->actingAs($manager)->get(route('admin.export.delivery-links.csv'))->assertOk(); // supply: marketplace links
 
 	$this->actingAs($manager)->get(route('admin.export.accounts.csv'))->assertForbidden(); // admin only now
 	$this->actingAs($manager)->get(route('admin.settings.index'))->assertForbidden();   // manage
@@ -78,11 +79,12 @@ it('limits an operator to fulfillment views plus account creation', function ():
 	$this->actingAs($operator)->get(route('admin.delivery-links.index'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.delivery-instructions.index'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.export.accounts.csv'))->assertForbidden();
+	$this->actingAs($operator)->get(route('admin.export.delivery-links.csv'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.settings.index'))->assertForbidden();
 	$this->actingAs($operator)->get(route('admin.users.index'))->assertForbidden();
 });
 
-it('makes import/export admin-only', function (): void {
+it('keeps sensitive exports admin-only while supply roles can export delivery links', function (): void {
 	$admin = User::factory()->admin()->create();
 	$manager = User::factory()->manager()->create();
 	$operator = User::factory()->operator()->create();
@@ -91,10 +93,13 @@ it('makes import/export admin-only', function (): void {
 	$this->actingAs($admin)->get(route('admin.export.delivery-links.csv'))->assertOk();
 	$this->actingAs($admin)->get(route('admin.export.issuances.csv'))->assertOk();
 
-	foreach ([$manager, $operator] as $user) {
-		$this->actingAs($user)->get(route('admin.export.accounts.csv'))->assertForbidden();
-		$this->actingAs($user)->get(route('admin.export.delivery-links.csv'))->assertForbidden();
-	}
+	$this->actingAs($manager)->get(route('admin.export.accounts.csv'))->assertForbidden();
+	$this->actingAs($manager)->get(route('admin.export.delivery-links.csv'))->assertOk();
+	$this->actingAs($manager)->get(route('admin.export.issuances.csv'))->assertForbidden();
+
+	$this->actingAs($operator)->get(route('admin.export.accounts.csv'))->assertForbidden();
+	$this->actingAs($operator)->get(route('admin.export.delivery-links.csv'))->assertForbidden();
+	$this->actingAs($operator)->get(route('admin.export.issuances.csv'))->assertForbidden();
 });
 
 it('gates the account card (show) to supply roles', function (): void {

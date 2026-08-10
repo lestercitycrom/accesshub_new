@@ -102,3 +102,39 @@ it('exports unused links as newline-separated urls', function (): void {
 	expect($body)->toContain(route('delivery.take-order.coded', ['code' => $unused->code]))
 		->and($body)->not->toContain($used->code);
 });
+
+it('lets a manager export all links from a batch', function (): void {
+	$manager = User::factory()->manager()->create();
+	$this->actingAs($manager);
+
+	$unused = DeliveryLink::factory()->create(['batch' => 'manager-batch']);
+	$used = DeliveryLink::factory()->used()->create(['batch' => 'manager-batch']);
+
+	$response = $this->get(route('admin.export.delivery-links.csv', [
+		'batch' => 'manager-batch',
+		'only' => 'all',
+	]))->assertOk()
+		->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+	expect($response->getContent())
+		->toContain(route('delivery.take-order.coded', ['code' => $unused->code]))
+		->toContain(route('delivery.take-order.coded', ['code' => $used->code]));
+});
+
+it('renders batch export links without double-encoding query parameters', function (): void {
+	$manager = User::factory()->manager()->create();
+	DeliveryLink::factory()->create(['batch' => 'render-batch']);
+
+	$response = $this->actingAs($manager)
+		->get(route('admin.delivery-links.index'))
+		->assertOk();
+
+	$unusedUrl = route('admin.export.delivery-links.csv', [
+		'batch' => 'render-batch',
+		'only' => 'unused',
+	]);
+
+	$response
+		->assertSee('href="'.e($unusedUrl).'"', false)
+		->assertDontSee('&amp;amp;', false);
+});

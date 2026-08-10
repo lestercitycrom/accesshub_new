@@ -79,7 +79,7 @@
 				</div>
 
 				<div class="mt-4 flex flex-wrap gap-2">
-					<x-admin.button variant="secondary" size="sm" href="{{ route('admin.export.delivery-links.csv', ['only' => 'unused']) }}">
+					<x-admin.button variant="secondary" size="sm" :href="route('admin.export.delivery-links.csv', ['only' => 'unused'])">
 						Export all unused (CSV)
 					</x-admin.button>
 				</div>
@@ -115,10 +115,10 @@
 									<td class="px-3 py-2">
 										<div class="flex flex-wrap justify-end gap-2">
 											@if($row->batch !== null)
-												<x-admin.button variant="secondary" size="sm" href="{{ route('admin.export.delivery-links.csv', ['batch' => $row->batch, 'only' => 'unused']) }}">
+											<x-admin.button variant="secondary" size="sm" :href="route('admin.export.delivery-links.csv', ['batch' => $row->batch, 'only' => 'unused'])">
 													CSV (unused)
 												</x-admin.button>
-												<x-admin.button variant="ghost" size="sm" href="{{ route('admin.export.delivery-links.csv', ['batch' => $row->batch, 'only' => 'all']) }}">
+											<x-admin.button variant="ghost" size="sm" :href="route('admin.export.delivery-links.csv', ['batch' => $row->batch, 'only' => 'all'])">
 													CSV (all)
 												</x-admin.button>
 												@if($row->unused > 0)

@@ -86,6 +86,7 @@ Route::middleware(['auth', 'can:hub-view', '2fa'])->prefix('admin')->name('admin
 		Route::get('/account-lookup', App\Admin\Livewire\Accounts\AccountLookup::class)->name('account-lookup');
 
 		Route::get('/delivery-links', App\Admin\Livewire\DeliveryLinks\DeliveryLinksIndex::class)->name('delivery-links.index');
+		Route::get('/export/delivery-links.csv', App\Admin\Http\Controllers\Export\ExportDeliveryLinksCsvController::class)->name('export.delivery-links.csv');
 		Route::get('/delivery-instructions', App\Admin\Livewire\DeliveryInstructions\DeliveryInstructionsIndex::class)->name('delivery-instructions.index');
 
 		// Logs — operators don't need these.
@@ -102,14 +103,12 @@ Route::middleware(['auth', 'can:hub-view', '2fa'])->prefix('admin')->name('admin
 
 	Route::get('/problems', App\Admin\Livewire\Problems\ProblemsIndex::class)->name('problems.index');
 
-	// ---- Manage tier (admin only): system config, users, import/export ----
+	// ---- Manage tier (admin only): system config, users, sensitive import/export ----
 	Route::middleware('can:hub-manage')->group(function (): void {
 		Route::post('/accounts/import', App\Admin\Http\Controllers\Import\AccountsSimpleImportController::class)->name('accounts.import');
 
 		Route::get('/export/accounts.csv', App\Admin\Http\Controllers\Export\ExportAccountsCsvController::class)->name('export.accounts.csv');
 		Route::get('/export/issuances.csv', App\Admin\Http\Controllers\Export\ExportIssuancesCsvController::class)->name('export.issuances.csv');
-		Route::get('/export/delivery-links.csv', App\Admin\Http\Controllers\Export\ExportDeliveryLinksCsvController::class)->name('export.delivery-links.csv');
-
 		Route::get('/users', App\Admin\Livewire\Users\UsersIndex::class)->name('users.index');
 
 		Route::get('/telegram-users', App\Admin\Livewire\TelegramUsers\TelegramUsersIndex::class)->name('telegram-users.index');
