@@ -13,12 +13,10 @@
                     this.code = '';
                     this.recovery_code = '';
 
-                    $dispatch('clear-2fa-auth-code');
-
                     $nextTick(() => {
                         this.showRecoveryInput
                             ? this.$refs.recovery_code?.focus()
-                            : $dispatch('focus-2fa-auth-code');
+                            : this.$refs.code?.focus();
                     });
                 },
             }"
@@ -43,15 +41,42 @@
                 <div class="space-y-5 text-center">
                     <div x-show="!showRecoveryInput">
                         <div class="flex items-center justify-center my-5">
-                            <flux:otp
+                            <label for="two-factor-code" class="sr-only">OTP код</label>
+                            <input
+                                id="two-factor-code"
+                                data-test="two-factor-code"
+                                x-ref="code"
                                 x-model="code"
-                                length="6"
                                 name="code"
-                                label="OTP код"
-                                label:sr-only
-                                class="mx-auto"
-                             />
+                                type="text"
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
+                                enterkeyhint="done"
+                                minlength="6"
+                                maxlength="6"
+                                pattern="[0-9]{6}"
+                                required
+                                autofocus
+                                autocorrect="off"
+                                spellcheck="false"
+                                placeholder="000000"
+                                aria-describedby="two-factor-code-hint"
+                                @input="
+                                    code = $event.target.value.replace(/\D/g, '').slice(0, 6);
+                                    $event.target.value = code;
+                                "
+                                style="letter-spacing: 0.45em;"
+                                class="block w-full max-w-64 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-center text-2xl font-semibold text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-300 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-600 dark:focus:border-zinc-500 dark:focus:ring-zinc-700"
+                            >
                         </div>
+
+                        <p id="two-factor-code-hint" class="sr-only">Введите шесть цифр из приложения-аутентификатора.</p>
+
+                        @error('code')
+                            <flux:text color="red">
+                                {{ $message }}
+                            </flux:text>
+                        @enderror
                     </div>
 
                     <div x-show="showRecoveryInput">
