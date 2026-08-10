@@ -1839,7 +1839,11 @@
 					// Заполняем игры (изначально все)
 					populateGameSelect(allGames);
 					document.getElementById('game')?.addEventListener('change', loadIssueAccounts);
-					document.getElementById('orderId')?.addEventListener('change', loadIssueAccounts);
+					document.getElementById('orderId')?.addEventListener('change', () => {
+						// A button click can blur this field immediately before its click handler.
+						// Defer the refresh so the currently selected account reaches the request.
+						window.setTimeout(loadIssueAccounts, 0);
+					});
 					document.getElementById('qty')?.addEventListener('change', () => {
 						if ((parseInt(document.getElementById('qty')?.value || '1', 10) || 1) > 1 && issueAccountSelect?.value) {
 							issueAccountSelect.value = '';

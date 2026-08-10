@@ -147,6 +147,19 @@ it('does not allow one selected account to masquerade as a quantity of two', fun
 	expect(Issuance::query()->where('order_id', 'QUANTITY-GUARD-ORDER')->exists())->toBeFalse();
 });
 
+it('keeps the selected account available when the order field blurs into the issue button', function (): void {
+	$operator = TelegramUser::factory()->create([
+		'telegram_id' => 202608102204,
+		'role' => TelegramRole::OPERATOR,
+		'is_active' => true,
+	]);
+
+	$this->withSession(['webapp.telegram_id' => $operator->telegram_id])
+		->get('/webapp')
+		->assertOk()
+		->assertSee('window.setTimeout(loadIssueAccounts, 0);', false);
+});
+
 it('uses only the customer platform catalog and canonicalizes production aliases', function (): void {
 	expect(config('accesshub.platforms'))->toBe(PlatformCatalog::OPTIONS)
 		->and(PlatformCatalog::canonicalize('Epic'))->toBe('Epic Games')

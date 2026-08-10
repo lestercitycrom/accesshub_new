@@ -19,7 +19,7 @@ final class AccountFactory extends Factory
 	{
 		return [
 			'game' => $this->faker->randomElement(['cs2', 'dota2', 'pubg']),
-			'platform' => [$this->faker->randomElement(['steam', 'epic', 'PS4', 'PS5'])], // Array of platforms
+			'platform' => [$this->faker->randomElement(['Steam', 'Epic Games', 'PS4', 'PS5'])], // Array of platforms
 			'login' => $this->faker->unique()->userName(),
 			'password' => 'secret123', // Will be encrypted by cast
 			'status' => AccountStatus::ACTIVE,
