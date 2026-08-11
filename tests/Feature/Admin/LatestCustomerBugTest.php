@@ -69,6 +69,34 @@ it('keeps the explicit replacement workflow available for an issued order', func
 		->and(Issuance::query()->where('order_id', 'REPLACEMENT-ORDER')->count())->toBe(2);
 });
 
+it('records an issuance for a game name longer than the former database limit', function (): void {
+	$game = 'Call of Duty Black Ops III Zombies Chronicles Edition';
+	$operator = TelegramUser::factory()->create([
+		'telegram_id' => 202608120002,
+		'role' => TelegramRole::OPERATOR,
+		'is_active' => true,
+	]);
+	$account = Account::factory()->create([
+		'game' => $game,
+		'platform' => ['PS5'],
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+
+	$result = app(IssueService::class)->issue(
+		telegramId: $operator->telegram_id,
+		orderId: 'LONG-GAME-NAME-ORDER',
+		game: $game,
+		platform: 'PS5',
+		qty: 1,
+		accountId: $account->id,
+	);
+
+	expect(mb_strlen($game))->toBeGreaterThan(50)
+		->and($result->ok())->toBeTrue()
+		->and(Issuance::query()->where('order_id', 'LONG-GAME-NAME-ORDER')->value('game'))->toBe($game);
+});
+
 it('notifies all other active staff about a browser issuance without credentials', function (): void {
 	config()->set('services.telegram.bot_token', 'test');
 	Http::fake([
