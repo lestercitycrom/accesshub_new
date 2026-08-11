@@ -27,8 +27,8 @@ final class IssueMessageFormatter
 			$message = "✅ Выдано:\n\n" .
 				$orderLine .
 				$gameLine .
-				"🎮 Логин: <code>{$items[0]['login']}</code>\n" .
-				"🔑 Пароль: <code>{$items[0]['password']}</code>\n";
+				"🎮 Login: <code>{$items[0]['login']}</code>\n" .
+				"🔑 Password: <code>{$items[0]['password']}</code>\n";
 
 			if (($items[0]['source_label'] ?? null) === 'allkeyshop') {
 				$message .= "🏷 ALLKEYSHOP\n";
@@ -47,8 +47,8 @@ final class IssueMessageFormatter
 		foreach ($items as $index => $item) {
 			$itemLines = [
 				"\n#" . ($index + 1) . "\n",
-				"🎮 Логин: <code>{$item['login']}</code>\n",
-				"🔑 Пароль: <code>{$item['password']}</code>\n",
+				"🎮 Login: <code>{$item['login']}</code>\n",
+				"🔑 Password: <code>{$item['password']}</code>\n",
 			];
 
 			if (($item['source_label'] ?? null) === 'allkeyshop') {
@@ -63,5 +63,37 @@ final class IssueMessageFormatter
 		}
 
 		return implode('', $lines);
+	}
+
+	public function copyCredentialsKeyboard(IssuanceResult $result): ?array
+	{
+		if (!$result->ok()) {
+			return null;
+		}
+
+		$rows = [];
+		$itemCount = count($result->items);
+
+		foreach ($result->items as $index => $item) {
+			$text = "Login: {$item['login']}\nPassword: {$item['password']}";
+
+			// Telegram accepts 1-256 characters in CopyTextButton.text. Never
+			// truncate credentials: omit the button when the pair is too long.
+			$length = function_exists('mb_strlen') ? mb_strlen($text) : strlen($text);
+			if ($length > 256) {
+				continue;
+			}
+
+			$rows[] = [[
+				'text' => $itemCount === 1
+					? '📋 Copy credentials'
+					: '📋 Copy credentials #' . ($index + 1),
+				'copy_text' => [
+					'text' => $text,
+				],
+			]];
+		}
+
+		return $rows === [] ? null : ['inline_keyboard' => $rows];
 	}
 }

@@ -51,10 +51,25 @@ it('handles text message webhook successfully', function (): void {
 
 	// Verify Telegram API was called
 	Http::assertSent(function ($request): bool {
-		return str_contains($request->url(), 'sendMessage')
-			&& str_contains($request['text'], '✅ Выдано')
-			&& str_contains($request['text'], 'testlogin')
-			&& str_contains($request['text'], 'testpass');
+		if (!str_contains($request->url(), 'sendMessage') || (string) $request['chat_id'] !== '123456789') {
+			return false;
+		}
+
+		$copyTexts = array_map(
+			static fn (array $row): ?string => $row[0]['copy_text']['text'] ?? null,
+			$request['reply_markup']['inline_keyboard'] ?? [],
+		);
+		sort($copyTexts);
+
+		return str_contains($request['text'], '✅ Выдано')
+			&& str_contains($request['text'], 'Login: <code>testlogin</code>')
+			&& str_contains($request['text'], 'Password: <code>testpass</code>')
+			&& !str_contains($request['text'], 'Логин:')
+			&& !str_contains($request['text'], 'Пароль:')
+			&& $copyTexts === [
+				"Login: testlogin\nPassword: testpass",
+				"Login: testlogin2\nPassword: testpass2",
+			];
 	});
 
 	Http::assertSentCount(4);

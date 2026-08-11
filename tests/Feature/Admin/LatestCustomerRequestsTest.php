@@ -14,6 +14,7 @@ use App\Domain\Telegram\Enums\TelegramRole;
 use App\Domain\Telegram\Models\TelegramUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -118,6 +119,53 @@ it('issues the exact account selected in the main mini app and returns its label
 		->assertJsonPath('items.0.source_label', Account::SOURCE_ALLKEYSHOP);
 
 	expect((string) $response->json('message'))->toContain('ALLKEYSHOP');
+});
+
+it('sends browser-issued credentials to Telegram with a copy button', function (): void {
+	config()->set('services.telegram.bot_token', 'test');
+	Http::fake([
+		'https://api.telegram.org/bottest/sendMessage' => Http::response(['ok' => true], 200),
+	]);
+
+	$operator = TelegramUser::factory()->create([
+		'telegram_id' => 202608120001,
+		'role' => TelegramRole::OPERATOR,
+		'is_active' => true,
+	]);
+	$account = Account::factory()->create([
+		'game' => 'Copy Button Game',
+		'platform' => ['Steam'],
+		'login' => 'copy-button@example.test',
+		'password' => 'copy-button-pass',
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+	Setting::query()->create([
+		'key' => 'webapp_issue_delivery',
+		'value' => ['v' => 'chat'],
+	]);
+
+	$this->withSession(['webapp.telegram_id' => $operator->telegram_id])
+		->postJson('/webapp/api/issue', [
+			'order_id' => 'COPY-BUTTON-ORDER',
+			'game' => 'Copy Button Game',
+			'platform' => 'Steam',
+			'qty' => 1,
+			'account_id' => $account->id,
+		])
+		->assertOk()
+		->assertJsonPath('sent_to_chat', true)
+		->assertJsonPath('show_in_webapp', false);
+
+	Http::assertSentCount(1);
+	Http::assertSent(fn ($request): bool =>
+		(string) $request['chat_id'] === (string) $operator->telegram_id
+		&& str_contains((string) $request['text'], 'Login: <code>copy-button@example.test</code>')
+		&& str_contains((string) $request['text'], 'Password: <code>copy-button-pass</code>')
+		&& ($request['reply_markup']['inline_keyboard'][0][0]['text'] ?? null) === '📋 Copy credentials'
+		&& ($request['reply_markup']['inline_keyboard'][0][0]['copy_text']['text'] ?? null)
+			=== "Login: copy-button@example.test\nPassword: copy-button-pass"
+	);
 });
 
 it('does not allow one selected account to masquerade as a quantity of two', function (): void {

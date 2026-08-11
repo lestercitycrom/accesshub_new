@@ -6,6 +6,7 @@ namespace App\Telegram\Http\Controllers;
 
 use App\Models\ServerError;
 use App\Telegram\DTO\IncomingUpdate;
+use App\Telegram\DTO\OutgoingMessage;
 use App\Telegram\Services\BotDispatcher;
 use App\Telegram\Services\TelegramClient;
 use App\Domain\Telegram\Models\TelegramUser;
@@ -52,11 +53,13 @@ final class WebhookController
 			$this->upsertTelegramUser($update);
 
 			// Dispatch message
-			$responseText = $this->dispatcher->dispatch($update);
+			$response = $this->dispatcher->dispatch($update);
 
 			// Send response back to Telegram
-			if ($chatId && $responseText) {
-				$this->telegramClient->sendMessage($chatId, $responseText);
+			if ($chatId && $response instanceof OutgoingMessage) {
+				$this->telegramClient->sendMessage($chatId, $response->text, replyMarkup: $response->replyMarkup);
+			} elseif ($chatId && is_string($response) && $response !== '') {
+				$this->telegramClient->sendMessage($chatId, $response);
 			}
 
 			return response()->json(['status' => 'ok'], 200);

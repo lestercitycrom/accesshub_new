@@ -73,7 +73,11 @@ final class ProblemController
 		}
 
 		$message = "Проблема сохранена. Выдана замена:\n\n" . $this->messageFormatter->format($replacement);
-		$this->telegramClient->sendMessage((string) $telegramId, $message);
+		$this->telegramClient->sendMessage(
+			(string) $telegramId,
+			$message,
+			replyMarkup: $this->messageFormatter->copyCredentialsKeyboard($replacement),
+		);
 
 		return response()->json(['ok' => true, 'message' => 'Проблема сохранена. Замена отправлена в чат.']);
 	}

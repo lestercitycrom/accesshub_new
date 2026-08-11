@@ -118,7 +118,11 @@ final class IssueController
 
 			if ($sendToChat) {
 				try {
-					$this->telegramClient->sendMessage((string) $telegramId, $message);
+					$this->telegramClient->sendMessage(
+						(string) $telegramId,
+						$message,
+						replyMarkup: $this->messageFormatter->copyCredentialsKeyboard($result),
+					);
 				} catch (\Throwable) {
 					// Ignore chat failures for webapp response.
 				}

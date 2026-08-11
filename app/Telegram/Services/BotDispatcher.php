@@ -11,6 +11,7 @@ use App\Domain\Issuance\Models\Issuance;
 use App\Domain\Accounts\Services\AccountStatusService;
 use App\Telegram\DTO\IncomingIssueRequest;
 use App\Telegram\DTO\IncomingUpdate;
+use App\Telegram\DTO\OutgoingMessage;
 use App\Telegram\Services\Parsers\TextIssueParser;
 use App\Telegram\Services\IssueMessageFormatter;
 use App\Domain\Telegram\Models\TelegramUser;
@@ -30,7 +31,7 @@ final class BotDispatcher
 		private readonly IssuanceStaffNotifier $staffNotifier,
 	) {}
 
-	public function dispatch(IncomingUpdate $incoming): ?string
+	public function dispatch(IncomingUpdate $incoming): string|OutgoingMessage|null
 	{
 		$telegramId = (int) $incoming->telegramId;
 		$user = TelegramUser::query()->where('telegram_id', $telegramId)->first();
@@ -95,7 +96,10 @@ final class BotDispatcher
 			issuedItems: $result->items,
 		);
 
-		return $this->messageFormatter->format($result);
+		return new OutgoingMessage(
+			text: $this->messageFormatter->format($result),
+			replyMarkup: $this->messageFormatter->copyCredentialsKeyboard($result),
+		);
 	}
 
 	private function handleCallback(IncomingUpdate $incoming): ?string
@@ -158,7 +162,7 @@ final class BotDispatcher
 		return null;
 	}
 
-	private function handleWebAppAction(IncomingUpdate $incoming): ?string
+	private function handleWebAppAction(IncomingUpdate $incoming): string|OutgoingMessage|null
 	{
 		try {
 			$data = json_decode($incoming->webAppData ?? '', true, JSON_THROW_ON_ERROR);
@@ -219,7 +223,10 @@ final class BotDispatcher
 				);
 			}
 
-			return "Проблема сохранена. Выдана замена:\n\n" . $this->messageFormatter->format($replacement);
+			return new OutgoingMessage(
+				text: "Проблема сохранена. Выдана замена:\n\n" . $this->messageFormatter->format($replacement),
+				replyMarkup: $this->messageFormatter->copyCredentialsKeyboard($replacement),
+			);
 		}
 
 		if ($action === 'update_password') {

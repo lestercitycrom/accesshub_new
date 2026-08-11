@@ -279,7 +279,7 @@ final class WebAppPage extends Component
 
 		if (count($items) === 1) {
 			return sprintf(
-				"Выдано:\nЛогин: %s\nПароль: %s",
+				"Выдано:\nLogin: %s\nPassword: %s",
 				(string) $items[0]['login'],
 				(string) $items[0]['password']
 			);
@@ -289,7 +289,7 @@ final class WebAppPage extends Component
 
 		foreach ($items as $index => $item) {
 			$lines[] = sprintf(
-				"#%d\nЛогин: %s\nПароль: %s",
+				"#%d\nLogin: %s\nPassword: %s",
 				$index + 1,
 				(string) $item['login'],
 				(string) $item['password']

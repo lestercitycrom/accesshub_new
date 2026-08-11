@@ -961,12 +961,12 @@
 			}
 			if (items.length === 1) {
 				const sourceLabel = items[0].source_label === 'allkeyshop' ? '\nМетка: ALLKEYSHOP' : '';
-				issueResultText.textContent = `Логин: ${items[0].login}\nПароль: ${items[0].password}${sourceLabel}`;
+				issueResultText.textContent = `Login: ${items[0].login}\nPassword: ${items[0].password}${sourceLabel}`;
 				return;
 			}
 			const lines = items.map((item, index) => {
 				const sourceLabel = item.source_label === 'allkeyshop' ? '\nМетка: ALLKEYSHOP' : '';
-				return `#${index + 1}\nЛогин: ${item.login}\nПароль: ${item.password}${sourceLabel}`;
+				return `#${index + 1}\nLogin: ${item.login}\nPassword: ${item.password}${sourceLabel}`;
 			});
 			issueResultText.textContent = lines.join('\n\n');
 		}
@@ -1268,7 +1268,7 @@
 				if (resp.status === 200 && resp.data?.ok) {
 					resultBox.style.display = 'block';
 					resultBox.style.cssText = 'display:block;margin-top:8px;padding:10px;border-radius:8px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.1);font-size:13px;white-space:pre-wrap;word-break:break-word;';
-					resultBox.textContent = `Замена выполнена.\nАккаунт: #${resp.data.account_id}\nЛогин: ${resp.data.login}\nПароль: ${resp.data.password}`;
+					resultBox.textContent = `Замена выполнена.\nАккаунт: #${resp.data.account_id}\nLogin: ${resp.data.login}\nPassword: ${resp.data.password}`;
 					confirmBtn.disabled = true;
 					select.disabled = true;
 					otherInput.disabled = true;
