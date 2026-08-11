@@ -42,6 +42,7 @@ final class SchemaController
 		$platforms = collect((array) config('accesshub.platforms', []))
 			->filter(fn (string $platform): bool => $availablePlatforms->contains($platform))
 			->map(fn($platform) => ['value' => $platform, 'label' => ucfirst($platform)])
+			->values()
 			->toArray();
 
 		// Build platform → games mapping

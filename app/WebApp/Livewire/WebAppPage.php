@@ -135,6 +135,7 @@ final class WebAppPage extends Component
 			game: (string) $issuance->game,
 			platform: (string) $issuance->platform,
 			qty: 1,
+			allowRepeatOrder: true,
 		);
 
 		if ($replacement->ok() !== true) {

@@ -7,6 +7,7 @@ namespace App\WebApp\Http\Controllers;
 use App\Domain\Issuance\Services\IssueService;
 use App\Domain\Settings\Services\SettingsService;
 use App\Telegram\Services\IssueMessageFormatter;
+use App\Telegram\Services\IssuanceAdminNotifier;
 use App\Telegram\Services\TelegramClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,18 +20,20 @@ final class IssueController
 		private readonly TelegramClient $telegramClient,
 		private readonly IssueMessageFormatter $messageFormatter,
 		private readonly SettingsService $settings,
+		private readonly IssuanceAdminNotifier $adminNotifier,
 	) {}
 
 	public function __invoke(Request $request): JsonResponse
 	{
-		// Log immediately at the start - this should always execute
-		\Illuminate\Support\Facades\Log::info('IssueController: INVOKE CALLED', [
+		Log::info('IssueController: request received', [
 			'method' => $request->method(),
-			'url' => $request->fullUrl(),
 			'path' => $request->path(),
-			'all_input' => $request->all(),
+			'order_id' => $request->input('order_id'),
+			'game' => $request->input('game'),
+			'platform' => $request->input('platform'),
+			'qty' => $request->integer('qty', 1),
+			'account_id' => $request->integer('account_id') ?: null,
 			'session_telegram_id' => $request->session()->get('webapp.telegram_id', 0),
-			'headers' => $request->headers->all(),
 		]);
 
 		try {
@@ -120,6 +123,13 @@ final class IssueController
 					// Ignore chat failures for webapp response.
 				}
 			}
+
+			$this->adminNotifier->notify(
+				orderId: $orderId,
+				game: $game,
+				platform: $platform,
+				operatorTelegramId: $telegramId,
+			);
 
 			return response()->json([
 				'ok' => true,

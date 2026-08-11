@@ -26,7 +26,16 @@ final class IssueService
 	/**
 	 * @param array<int, TelegramRole>|null $allowedRoles
 	 */
-	public function issue(int $telegramId, string $orderId, string $game, string $platform, int $qty, ?array $allowedRoles = null, ?int $accountId = null): IssuanceResult
+	public function issue(
+		int $telegramId,
+		string $orderId,
+		string $game,
+		string $platform,
+		int $qty,
+		?array $allowedRoles = null,
+		?int $accountId = null,
+		bool $allowRepeatOrder = false,
+	): IssuanceResult
 	{
 		$qty = max(1, $qty);
 
@@ -63,12 +72,20 @@ final class IssueService
 		);
 		$now = CarbonImmutable::now();
 
-		return DB::transaction(function () use ($telegramId, $orderId, $game, $platform, $platformCandidates, $qty, $cooldownDays, $now, $accountId): IssuanceResult {
+		return DB::transaction(function () use ($telegramId, $orderId, $game, $platform, $platformCandidates, $qty, $cooldownDays, $now, $accountId, $allowRepeatOrder): IssuanceResult {
 			try {
 				$alreadyIssuedAccountIds = Issuance::query()
 					->where('order_id', $orderId)
+					->lockForUpdate()
 					->pluck('account_id')
 					->all();
+
+				if (!$allowRepeatOrder && $alreadyIssuedAccountIds !== []) {
+					return IssuanceResult::fail(
+						'По этому номеру заказа аккаунт уже выдан. Повторная выдача запрещена; для замены используйте действие «Замена».',
+						IssuanceResult::REASON_ALREADY_ISSUED,
+					);
+				}
 
 				// Search for accounts where the requested platform is in the platform array
 				// Use whereJsonContains which works with both MySQL and SQLite

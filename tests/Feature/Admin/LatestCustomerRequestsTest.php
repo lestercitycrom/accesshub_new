@@ -165,6 +165,7 @@ it('uses only the customer platform catalog and canonicalizes production aliases
 	$expected = [
 		'Steam',
 		'Epic Games',
+		'Windows',
 		'PS3',
 		'PS4',
 		'PS5',
@@ -181,6 +182,7 @@ it('uses only the customer platform catalog and canonicalizes production aliases
 	expect(PlatformCatalog::OPTIONS)->toBe($expected)
 		->and(config('accesshub.platforms'))->toBe($expected)
 		->and(PlatformCatalog::canonicalize('Epic'))->toBe('Epic Games')
+		->and(PlatformCatalog::canonicalize('PC'))->toBe('Windows')
 		->and(PlatformCatalog::canonicalize('Xbox X'))->toBe('Xbox Series X')
 		->and(PlatformCatalog::canonicalize('Xbox One/Xbox X'))->toBeNull()
 		->and(PlatformCatalog::normalizeList(['Xbox One/Xbox X']))->toBe(['Xbox One', 'Xbox Series X'])

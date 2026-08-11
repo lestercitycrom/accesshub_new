@@ -337,8 +337,8 @@ it('issues two distinct accounts for qty=2 when enough available', function (): 
 	expect(Issuance::query()->where('order_id', 'ORD-QTY2-OK')->count())->toBe(2);
 })->group('Stage2');
 
-it('does not issue the same account twice for the same order_id (excludes already issued)', function (): void {
-	$accounts = Account::factory()->count(2)->create([
+it('does not issue another account for a previously issued order_id', function (): void {
+	$accounts = Account::factory()->count(3)->create([
 		'game' => 'cs2',
 		'platform' => 'steam',
 		'status' => AccountStatus::ACTIVE,
@@ -355,13 +355,14 @@ it('does not issue the same account twice for the same order_id (excludes alread
 
 	$issuedIds = array_map(static fn (array $item): int => (int) $item['account_id'], $result1->items);
 
-	// With only two accounts in pool, second call must fail because already issued are excluded.
+	// A third account is available, but the order number itself is single-use.
 	$result2 = $service->issue(111, 'ORD-IDEMP', 'cs2', 'steam', 1);
 
 	expect($result2->ok())->toBeFalse();
 	expect($result2->message())->toBe(
-		'По этому заказу уже выданы все доступные аккаунты. Используйте новый order_id или дождитесь пополнения.'
+		'По этому номеру заказа аккаунт уже выдан. Повторная выдача запрещена; для замены используйте действие «Замена».'
 	);
+	expect($result2->reason())->toBe(\App\Domain\Issuance\DTO\IssuanceResult::REASON_ALREADY_ISSUED);
 
 	// Ensure no extra issuances were created
 	expect(Issuance::query()->where('order_id', 'ORD-IDEMP')->count())->toBe(2);

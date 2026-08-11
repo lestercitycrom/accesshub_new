@@ -10,6 +10,7 @@ final class PlatformCatalog
 	public const OPTIONS = [
 		'Steam',
 		'Epic Games',
+		'Windows',
 		'PS3',
 		'PS4',
 		'PS5',
@@ -39,6 +40,7 @@ final class PlatformCatalog
 		return match ($key) {
 			'steam' => ['Steam'],
 			'epic', 'epicgames' => ['Epic Games'],
+			'windows', 'win', 'pc', 'microsoftwindows' => ['Windows'],
 			'ps3' => ['PS3'],
 			'ps4' => ['PS4'],
 			'ps5' => ['PS5'],

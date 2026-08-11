@@ -83,7 +83,7 @@ it('imports baseline accounts and ignores duplicates', function (): void {
 	expect($count)->toBe(7);
 })->group('Stage61');
 
-it('issues accounts per order and avoids reuse within the same order', function (): void {
+it('treats an order number as single-use even when more accounts are available', function (): void {
 	importBaselineAccounts($this);
 
 	$operator = TelegramUser::factory()->create(['telegram_id' => 7001]);
@@ -94,14 +94,12 @@ it('issues accounts per order and avoids reuse within the same order', function 
 	expect(Issuance::query()->where('order_id', 'ORD-OK')->count())->toBe(2);
 
 	$result = $service->issue($operator->telegram_id, 'ORD-OK', 'cs2', 'steam', 1);
-	expect($result->ok())->toBeTrue();
-	expect(Issuance::query()->where('order_id', 'ORD-OK')->count())->toBe(3);
+	expect($result->ok())->toBeFalse()
+		->and($result->reason())->toBe(\App\Domain\Issuance\DTO\IssuanceResult::REASON_ALREADY_ISSUED);
+	expect(Issuance::query()->where('order_id', 'ORD-OK')->count())->toBe(2);
 
 	$issuedIds = Issuance::query()->where('order_id', 'ORD-OK')->pluck('account_id')->all();
-	expect(count(array_unique($issuedIds)))->toBe(3);
-
-	$result = $service->issue($operator->telegram_id, 'ORD-OK', 'cs2', 'steam', 1);
-	expect($result->ok())->toBeFalse();
+	expect(count(array_unique($issuedIds)))->toBe(2);
 })->group('Stage61');
 
 it('fails issuance when no accounts exist for the requested game/platform', function (): void {

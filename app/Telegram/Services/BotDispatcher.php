@@ -27,6 +27,7 @@ final class BotDispatcher
 		private readonly IssueMessageFormatter $messageFormatter,
 		private readonly WebAppTokenService $tokenService,
 		private readonly DeliveryOrderService $deliveryOrders,
+		private readonly IssuanceAdminNotifier $adminNotifier,
 	) {}
 
 	public function dispatch(IncomingUpdate $incoming): ?string
@@ -86,7 +87,12 @@ final class BotDispatcher
 			return 'Ошибка выдачи: ' . ($result->message() ?? 'Неизвестная ошибка');
 		}
 
-		$this->notifyAdmins($request, $telegramId);
+		$this->adminNotifier->notify(
+			orderId: $request->orderId,
+			game: $request->game,
+			platform: $request->platform,
+			operatorTelegramId: $telegramId,
+		);
 
 		return $this->messageFormatter->format($result);
 	}
@@ -200,6 +206,7 @@ final class BotDispatcher
 				game: (string) $issuance->game,
 				platform: (string) $issuance->platform,
 				qty: 1,
+				allowRepeatOrder: true,
 			);
 
 			if ($replacement->ok() !== true) {
@@ -262,34 +269,6 @@ final class BotDispatcher
 		}
 
 		return null;
-	}
-
-	private function notifyAdmins(IncomingIssueRequest $request, int $operatorTelegramId): void
-	{
-		$admins = TelegramUser::query()
-			->where('role', TelegramRole::ADMIN)
-			->where('is_active', true)
-			->get();
-
-		$operator = TelegramUser::query()
-			->where('telegram_id', $operatorTelegramId)
-			->first();
-
-		$operatorName = $operator?->username
-			? '@' . $operator->username
-			: ($operator?->first_name ?? (string) $operatorTelegramId);
-
-		$message = "{$request->game} ({$request->platform})\n"
-			. "{$request->orderId}\n"
-			. "The Buyer has paid for the order\n"
-			. "👤 {$operatorName}";
-
-		foreach ($admins as $admin) {
-			if ($admin->telegram_id === $operatorTelegramId) {
-				continue;
-			}
-			$this->telegramClient->sendMessage((string) $admin->telegram_id, $message);
-		}
 	}
 
 	private function parseIncomingRequest(IncomingUpdate $incoming): ?IncomingIssueRequest

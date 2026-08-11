@@ -17,10 +17,11 @@ final class LogWebAppRequests
 			Log::info('LogWebAppRequests: Request intercepted', [
 				'method' => $request->method(),
 				'path' => $request->path(),
-				'url' => $request->fullUrl(),
-				'all_input' => $request->all(),
-				'headers' => $request->headers->all(),
-				'session_id' => $request->session()->getId(),
+				'order_id' => $request->input('order_id'),
+				'game' => $request->input('game'),
+				'platform' => $request->input('platform'),
+				'qty' => $request->integer('qty', 1),
+				'account_id' => $request->integer('account_id') ?: null,
 				'session_telegram_id' => $request->session()->get('webapp.telegram_id', 0),
 			]);
 		}
@@ -30,7 +31,6 @@ final class LogWebAppRequests
 		if (str_starts_with($request->path(), 'webapp/api/issue')) {
 			Log::info('LogWebAppRequests: Response sent', [
 				'status' => $response->getStatusCode(),
-				'content' => $response->getContent(),
 			]);
 		}
 

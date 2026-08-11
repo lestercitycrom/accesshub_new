@@ -34,6 +34,7 @@ trait NormalizesDeliveryPlatforms
 			'nintendoswitch1/2' => 'Nintendo',
 			'steam' => 'Steam',
 			'epic', 'epicgames' => 'Epic Games',
+			'windows', 'win', 'pc', 'microsoftwindows' => 'Windows',
 			default => $platform,
 		};
 	}

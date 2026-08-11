@@ -101,6 +101,7 @@ final class DeliveryOrderService
 				qty: 1,
 				allowedRoles: [TelegramRole::OPERATOR, TelegramRole::DELIVERY_OPERATOR, TelegramRole::ADMIN],
 				accountId: $accountId,
+				allowRepeatOrder: $previousAccountId !== null,
 			);
 
 			if ($result->ok()) {
@@ -234,6 +235,7 @@ final class DeliveryOrderService
 				qty: 1,
 				allowedRoles: [TelegramRole::OPERATOR, TelegramRole::DELIVERY_OPERATOR, TelegramRole::ADMIN],
 				accountId: $accountId,
+				allowRepeatOrder: true,
 			);
 
 			if ($result->ok()) {
