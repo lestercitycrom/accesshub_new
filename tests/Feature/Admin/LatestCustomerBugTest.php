@@ -69,7 +69,7 @@ it('keeps the explicit replacement workflow available for an issued order', func
 		->and(Issuance::query()->where('order_id', 'REPLACEMENT-ORDER')->count())->toBe(2);
 });
 
-it('notifies active admins when an operator issues through the browser webapp', function (): void {
+it('notifies all other active staff about a browser issuance without credentials', function (): void {
 	config()->set('services.telegram.bot_token', 'test');
 	Http::fake([
 		'https://api.telegram.org/bottest/sendMessage' => Http::response(['ok' => true], 200),
@@ -81,21 +81,33 @@ it('notifies active admins when an operator issues through the browser webapp', 
 		'role' => TelegramRole::OPERATOR,
 		'is_active' => true,
 	]);
-	$admin = TelegramUser::factory()->create([
+	$otherOperator = TelegramUser::factory()->create([
 		'telegram_id' => 2026081104,
+		'role' => TelegramRole::OPERATOR,
+		'is_active' => true,
+	]);
+	$deliveryOperator = TelegramUser::factory()->create([
+		'telegram_id' => 2026081105,
+		'role' => TelegramRole::DELIVERY_OPERATOR,
+		'is_active' => true,
+	]);
+	$admin = TelegramUser::factory()->create([
+		'telegram_id' => 2026081106,
 		'role' => TelegramRole::ADMIN,
 		'is_active' => true,
 	]);
 	TelegramUser::factory()->create([
-		'telegram_id' => 2026081105,
+		'telegram_id' => 2026081107,
 		'role' => TelegramRole::ADMIN,
 		'is_active' => false,
 	]);
-	Account::factory()->count(2)->create([
-		'game' => 'Admin Notice Game',
+	$accounts = Account::factory()->count(2)->create([
+		'game' => 'Staff Notice Game',
 		'platform' => ['Windows'],
 		'status' => AccountStatus::ACTIVE,
 		'available_uses' => 1,
+		'source_label' => Account::SOURCE_ALLKEYSHOP,
+		'comment' => 'private operator comment',
 	]);
 	Setting::query()->create([
 		'key' => 'webapp_issue_delivery',
@@ -104,10 +116,11 @@ it('notifies active admins when an operator issues through the browser webapp', 
 
 	$this->withSession(['webapp.telegram_id' => $operator->telegram_id])
 		->postJson('/webapp/api/issue', [
-			'order_id' => 'WEBAPP-ADMIN-NOTICE',
-			'game' => 'Admin Notice Game',
+			'order_id' => 'WEBAPP-STAFF-NOTICE',
+			'game' => 'Staff Notice Game',
 			'platform' => 'Windows',
 			'qty' => 1,
+			'account_id' => $accounts[0]->id,
 		])
 		->assertOk()
 		->assertJsonPath('ok', true)
@@ -115,23 +128,32 @@ it('notifies active admins when an operator issues through the browser webapp', 
 
 	$this->withSession(['webapp.telegram_id' => $operator->telegram_id])
 		->postJson('/webapp/api/issue', [
-			'order_id' => 'WEBAPP-ADMIN-NOTICE',
-			'game' => 'Admin Notice Game',
+			'order_id' => 'WEBAPP-STAFF-NOTICE',
+			'game' => 'Staff Notice Game',
 			'platform' => 'Windows',
 			'qty' => 1,
+			'account_id' => $accounts[1]->id,
 		])
 		->assertUnprocessable()
 		->assertJsonPath('ok', false)
 		->assertJsonPath('error', 'По этому номеру заказа аккаунт уже выдан. Повторная выдача запрещена; для замены используйте действие «Замена».');
 
-	Http::assertSentCount(1);
-	Http::assertSent(fn ($request): bool =>
-		(string) $request['chat_id'] === (string) $admin->telegram_id
-		&& str_contains((string) $request['text'], 'Admin Notice Game (Windows)')
-		&& str_contains((string) $request['text'], 'WEBAPP-ADMIN-NOTICE')
-		&& str_contains((string) $request['text'], '@browser_operator')
-	);
-	expect(Issuance::query()->where('order_id', 'WEBAPP-ADMIN-NOTICE')->count())->toBe(1);
+	Http::assertSentCount(3);
+	foreach ([$otherOperator, $deliveryOperator, $admin] as $recipient) {
+		Http::assertSent(fn ($request): bool =>
+			(string) $request['chat_id'] === (string) $recipient->telegram_id
+			&& str_contains((string) $request['text'], 'Аккаунт выдан')
+			&& str_contains((string) $request['text'], 'Staff Notice Game')
+			&& str_contains((string) $request['text'], 'Windows')
+			&& str_contains((string) $request['text'], 'WEBAPP-STAFF-NOTICE')
+			&& str_contains((string) $request['text'], 'ALLKEYSHOP')
+			&& str_contains((string) $request['text'], '@browser_operator')
+			&& !str_contains((string) $request['text'], (string) $accounts[0]->login)
+			&& !str_contains((string) $request['text'], (string) $accounts[0]->password)
+			&& !str_contains((string) $request['text'], 'private operator comment')
+		);
+	}
+	expect(Issuance::query()->where('order_id', 'WEBAPP-STAFF-NOTICE')->count())->toBe(1);
 });
 
 it('returns sparse catalog matches as a JSON list so Windows renders in the webapp', function (): void {

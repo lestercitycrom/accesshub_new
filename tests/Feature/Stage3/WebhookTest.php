@@ -14,13 +14,18 @@ it('handles text message webhook successfully', function (): void {
 	config()->set('services.telegram.bot_token', 'test');
 
 	// Setup test data
-	$telegramUser = TelegramUser::factory()->create(['telegram_id' => 123456789]);
+	TelegramUser::factory()->create(['telegram_id' => 123456789]);
+	$otherOperator = TelegramUser::factory()->create(['telegram_id' => 9001]);
+	$deliveryOperator = TelegramUser::factory()->deliveryOperator()->create(['telegram_id' => 9002]);
+	$admin = TelegramUser::factory()->admin()->create(['telegram_id' => 9003]);
+	TelegramUser::factory()->inactive()->create(['telegram_id' => 9004]);
 	$account = Account::factory()->create([
 		'game' => 'cs2',
 		'platform' => 'steam',
 		'status' => AccountStatus::ACTIVE,
 		'login' => 'testlogin',
 		'password' => 'testpass',
+		'source_label' => Account::SOURCE_ALLKEYSHOP,
 	]);
 	Account::factory()->create([
 		'game' => 'cs2',
@@ -51,6 +56,20 @@ it('handles text message webhook successfully', function (): void {
 			&& str_contains($request['text'], 'testlogin')
 			&& str_contains($request['text'], 'testpass');
 	});
+
+	Http::assertSentCount(4);
+	foreach ([$otherOperator, $deliveryOperator, $admin] as $recipient) {
+		Http::assertSent(fn ($request): bool =>
+			(string) $request['chat_id'] === (string) $recipient->telegram_id
+			&& str_contains((string) $request['text'], 'Аккаунт выдан')
+			&& str_contains((string) $request['text'], 'ORD-12345')
+			&& str_contains((string) $request['text'], 'cs2')
+			&& str_contains((string) $request['text'], 'steam')
+			&& str_contains((string) $request['text'], 'ALLKEYSHOP')
+			&& !str_contains((string) $request['text'], 'testlogin')
+			&& !str_contains((string) $request['text'], 'testpass')
+		);
+	}
 
 	// Verify database changes
 	expect($account->issuances()->count())->toBe(1);

@@ -7,7 +7,7 @@ namespace App\WebApp\Http\Controllers;
 use App\Domain\Issuance\Services\IssueService;
 use App\Domain\Settings\Services\SettingsService;
 use App\Telegram\Services\IssueMessageFormatter;
-use App\Telegram\Services\IssuanceAdminNotifier;
+use App\Telegram\Services\IssuanceStaffNotifier;
 use App\Telegram\Services\TelegramClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,7 +20,7 @@ final class IssueController
 		private readonly TelegramClient $telegramClient,
 		private readonly IssueMessageFormatter $messageFormatter,
 		private readonly SettingsService $settings,
-		private readonly IssuanceAdminNotifier $adminNotifier,
+		private readonly IssuanceStaffNotifier $staffNotifier,
 	) {}
 
 	public function __invoke(Request $request): JsonResponse
@@ -124,11 +124,12 @@ final class IssueController
 				}
 			}
 
-			$this->adminNotifier->notify(
+			$this->staffNotifier->notify(
 				orderId: $orderId,
 				game: $game,
 				platform: $platform,
 				operatorTelegramId: $telegramId,
+				issuedItems: $result->items,
 			);
 
 			return response()->json([

@@ -27,7 +27,7 @@ final class BotDispatcher
 		private readonly IssueMessageFormatter $messageFormatter,
 		private readonly WebAppTokenService $tokenService,
 		private readonly DeliveryOrderService $deliveryOrders,
-		private readonly IssuanceAdminNotifier $adminNotifier,
+		private readonly IssuanceStaffNotifier $staffNotifier,
 	) {}
 
 	public function dispatch(IncomingUpdate $incoming): ?string
@@ -87,11 +87,12 @@ final class BotDispatcher
 			return 'Ошибка выдачи: ' . ($result->message() ?? 'Неизвестная ошибка');
 		}
 
-		$this->adminNotifier->notify(
+		$this->staffNotifier->notify(
 			orderId: $request->orderId,
 			game: $request->game,
 			platform: $request->platform,
 			operatorTelegramId: $telegramId,
+			issuedItems: $result->items,
 		);
 
 		return $this->messageFormatter->format($result);
