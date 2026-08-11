@@ -123,7 +123,7 @@
 				</div>
 			</x-admin.card>
 
-			<x-admin.card title="Источник аккаунта">
+			<x-admin.card title="Канал продаж">
 				<label class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
 					<input
 						type="checkbox"

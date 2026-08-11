@@ -34,7 +34,7 @@ final class ExportAccountsCsvController
 		}
 
 		if ($platform !== '') {
-			$query->where('platform', $platform);
+			$query->whereJsonContains('platform', $platform);
 		}
 
 		$query->orderByDesc('id');
@@ -47,6 +47,7 @@ final class ExportAccountsCsvController
 			$handle = fopen('php://temp', 'r+');
 
 			if ($handle !== false) {
+				fwrite($handle, "\xEF\xBB\xBF");
 				// CSV header
 				fputcsv($handle, [
 					'id',
@@ -66,7 +67,7 @@ final class ExportAccountsCsvController
 					fputcsv($handle, [
 						$row->id,
 						$row->game,
-						$row->platform,
+						$this->platformCsvValue($row),
 						$row->login,
 						$row->source_label,
 						$row->status->value,
@@ -94,6 +95,7 @@ final class ExportAccountsCsvController
 			if ($handle === false) {
 				return;
 			}
+			fwrite($handle, "\xEF\xBB\xBF");
 
 			// CSV header
 			fputcsv($handle, [
@@ -115,7 +117,7 @@ final class ExportAccountsCsvController
 					fputcsv($handle, [
 						$row->id,
 						$row->game,
-						$row->platform,
+						$this->platformCsvValue($row),
 						$row->login,
 						$row->source_label,
 						$row->status->value,
@@ -131,5 +133,15 @@ final class ExportAccountsCsvController
 		}, $filename, [
 			'Content-Type' => 'text/csv; charset=UTF-8',
 		]);
+	}
+
+	private function platformCsvValue(Account $account): string
+	{
+		$platforms = is_array($account->platform) ? $account->platform : [(string) $account->platform];
+
+		return implode(' & ', array_values(array_filter(array_map(
+			static fn (mixed $platform): string => trim((string) $platform),
+			$platforms,
+		))));
 	}
 }

@@ -17,14 +17,14 @@ it('exports accounts csv with filters for admin', function (): void {
 	Account::factory()->create([
 		'login' => 'alpha_login',
 		'game' => 'cs2',
-		'platform' => 'steam',
+		'platform' => ['Steam'],
 		'status' => AccountStatus::ACTIVE,
 	]);
 
 	Account::factory()->create([
 		'login' => 'beta_login',
 		'game' => 'cs2',
-		'platform' => 'steam',
+		'platform' => ['Xbox One', 'Xbox Series X'],
 		'status' => AccountStatus::DEAD,
 		'source_label' => Account::SOURCE_ALLKEYSHOP,
 	]);
@@ -36,10 +36,18 @@ it('exports accounts csv with filters for admin', function (): void {
 
 	$csv = (string) $response->getContent();
 
-	expect($csv)->toContain("id,game,platform,login,source_label,status");
-	expect($csv)->toContain('beta_login');
-	expect($csv)->toContain(Account::SOURCE_ALLKEYSHOP);
-	expect($csv)->not->toContain('alpha_login');
+	expect($csv)->toStartWith("\xEF\xBB\xBF")
+		->and($csv)->toContain("id,game,platform,login,source_label,status")
+		->and($csv)->toContain('Xbox One & Xbox Series X')
+		->and($csv)->toContain('beta_login')
+		->and($csv)->toContain(Account::SOURCE_ALLKEYSHOP)
+		->and($csv)->not->toContain('Array')
+		->and($csv)->not->toContain('alpha_login');
+
+	$this->get('/admin/export/accounts.csv?platform=' . urlencode('Xbox Series X'))
+		->assertOk()
+		->assertSee('beta_login')
+		->assertDontSee('alpha_login');
 })->group('Stage5.7');
 
 it('exports issuances csv and filters by order_id', function (): void {

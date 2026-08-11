@@ -162,11 +162,31 @@ it('keeps the selected account available when the order field blurs into the iss
 });
 
 it('uses only the customer platform catalog and canonicalizes production aliases', function (): void {
-	expect(config('accesshub.platforms'))->toBe(PlatformCatalog::OPTIONS)
+	$expected = [
+		'Steam',
+		'Epic Games',
+		'PS3',
+		'PS4',
+		'PS5',
+		'Xbox One',
+		'Xbox Series X',
+		'Nintendo Switch 1',
+		'Nintendo Switch 2',
+		'Origin',
+		'Battle.net',
+		'GOG',
+		'Другое',
+	];
+
+	expect(PlatformCatalog::OPTIONS)->toBe($expected)
+		->and(config('accesshub.platforms'))->toBe($expected)
 		->and(PlatformCatalog::canonicalize('Epic'))->toBe('Epic Games')
 		->and(PlatformCatalog::canonicalize('Xbox X'))->toBe('Xbox Series X')
-		->and(PlatformCatalog::canonicalize('Xbox One/Xbox X'))->toBe('Xbox One/Series X')
-		->and(PlatformCatalog::normalizeList(['Nintendo Switch 1', '2']))->toBe(['Nintendo Switch 1/2'])
+		->and(PlatformCatalog::canonicalize('Xbox One/Xbox X'))->toBeNull()
+		->and(PlatformCatalog::normalizeList(['Xbox One/Xbox X']))->toBe(['Xbox One', 'Xbox Series X'])
+		->and(PlatformCatalog::normalizeList(['Nintendo Switch 1/2']))->toBe(['Nintendo Switch 1', 'Nintendo Switch 2'])
+		->and(PlatformCatalog::normalizeList(['PS4/PS5']))->toBe(['PS4', 'PS5'])
+		->and(PlatformCatalog::searchCandidates('xbox'))->toContain('Xbox One', 'Xbox Series X')
 		->and(PlatformCatalog::normalizeList(['Unknown Console']))->toBeNull();
 
 	Livewire::actingAs(User::factory()->manager()->create())
@@ -174,17 +194,19 @@ it('uses only the customer platform catalog and canonicalizes production aliases
 		->assertViewHas('platformOptions', PlatformCatalog::OPTIONS);
 });
 
-it('normalizes existing platform aliases through the production data migration', function (): void {
+it('splits every combined platform through the production data migration', function (): void {
 	$xboxCombined = Account::factory()->create(['platform' => ['Xbox One/Xbox X']]);
 	$xboxSeries = Account::factory()->create(['platform' => ['Xbox X']]);
 	$epic = Account::factory()->create(['platform' => ['Epic']]);
-	$nintendo = Account::factory()->create(['platform' => ['Nintendo Switch 1', '2']]);
+	$nintendo = Account::factory()->create(['platform' => ['Nintendo Switch 1/2']]);
+	$playStation = Account::factory()->create(['platform' => ['PS4/PS5']]);
 
-	$migration = require database_path('migrations/2026_08_10_000003_normalize_account_platforms.php');
+	$migration = require database_path('migrations/2026_08_11_000004_split_combined_account_platforms.php');
 	$migration->up();
 
-	expect($xboxCombined->fresh()->platform)->toBe(['Xbox One/Series X'])
+	expect($xboxCombined->fresh()->platform)->toBe(['Xbox One', 'Xbox Series X'])
 		->and($xboxSeries->fresh()->platform)->toBe(['Xbox Series X'])
 		->and($epic->fresh()->platform)->toBe(['Epic Games'])
-		->and($nintendo->fresh()->platform)->toBe(['Nintendo Switch 1/2']);
+		->and($nintendo->fresh()->platform)->toBe(['Nintendo Switch 1', 'Nintendo Switch 2'])
+		->and($playStation->fresh()->platform)->toBe(['PS4', 'PS5']);
 });

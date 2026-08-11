@@ -19,6 +19,8 @@ it('stores and renders the AllKeyShop label from the account form', function ():
 
 	Livewire::actingAs($manager)
 		->test(AccountForm::class, ['account' => null])
+		->assertSee('Канал продаж')
+		->assertDontSee('Источник аккаунта')
 		->assertSee('AllKeyShop')
 		->set('game', 'AllKeyShop Test Game')
 		->set('platformSelected', ['Steam'])

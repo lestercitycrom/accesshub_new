@@ -21,16 +21,17 @@ trait NormalizesDeliveryPlatforms
 
 		return match ($lower) {
 			'ps', 'playstation' => 'PlayStation',
+			'ps4/ps5' => 'PlayStation',
 			'ps4' => 'PS4',
 			'ps5' => 'PS5',
 			'xb', 'xbox' => 'Xbox',
 			'xboxx', 'xboxseriesx' => 'Xbox Series X',
 			'xboxone' => 'Xbox One',
-			'xboxone/xboxx', 'xboxone/seriesx' => 'Xbox One/Series X',
+			'xboxone/xboxx', 'xboxone/seriesx' => 'Xbox',
 			'nintendo', 'switch', 'nintendoswitch' => 'Nintendo',
 			'nintendo1', 'switch1', 'nintendoswitch1' => 'Nintendo Switch 1',
 			'nintendo2', 'switch2', 'nintendoswitch2' => 'Nintendo Switch 2',
-			'nintendoswitch1/2' => 'Nintendo Switch 1/2',
+			'nintendoswitch1/2' => 'Nintendo',
 			'steam' => 'Steam',
 			'epic', 'epicgames' => 'Epic Games',
 			default => $platform,
@@ -47,13 +48,11 @@ trait NormalizesDeliveryPlatforms
 		$platform = $this->normalizePlatform($platform);
 
 		return match ($platform) {
-			'PlayStation' => ['PlayStation', 'PS5', 'PS4'],
-			'Xbox' => ['Xbox One/Series X', 'Xbox One/Xbox X', 'Xbox', 'XBox', 'Xbox Series X', 'Xbox X', 'Xbox One'],
-			'Xbox One/Series X' => ['Xbox One/Series X', 'Xbox One/Xbox X', 'Xbox', 'XBox', 'Xbox Series X', 'Xbox X', 'Xbox One'],
+			'PlayStation' => ['PS5', 'PS4', 'PlayStation'],
+			'Xbox' => ['Xbox One', 'Xbox Series X', 'Xbox X', 'Xbox One/Series X', 'Xbox One/Xbox X', 'Xbox', 'XBox'],
 			'Xbox Series X' => ['Xbox Series X', 'Xbox X', 'Xbox One/Series X', 'Xbox One/Xbox X'],
 			'Xbox One' => ['Xbox One', 'Xbox One/Series X', 'Xbox One/Xbox X'],
-			'Nintendo' => ['Nintendo Switch 1/2', 'Nintendo', 'Nintendo Switch 2', '2', 'Nintendo Switch 1'],
-			'Nintendo Switch 1/2' => ['Nintendo Switch 1/2', 'Nintendo', 'Nintendo Switch 2', '2', 'Nintendo Switch 1'],
+			'Nintendo' => ['Nintendo Switch 1', 'Nintendo Switch 2', 'Nintendo Switch 1/2', 'Nintendo', '2'],
 			'Nintendo Switch 1' => ['Nintendo Switch 1', 'Nintendo'],
 			'Nintendo Switch 2' => ['Nintendo Switch 2', '2', 'Nintendo', 'Nintendo Switch 1/2'],
 			'Epic Games' => ['Epic Games', 'EpicGames', 'Epic'],

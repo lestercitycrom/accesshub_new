@@ -39,10 +39,7 @@ final class IssueService
 		$orderId = trim($orderId);
 		$game = trim($game);
 		$platform = trim($platform);
-		$platformCandidates = array_values(array_unique(array_filter([
-			$platform,
-			PlatformCatalog::canonicalize($platform),
-		])));
+		$platformCandidates = PlatformCatalog::searchCandidates($platform);
 
 		if ($orderId === '' || $game === '' || $platform === '') {
 			return IssuanceResult::fail('Неверные данные.');
