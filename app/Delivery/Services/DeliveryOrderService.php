@@ -88,6 +88,23 @@ final class DeliveryOrderService
 			return DeliveryActionResult::fail('Game and platform are required.');
 		}
 
+		// A customer can open the delivery link after the same order number was
+		// already issued through the regular bot flow. Attach that exact issuance
+		// to the empty delivery card instead of spending another account use or
+		// incorrectly reporting that no inventory exists.
+		if ($previousAccountId === null) {
+			$attached = $this->attachExistingIssuance(
+				$order,
+				$operatorTelegramId,
+				$game,
+				$issuePlatform,
+				$accountId,
+			);
+			if ($attached !== null) {
+				return $attached;
+			}
+		}
+
 		$result = null;
 		$attemptMessages = [];
 		$issuedPlatform = $issuePlatform;
@@ -181,6 +198,95 @@ final class DeliveryOrderService
 		}
 
 		return DeliveryActionResult::ok('Account assigned.');
+	}
+
+	private function attachExistingIssuance(
+		DeliveryOrder $order,
+		int $operatorTelegramId,
+		string $game,
+		string $issuePlatform,
+		?int $requestedAccountId,
+	): ?DeliveryActionResult {
+		return DB::transaction(function () use ($order, $operatorTelegramId, $game, $issuePlatform, $requestedAccountId): ?DeliveryActionResult {
+			$lockedOrder = DeliveryOrder::query()->lockForUpdate()->find($order->id);
+			if ($lockedOrder === null || $lockedOrder->account_id !== null) {
+				return null;
+			}
+
+			$candidatePlatforms = collect($this->issuePlatformCandidates($issuePlatform))
+				->map(fn ($platform): string => $this->normalizePlatform((string) $platform))
+				->unique()
+				->all();
+
+			$issuances = Issuance::query()
+				->where('order_id', (string) $lockedOrder->order_number)
+				->where('game', $game)
+				->when($requestedAccountId !== null, static fn ($query) => $query->where('account_id', $requestedAccountId))
+				->latest('issued_at')
+				->lockForUpdate()
+				->get();
+
+			foreach ($issuances as $issuance) {
+				if (!empty($issuance->payload['replaced'])) {
+					continue;
+				}
+
+				$alreadyAttached = DeliveryOrder::query()
+					->where('issuance_id', $issuance->id)
+					->whereKeyNot($lockedOrder->id)
+					->exists()
+					|| DeliveryOrderItem::query()->where('issuance_id', $issuance->id)->exists();
+				if ($alreadyAttached) {
+					continue;
+				}
+
+				$account = Account::query()->lockForUpdate()->find($issuance->account_id);
+				if ($account === null || $account->status !== AccountStatus::ACTIVE) {
+					continue;
+				}
+
+				$accountPlatforms = collect(is_array($account->platform) ? $account->platform : [$account->platform])
+					->filter()
+					->map(fn ($platform): string => $this->normalizePlatform((string) $platform))
+					->unique()
+					->all();
+				if (array_intersect($candidatePlatforms, $accountPlatforms) === []) {
+					continue;
+				}
+
+				$requiresConnection = $this->requiresConnectionCode((string) $lockedOrder->platform);
+				$passwordType = $requiresConnection ? DeliveryPasswordType::FAKE : DeliveryPasswordType::REAL;
+				$lockedOrder->forceFill([
+					'game' => $game,
+					'issue_platform' => $this->canonicalIssuePlatformLabel((string) $issuance->platform),
+					'status' => $requiresConnection
+						? DeliveryOrderStatus::WAITING_FOR_CONNECTION_CODE
+						: DeliveryOrderStatus::ACCOUNT_ASSIGNED,
+					'account_id' => $account->id,
+					'issuance_id' => $issuance->id,
+					'operator_telegram_id' => $operatorTelegramId,
+					'display_login' => (string) $account->login,
+					'display_password' => $requiresConnection
+						? $this->fakePasswordFactory->make()
+						: (string) $account->password,
+					'display_password_type' => $passwordType,
+				])->save();
+
+				$this->recordEvent($lockedOrder, 'existing_issuance_attached', 'telegram', (string) $operatorTelegramId, [
+					'game' => $game,
+					'issue_platform' => $lockedOrder->issue_platform,
+					'account_id' => $account->id,
+					'issuance_id' => $issuance->id,
+					'password_type' => $passwordType->value,
+				]);
+
+				$order->refresh();
+
+				return DeliveryActionResult::ok('Existing order issuance attached.');
+			}
+
+			return null;
+		});
 	}
 
 	private function restoreAccountUse(int $accountId): void
@@ -792,6 +898,12 @@ final class DeliveryOrderService
 			->filter()
 			->unique()
 			->values();
+		$alreadyIssuedMessage = $messages->first(
+			static fn ($message): bool => str_contains((string) $message, 'Повторная выдача запрещена')
+		);
+		if ($alreadyIssuedMessage !== null) {
+			return (string) $alreadyIssuedMessage;
+		}
 
 		if (count($platforms) > 1) {
 			return sprintf(

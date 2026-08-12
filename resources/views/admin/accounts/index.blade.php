@@ -56,7 +56,21 @@
 		<x-admin.alert variant="success" :message="$alertMessage" />
 	@endif
 
+	@if($canSupply)
+		<div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+			<button type="button" wire:click="showSection('base')"
+				class="rounded-lg px-4 py-2 text-sm font-semibold {{ $section === 'base' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50' }}">
+				База аккаунтов
+			</button>
+			<button type="button" wire:click="showSection('cooldown')"
+				class="rounded-lg px-4 py-2 text-sm font-semibold {{ $section === 'cooldown' ? 'bg-amber-500 text-white' : 'text-slate-600 hover:bg-slate-50' }}">
+				Кулдаун
+			</button>
+		</div>
+	@endif
+
 	{{-- Cooldown widget --}}
+	@if(!$canSupply || $section === 'cooldown')
 	@php $cooldownCount = $cooldownAccounts->count(); @endphp
 	<x-admin.card>
 		<x-slot:actions>
@@ -104,7 +118,14 @@
 								{{ $ca->platform }}
 							@endif
 						</x-admin.td>
-						<x-admin.td class="text-slate-700">{{ $ca->login }}</x-admin.td>
+						<x-admin.td class="text-slate-700">
+							<div class="flex flex-wrap items-center gap-1.5">
+								<span>{{ $ca->login }}</span>
+								@if($ca->isAllKeyShop())
+									<x-admin.badge variant="amber">ALLKEYSHOP</x-admin.badge>
+								@endif
+							</div>
+						</x-admin.td>
 						<x-admin.td>
 							<x-admin.badge variant="amber">{{ $ca->next_release_at->format('d.m.Y H:i') }}</x-admin.badge>
 						</x-admin.td>
@@ -116,10 +137,11 @@
 			</x-admin.table>
 		@endif
 	</x-admin.card>
+	@endif
 
 	{{-- Account base (list, filters, actions) — supply roles only. Operators see
 	     only the cooldown block above. --}}
-	@can('hub-supply')
+	@if($canSupply && $section === 'base')
 	<x-admin.filters-bar>
 		<div class="lg:col-span-3">
 			<x-admin.filter-input
@@ -282,6 +304,6 @@
 			{{ $rows->links() }}
 		</div>
 	@endif
-	@endcan
+	@endif
 
 </div>

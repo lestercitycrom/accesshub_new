@@ -162,6 +162,50 @@ it('replace endpoint issues new account and marks original as replaced', functio
     expect($replacementAcc->refresh()->available_uses)->toBe(2);
 })->group('Stage63');
 
+it('allows a replacement account to be replaced again', function (): void {
+	$operator = TelegramUser::factory()->create(['telegram_id' => 3010]);
+	$accounts = Account::factory()->count(3)->create([
+		'game' => 'GTA V',
+		'platform' => ['steam'],
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 3,
+		'max_uses' => 3,
+	]);
+	$firstIssuance = Issuance::factory()->create([
+		'telegram_id' => $operator->telegram_id,
+		'account_id' => $accounts[0]->id,
+		'game' => 'GTA V',
+		'platform' => 'steam',
+		'order_id' => 'GTA-REPLACE-CHAIN',
+	]);
+
+	$this->withSession(['webapp.telegram_id' => $operator->telegram_id]);
+	$this->postJson('/webapp/api/replace', [
+		'issuance_id' => $firstIssuance->id,
+		'reason' => 'dead',
+	])->assertOk()->assertJsonPath('account_id', $accounts[1]->id);
+
+	$secondIssuance = Issuance::query()
+		->where('order_id', 'GTA-REPLACE-CHAIN')
+		->where('account_id', $accounts[1]->id)
+		->firstOrFail();
+
+	$this->postJson('/webapp/api/replace', [
+		'issuance_id' => $secondIssuance->id,
+		'reason' => 'dead',
+	])->assertOk()->assertJsonPath('account_id', $accounts[2]->id);
+
+	expect($secondIssuance->fresh()->payload['replaced'])->toBeTrue()
+		->and(Issuance::query()->where('order_id', 'GTA-REPLACE-CHAIN')->count())->toBe(3);
+})->group('Stage63');
+
+it('renders the replacement action for a replacement history item', function (): void {
+	$this->get('/webapp')
+		->assertOk()
+		->assertSee('if (!item.is_replaced) {', false)
+		->assertDontSee('if (!item.is_replaced && !item.is_replacement) {', false);
+})->group('Stage63');
+
 it('replace restores one use to original account when reason is not dead', function (): void {
     $operator    = TelegramUser::factory()->create(['telegram_id' => 3002]);
     $originalAcc = Account::factory()->create([

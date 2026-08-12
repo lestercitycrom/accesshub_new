@@ -52,12 +52,16 @@ final class ReplaceController
             $now     = CarbonImmutable::now();
             $isBroken = $reason === 'dead';
 
+            $alreadyIssuedAccountIds = Issuance::query()
+                ->where('order_id', $original->order_id)
+                ->pluck('account_id');
+
             // Find replacement account (same game+platform, different account, available)
             $replacement = Account::query()
                 ->where('game', $original->game)
                 ->where('status', AccountStatus::ACTIVE)
                 ->whereJsonContains('platform', $original->platform)
-                ->where('id', '!=', $original->account_id)
+                ->whereNotIn('id', $alreadyIssuedAccountIds)
                 ->where(static function ($q) use ($now): void {
                     $q->where('available_uses', '>', 0)
                         ->orWhere(static function ($q2) use ($now): void {

@@ -1364,7 +1364,7 @@
 				const actions = document.createElement('div');
 				actions.className = 'list-actions';
 				actions.appendChild(buildProblemButtons(item));
-				if (!item.is_replaced && !item.is_replacement) {
+				if (!item.is_replaced) {
 					actions.appendChild(buildReplaceButton(item));
 				}
 				card.appendChild(actions);

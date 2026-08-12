@@ -260,3 +260,36 @@ it('splits every combined platform through the production data migration', funct
 		->and($nintendo->fresh()->platform)->toBe(['Nintendo Switch 1', 'Nintendo Switch 2'])
 		->and($playStation->fresh()->platform)->toBe(['PS4', 'PS5']);
 });
+
+it('shows cooldown accounts on a separate tab with the AllKeyShop label', function (): void {
+	$manager = User::factory()->manager()->create();
+	$baseAccount = Account::factory()->create([
+		'login' => 'base-tab-account@example.test',
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+	$cooldownAccount = Account::factory()->create([
+		'login' => 'cooldown-allkeyshop@example.test',
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 0,
+		'next_release_at' => now()->addDays(7),
+		'source_label' => Account::SOURCE_ALLKEYSHOP,
+	]);
+
+	$component = Livewire::actingAs($manager)
+		->test(\App\Admin\Livewire\Accounts\AccountsIndex::class)
+		->assertSet('section', 'base')
+		->assertSee('База аккаунтов')
+		->assertSee('Кулдаун')
+		->assertSee('base-tab-account@example.test')
+		->assertDontSee('cooldown-allkeyshop@example.test');
+
+	$component->call('showSection', 'cooldown')
+		->assertSet('section', 'cooldown')
+		->assertSee('cooldown-allkeyshop@example.test')
+		->assertSee('ALLKEYSHOP')
+		->assertDontSee('base-tab-account@example.test');
+
+	expect($baseAccount->exists)->toBeTrue()
+		->and($cooldownAccount->exists)->toBeTrue();
+});

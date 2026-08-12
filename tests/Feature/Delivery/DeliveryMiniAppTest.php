@@ -85,6 +85,52 @@ it('assigns a delivery account from telegram mini app with database options', fu
 		->and($account->available_uses)->toBe(0);
 });
 
+it('attaches an earlier regular issuance to an empty delivery order without spending another use', function (): void {
+	$operator = TelegramUser::factory()->deliveryOperator()->create(['telegram_id' => 9310]);
+	$account = Account::factory()->create([
+		'game' => 'Assassins Creed Black Flag Resynced',
+		'platform' => ['Epic Games'],
+		'login' => 'existing-issuance-login',
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 2,
+		'max_uses' => 3,
+	]);
+	$issuance = Issuance::factory()->create([
+		'order_id' => '3623233',
+		'telegram_id' => $operator->telegram_id,
+		'account_id' => $account->id,
+		'game' => 'Assassins Creed Black Flag Resynced',
+		'platform' => 'Epic Games',
+		'payload' => ['qty' => 1],
+	]);
+	$order = DeliveryOrder::factory()->create([
+		'order_number' => '3623233',
+		'platform' => 'Epic Games',
+		'game' => 'Assassins Creed Black Flag Resynced',
+		'status' => DeliveryOrderStatus::WAITING_FOR_OPERATOR,
+		'account_id' => null,
+		'issuance_id' => null,
+	]);
+
+	$this->withSession(['webapp.telegram_id' => $operator->telegram_id])
+		->postJson("/webapp/api/delivery-orders/{$order->id}/assign", [
+			'game' => 'Assassins Creed Black Flag Resynced',
+			'issue_platform' => 'Epic Games',
+		])
+		->assertOk()
+		->assertJsonPath('ok', true)
+		->assertJsonPath('order.account_id', $account->id)
+		->assertJsonPath('order.issuance_id', $issuance->id)
+		->assertJsonPath('order.display_login', 'existing-issuance-login');
+
+	expect($account->fresh()->available_uses)->toBe(2)
+		->and($order->fresh()->issue_platform)->toBe('Epic Games');
+	$this->assertDatabaseHas('delivery_events', [
+		'delivery_order_id' => $order->id,
+		'type' => 'existing_issuance_attached',
+	]);
+});
+
 it('does not return duplicate platform aliases in issue platform options', function (): void {
 	$operator = TelegramUser::factory()->deliveryOperator()->create(['telegram_id' => 9305]);
 	Account::factory()->create([

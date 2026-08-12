@@ -21,6 +21,7 @@ final class AccountsIndex extends Component
 	public string $gameFilter = '';
 	public string $platformFilter = '';
 	public bool $duplicatesOnly = false;
+	public string $section = 'base';
 	public array $selected = [];
 	public string $density = 'normal';
 	public ?string $alertMessage = null;
@@ -30,6 +31,22 @@ final class AccountsIndex extends Component
 	public function mount(): void
 	{
 		Gate::authorize('hub-view');
+		if (Gate::denies('hub-supply')) {
+			$this->section = 'cooldown';
+		}
+	}
+
+	public function showSection(string $section): void
+	{
+		if (!in_array($section, ['base', 'cooldown'], true)) {
+			return;
+		}
+		if ($section === 'base') {
+			Gate::authorize('hub-supply');
+		}
+
+		$this->section = $section;
+		$this->selected = [];
 	}
 
 	public function updatingQ(): void
@@ -126,6 +143,12 @@ final class AccountsIndex extends Component
 	{
 		return Account::query()
 			->with('assignedOperator')
+			->where(static function ($query): void {
+				$query->where('status', '!=', AccountStatus::ACTIVE)
+					->orWhere('available_uses', '>', 0)
+					->orWhereNull('next_release_at')
+					->orWhere('next_release_at', '<=', now());
+			})
 			->when($this->q !== '', function ($query): void {
 				// Search by game name, console login or mail login (and by exact id
 				// when the term is numeric). login/game are plain columns; the
@@ -237,7 +260,7 @@ final class AccountsIndex extends Component
 			->whereNotNull('next_release_at')
 			->where('next_release_at', '>', now())
 			->orderBy('next_release_at')
-			->get(['id', 'game', 'platform', 'login', 'next_release_at', 'max_uses']);
+			->get(['id', 'game', 'platform', 'login', 'next_release_at', 'max_uses', 'source_label']);
 	}
 
 	public function render()
@@ -254,12 +277,13 @@ final class AccountsIndex extends Component
 		], static fn ($v): bool => $v !== null);
 
 		return view('admin.accounts.index', [
-			'rows' => $canSupply ? $this->rows : null,
-			'statusOptions' => $canSupply ? $this->statusOptions : [],
-			'gameOptions' => $canSupply ? $this->gameOptions : [],
-			'platformOptions' => $canSupply ? $this->platformOptions : [],
+			'rows' => $canSupply && $this->section === 'base' ? $this->rows : null,
+			'statusOptions' => $canSupply && $this->section === 'base' ? $this->statusOptions : [],
+			'gameOptions' => $canSupply && $this->section === 'base' ? $this->gameOptions : [],
+			'platformOptions' => $canSupply && $this->section === 'base' ? $this->platformOptions : [],
 			'exportUrl' => $canSupply ? route('admin.export.accounts.csv', $exportParams) : null,
 			'cooldownAccounts' => $this->cooldownAccounts,
+			'canSupply' => $canSupply,
 		])->layout('layouts.admin');
 	}
 }
