@@ -93,10 +93,9 @@ async function login(page, credentials, label) {
     ]);
     record(`${label}: password step requires 2FA`, /\/two-factor-challenge(?:\?|$)/.test(page.url()));
 
-    const otpInputs = page.locator('[data-flux-otp-input]');
-    record(`${label}: six OTP inputs are visible`, await otpInputs.count() === 6, String(await otpInputs.count()));
-    await otpInputs.first().click();
-    await page.keyboard.type(totp(credentials.totpSecret));
+    const otpInput = page.locator('[data-test="two-factor-code"]');
+    record(`${label}: OTP input is visible`, await otpInput.isVisible());
+    await otpInput.fill(totp(credentials.totpSecret));
 
     await Promise.all([
         page.waitForURL(/\/admin\/accounts(?:\?|$)/, { timeout: 15_000 }),
@@ -163,7 +162,7 @@ try {
     }, 'manager');
 
     await createAccount(managerPage, { game: `${gameBase} B`, platform: 'Steam', cooldownDays: 30 });
-    await createAccount(managerPage, { game: `${gameBase} Epic`, platform: 'Epic', cooldownDays: 30 });
+    await createAccount(managerPage, { game: `${gameBase} Epic`, platform: 'Epic Games', cooldownDays: 30 });
 
     await managerPage.goto(`${base}/admin/accounts`, { waitUntil: 'networkidle' });
     const duplicateButton = managerPage.getByRole('button', { name: 'Показать дубли' });
