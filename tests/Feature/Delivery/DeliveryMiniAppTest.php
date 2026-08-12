@@ -131,6 +131,40 @@ it('attaches an earlier regular issuance to an empty delivery order without spen
 	]);
 });
 
+it('does not attach an earlier issuance made for another platform', function (): void {
+	$operator = TelegramUser::factory()->deliveryOperator()->create(['telegram_id' => 9311]);
+	$account = Account::factory()->create([
+		'game' => 'Cross-platform Game',
+		'platform' => ['Steam', 'Epic Games'],
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 2,
+	]);
+	Issuance::factory()->create([
+		'order_id' => 'ORD-CROSS-PLATFORM',
+		'telegram_id' => $operator->telegram_id,
+		'account_id' => $account->id,
+		'game' => 'Cross-platform Game',
+		'platform' => 'Steam',
+	]);
+	$order = DeliveryOrder::factory()->create([
+		'order_number' => 'ORD-CROSS-PLATFORM',
+		'platform' => 'Epic Games',
+		'game' => 'Cross-platform Game',
+		'status' => DeliveryOrderStatus::WAITING_FOR_OPERATOR,
+	]);
+
+	$this->withSession(['webapp.telegram_id' => $operator->telegram_id])
+		->postJson("/webapp/api/delivery-orders/{$order->id}/assign", [
+			'game' => 'Cross-platform Game',
+			'issue_platform' => 'Epic Games',
+		])
+		->assertStatus(422);
+
+	expect($order->fresh()->account_id)->toBeNull()
+		->and($account->fresh()->available_uses)->toBe(2)
+		->and(Issuance::query()->where('order_id', 'ORD-CROSS-PLATFORM')->count())->toBe(1);
+});
+
 it('does not return duplicate platform aliases in issue platform options', function (): void {
 	$operator = TelegramUser::factory()->deliveryOperator()->create(['telegram_id' => 9305]);
 	Account::factory()->create([

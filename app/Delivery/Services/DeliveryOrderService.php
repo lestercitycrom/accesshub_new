@@ -230,6 +230,9 @@ final class DeliveryOrderService
 				if (!empty($issuance->payload['replaced'])) {
 					continue;
 				}
+				if (!in_array($this->normalizePlatform((string) $issuance->platform), $candidatePlatforms, true)) {
+					continue;
+				}
 
 				$alreadyAttached = DeliveryOrder::query()
 					->where('issuance_id', $issuance->id)
