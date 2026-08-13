@@ -322,6 +322,11 @@
 			box-shadow: 0 0 0 2px var(--ah-accent-weak);
 		}
 
+		.searchable-select-trigger.disabled {
+			cursor: not-allowed;
+			opacity: .6;
+		}
+
 		.searchable-select-trigger .trigger-placeholder {
 			color: var(--ah-placeholder);
 		}

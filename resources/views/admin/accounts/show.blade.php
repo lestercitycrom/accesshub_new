@@ -164,6 +164,22 @@
 		{{-- Действия --}}
 		<x-admin.card title="Действия">
 			<div class="space-y-4">
+				@if($account->status === \App\Domain\Accounts\Enums\AccountStatus::STOLEN)
+					<div class="rounded-xl border border-violet-200 bg-violet-50 p-4 space-y-3">
+						<div class="text-sm font-semibold text-violet-800">Ответственный за восстановление</div>
+						<select wire:model="assignToTelegramId"
+							class="w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-violet-400 focus:ring-2 focus:ring-violet-100">
+							<option value="">— не назначен</option>
+							@foreach($operators ?? [] as $op)
+								<option value="{{ $op->telegram_id }}">{{ $op->username ?: $op->first_name }} ({{ $op->telegram_id }})</option>
+							@endforeach
+						</select>
+						<x-admin.button variant="primary" size="md" wire:click="assignOperator" class="w-full">
+							Сохранить ответственного
+						</x-admin.button>
+						<p class="text-xs text-violet-600">Просроченный дедлайн будет ежедневно напоминаться назначенному сотруднику в Telegram.</p>
+					</div>
+				@endif
 
 				<div class="space-y-3">
 					<div class="space-y-1">

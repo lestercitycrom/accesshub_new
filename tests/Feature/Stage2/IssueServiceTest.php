@@ -370,3 +370,36 @@ it('does not issue another account for a previously issued order_id', function (
 	// Ensure the first issuance actually used both accounts
 	expect(count(array_unique($issuedIds)))->toBe(2);
 })->group('Stage2');
+
+it('allows distinct games on the same order while still blocking the same product twice', function (): void {
+	$firstAccount = Account::factory()->create([
+		'game' => 'Game One',
+		'platform' => ['PS5'],
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+	$secondAccount = Account::factory()->create([
+		'game' => 'Game Two',
+		'platform' => ['PS5'],
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+	$duplicateAccount = Account::factory()->create([
+		'game' => 'Game Two',
+		'platform' => ['PS5'],
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+
+	$service = app(IssueService::class);
+	$first = $service->issue(111, 'ORD-TWO-GAMES', 'Game One', 'PS5', 1, accountId: $firstAccount->id);
+	$second = $service->issue(111, 'ORD-TWO-GAMES', 'Game Two', 'PS5', 1, accountId: $secondAccount->id);
+	$duplicate = $service->issue(111, 'ORD-TWO-GAMES', 'Game Two', 'PS5', 1, accountId: $duplicateAccount->id);
+
+	expect($first->ok())->toBeTrue()
+		->and($second->ok())->toBeTrue()
+		->and($duplicate->ok())->toBeFalse()
+		->and($duplicate->reason())->toBe(IssuanceResult::REASON_ALREADY_ISSUED)
+		->and(Issuance::query()->where('order_id', 'ORD-TWO-GAMES')->count())->toBe(2)
+		->and($duplicateAccount->fresh()->available_uses)->toBe(1);
+})->group('Stage2');

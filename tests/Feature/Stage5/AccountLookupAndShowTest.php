@@ -103,6 +103,37 @@ it('account show can set status and writes SET_STATUS event', function (): void 
 	expect(AccountEvent::query()->where('account_id', $account->id)->where('type', 'SET_STATUS')->exists())->toBeTrue();
 })->group('Stage5.5');
 
+it('account show can assign a responsible operator without resetting an existing deadline', function (): void {
+	$admin = User::factory()->create(['is_admin' => true]);
+	$this->actingAs($admin);
+
+	$operator = TelegramUser::factory()->create([
+		'telegram_id' => 555001,
+		'is_active' => true,
+		'username' => 'recovery_operator',
+	]);
+	$deadline = now()->addDays(2)->startOfSecond();
+	$account = Account::factory()->create([
+		'status' => AccountStatus::STOLEN,
+		'assigned_to_telegram_id' => null,
+		'status_deadline_at' => $deadline,
+	]);
+
+	Livewire::test(\App\Admin\Livewire\Accounts\AccountShow::class, ['account' => $account])
+		->assertSee('Ответственный за восстановление')
+		->set('assignToTelegramId', (string) $operator->telegram_id)
+		->call('assignOperator');
+
+	$account->refresh();
+
+	expect($account->assigned_to_telegram_id)->toBe($operator->telegram_id)
+		->and($account->status_deadline_at?->equalTo($deadline))->toBeTrue()
+		->and(AccountEvent::query()
+			->where('account_id', $account->id)
+			->where('type', 'ASSIGNED_OPERATOR')
+			->exists())->toBeTrue();
+})->group('Stage5.5');
+
 it('account show can release to pool and writes RELEASE_TO_POOL', function (): void {
 	$admin = User::factory()->create(['is_admin' => true]);
 	$this->actingAs($admin);

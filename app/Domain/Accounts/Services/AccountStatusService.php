@@ -61,6 +61,46 @@ final class AccountStatusService
 		});
 	}
 
+	public function assignOperator(int $accountId, ?int $assignedTelegramId, ?int $telegramId, array $payload = []): bool
+	{
+		return DB::transaction(function () use ($accountId, $assignedTelegramId, $telegramId, $payload): bool {
+			$account = Account::query()
+				->lockForUpdate()
+				->findOrFail($accountId);
+
+			if ($account->status !== AccountStatus::STOLEN) {
+				return false;
+			}
+
+			$previousTelegramId = $account->assigned_to_telegram_id;
+			$account->assigned_to_telegram_id = $assignedTelegramId;
+
+			if ($assignedTelegramId !== null && $account->status_deadline_at === null) {
+				$deadlineDays = $this->settings->getInt('stolen_default_deadline_days', (int) config('accesshub.stolen.default_deadline_days', 5));
+				$account->status_deadline_at = Carbon::now()->addDays($deadlineDays);
+			}
+
+			$flags = is_array($account->flags) ? $account->flags : [];
+			if ($assignedTelegramId !== null) {
+				$flags['ACTION_REQUIRED'] = true;
+			}
+			$account->flags = $flags;
+			$account->save();
+
+			AccountEvent::query()->create([
+				'account_id' => $account->id,
+				'telegram_id' => $telegramId,
+				'type' => 'ASSIGNED_OPERATOR',
+				'payload' => array_merge([
+					'previous_telegram_id' => $previousTelegramId,
+					'assigned_to_telegram_id' => $assignedTelegramId,
+				], $payload),
+			]);
+
+			return true;
+		});
+	}
+
 	public function markProblem(int $accountId, int $telegramId, string $reason, array $payload = []): void
 	{
 		DB::transaction(function () use ($accountId, $telegramId, $reason, $payload): void {

@@ -69,6 +69,51 @@ it('keeps the explicit replacement workflow available for an issued order', func
 		->and(Issuance::query()->where('order_id', 'REPLACEMENT-ORDER')->count())->toBe(2);
 });
 
+it('allows the webapp to issue two different games for one order number', function (): void {
+	$operator = TelegramUser::factory()->create([
+		'telegram_id' => 2026081301,
+		'role' => TelegramRole::OPERATOR,
+		'is_active' => true,
+	]);
+	$firstAccount = Account::factory()->create([
+		'game' => 'First Ordered Game',
+		'platform' => ['PS5'],
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+	$secondAccount = Account::factory()->create([
+		'game' => 'Second Ordered Game',
+		'platform' => ['PS5'],
+		'status' => AccountStatus::ACTIVE,
+		'available_uses' => 1,
+	]);
+
+	foreach ([
+		['game' => 'First Ordered Game', 'account_id' => $firstAccount->id],
+		['game' => 'Second Ordered Game', 'account_id' => $secondAccount->id],
+	] as $request) {
+		$this->withSession(['webapp.telegram_id' => $operator->telegram_id])
+			->postJson('/webapp/api/issue', [
+				'order_id' => 'TWO-GAMES-ONE-ORDER',
+				'game' => $request['game'],
+				'platform' => 'PS5',
+				'qty' => 1,
+				'account_id' => $request['account_id'],
+			])
+			->assertOk()
+			->assertJsonPath('ok', true);
+	}
+
+	expect(Issuance::query()->where('order_id', 'TWO-GAMES-ONE-ORDER')->count())->toBe(2);
+});
+
+it('renders a scrollable searchable account selector in the webapp', function (): void {
+	$this->get('/webapp')
+		->assertOk()
+		->assertSee('id="issueAccount" class="form-select searchable-select"', false)
+		->assertSee("initSearchableSelect('issueAccount')", false);
+});
+
 it('records an issuance for a game name longer than the former database limit', function (): void {
 	$game = 'Call of Duty Black Ops III Zombies Chronicles Edition';
 	$operator = TelegramUser::factory()->create([

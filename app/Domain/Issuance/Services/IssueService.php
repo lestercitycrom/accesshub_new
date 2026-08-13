@@ -74,13 +74,23 @@ final class IssueService
 
 		return DB::transaction(function () use ($telegramId, $orderId, $game, $platform, $platformCandidates, $qty, $cooldownDays, $now, $accountId, $allowRepeatOrder): IssuanceResult {
 			try {
-				$alreadyIssuedAccountIds = Issuance::query()
+				$existingIssuances = Issuance::query()
 					->where('order_id', $orderId)
 					->lockForUpdate()
+					->get(['account_id', 'game', 'platform']);
+
+				$alreadyIssuedAccountIds = $existingIssuances
 					->pluck('account_id')
+					->map(static fn ($id): int => (int) $id)
 					->all();
 
-				if (!$allowRepeatOrder && $alreadyIssuedAccountIds !== []) {
+				$sameProductAlreadyIssued = $existingIssuances->contains(
+					static fn (Issuance $issuance): bool =>
+						mb_strtolower(trim((string) $issuance->game)) === mb_strtolower($game)
+						&& mb_strtolower(trim((string) $issuance->platform)) === mb_strtolower($platform)
+				);
+
+				if (!$allowRepeatOrder && $sameProductAlreadyIssued) {
 					return IssuanceResult::fail(
 						'По этому номеру заказа аккаунт уже выдан. Повторная выдача запрещена; для замены используйте действие «Замена».',
 						IssuanceResult::REASON_ALREADY_ISSUED,

@@ -23,6 +23,9 @@ final class AccountShow extends Component
 		Gate::authorize('hub-supply');
 
 		$this->account = $account->load('assignedOperator');
+		$this->assignToTelegramId = $account->assigned_to_telegram_id !== null
+			? (string) $account->assigned_to_telegram_id
+			: null;
 	}
 
 	public function applyStatus(AccountStatusService $statusService): void
@@ -43,11 +46,40 @@ final class AccountShow extends Component
 		}
 		$statusService->setStatus($this->account->id, $status, null, $payload);
 
-		$this->account->refresh();
+		$this->account->refresh()->load('assignedOperator');
 		$this->setStatus = '';
-		$this->assignToTelegramId = null;
+		$this->assignToTelegramId = $this->account->assigned_to_telegram_id !== null
+			? (string) $this->account->assigned_to_telegram_id
+			: null;
 
 		session()->flash('message', 'Status updated successfully');
+	}
+
+	public function assignOperator(AccountStatusService $statusService): void
+	{
+		Gate::authorize('hub-supply');
+
+		$assignedTelegramId = null;
+		if ($this->assignToTelegramId !== null && $this->assignToTelegramId !== '') {
+			$assignedTelegramId = (int) $this->assignToTelegramId;
+			if ($assignedTelegramId <= 0 || !TelegramUser::query()
+				->where('telegram_id', $assignedTelegramId)
+				->where('is_active', true)
+				->exists()) {
+				return;
+			}
+		}
+
+		if (!$statusService->assignOperator($this->account->id, $assignedTelegramId, null)) {
+			return;
+		}
+
+		$this->account->refresh()->load('assignedOperator');
+		$this->assignToTelegramId = $this->account->assigned_to_telegram_id !== null
+			? (string) $this->account->assigned_to_telegram_id
+			: null;
+
+		session()->flash('message', 'Responsible operator updated');
 	}
 
 	public function releaseToPool(AccountStatusService $statusService): void

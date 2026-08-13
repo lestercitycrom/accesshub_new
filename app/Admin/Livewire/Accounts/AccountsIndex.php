@@ -143,11 +143,13 @@ final class AccountsIndex extends Component
 	{
 		return Account::query()
 			->with('assignedOperator')
-			->where(static function ($query): void {
-				$query->where('status', '!=', AccountStatus::ACTIVE)
-					->orWhere('available_uses', '>', 0)
-					->orWhereNull('next_release_at')
-					->orWhere('next_release_at', '<=', now());
+			->when(trim($this->q) === '', static function ($query): void {
+				$query->where(static function ($inner): void {
+					$inner->where('status', '!=', AccountStatus::ACTIVE)
+						->orWhere('available_uses', '>', 0)
+						->orWhereNull('next_release_at')
+						->orWhere('next_release_at', '<=', now());
+				});
 			})
 			->when($this->q !== '', function ($query): void {
 				// Search by game name, console login or mail login (and by exact id

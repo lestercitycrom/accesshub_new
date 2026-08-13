@@ -290,6 +290,11 @@ it('shows cooldown accounts on a separate tab with the AllKeyShop label', functi
 		->assertSee('ALLKEYSHOP')
 		->assertDontSee('base-tab-account@example.test');
 
+	$component->call('showSection', 'base')
+		->set('q', 'cooldown-allkeyshop@example.test')
+		->assertSee('cooldown-allkeyshop@example.test')
+		->assertSee('ALLKEYSHOP');
+
 	expect($baseAccount->exists)->toBeTrue()
 		->and($cooldownAccount->exists)->toBeTrue();
 });

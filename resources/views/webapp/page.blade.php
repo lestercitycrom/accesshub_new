@@ -63,9 +63,11 @@
 						</div>
 						<div class="col-12">
 							<label class="form-label" for="issueAccount">Доступный аккаунт</label>
-							<select id="issueAccount" class="form-select" disabled>
-								<option value="">Сначала выберите платформу и игру</option>
-							</select>
+							<div class="searchable-select-wrapper">
+								<select id="issueAccount" class="form-select searchable-select" disabled>
+									<option value="">Сначала выберите платформу и игру</option>
+								</select>
+							</div>
 							<div id="issueAccountHint" class="small text-muted mt-1">До выдачи можно увидеть логин и метку AllKeyShop.</div>
 						</div>
 					</div>
@@ -1746,6 +1748,7 @@
 
 			// Открытие по клику/Enter на триггер
 			function openDropdown() {
+				if (select.disabled) return;
 				dropdown.classList.add('active');
 				updateOptions();
 				if (searchInput) searchInput.focus();
@@ -1785,10 +1788,22 @@
 			});
 
 			// Обновление при изменении опций
-			const observer = new MutationObserver(updateOptions);
-			observer.observe(select, { childList: true });
+			function syncDisabledState() {
+				trigger.classList.toggle('disabled', select.disabled);
+				trigger.tabIndex = select.disabled ? -1 : 0;
+				trigger.setAttribute('aria-disabled', select.disabled ? 'true' : 'false');
+				if (select.disabled) dropdown.classList.remove('active');
+			}
+
+			const observer = new MutationObserver(() => {
+				updateOptions();
+				syncDisabledState();
+			});
+			observer.observe(select, { childList: true, attributes: true, attributeFilter: ['disabled'] });
+			select.addEventListener('change', updateOptions);
 
 			updateOptions();
+			syncDisabledState();
 		}
 
 		function populateGameSelect(games) {
@@ -1940,6 +1955,7 @@
 		});
 
 		async function init() {
+			initSearchableSelect('issueAccount');
 			await loadPlatforms();
 
 			let ok = await loadMe();
